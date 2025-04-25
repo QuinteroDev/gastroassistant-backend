@@ -47,7 +47,8 @@ INSTALLED_APPS = [
 
     # Aquí añadirás tus apps, por ejemplo:
      'users',
-    # 'questionnaires',
+     'profiles',
+     'questionnaires',
 ]
 
 MIDDLEWARE = [
