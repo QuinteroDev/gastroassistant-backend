@@ -1,15 +1,22 @@
-# questionnaires/views.py
+# questionnaires/views.py (Añadir las siguientes vistas)
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from .models import Questionnaire
-from .serializers import QuestionnaireDetailSerializer
-from django.shortcuts import get_object_or_404 # Para manejar 404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.db import transaction # Importante para la atomicidad
-from .models import Question, AnswerOption, UserAnswer, QuestionnaireCompletion # Importar modelos necesarios
-from .serializers import QuestionnaireSubmitSerializer # Importar el nuevo serializer
+from django.db import transaction
+from .models import (
+    Questionnaire, Question, AnswerOption, UserAnswer, QuestionnaireCompletion,
+    HabitQuestion, HabitOption, UserHabitAnswer
+)
+from .serializers import (
+    QuestionnaireDetailSerializer, QuestionnaireSubmitSerializer,
+    HabitQuestionSerializer, UserHabitAnswerSerializer
+)
+from habits.models import HabitTracker
+from recommendations.services import HabitTrackingService
+
+# --- Vistas para cuestionarios existentes ---
 
 class QuestionnaireDetailView(generics.RetrieveAPIView):
     """
@@ -17,30 +24,12 @@ class QuestionnaireDetailView(generics.RetrieveAPIView):
     de un cuestionario específico por su ID (pk).
     """
     serializer_class = QuestionnaireDetailSerializer
-    permission_classes = [IsAuthenticated] # Solo usuarios logueados
+    permission_classes = [IsAuthenticated]
     queryset = Questionnaire.objects.prefetch_related('questions__options').all()
-    # lookup_field = 'pk' # 'pk' es el default, podrías cambiar a 'name' si prefieres buscar por nombre
 
-    # Opcional: Si quieres buscar por 'name' en lugar de 'pk' en la URL
-    # lookup_field = 'name'
-    # queryset = Questionnaire.objects.prefetch_related('questions__options').all()
-
-    # Optimizamos la consulta para traer preguntas y opciones eficientemente
     def get_queryset(self):
          return Questionnaire.objects.prefetch_related('questions__options').all()
-
-# --- Alternativa con function-based view si prefieres ---
-# from rest_framework.decorators import api_view, permission_classes
-# from rest_framework.response import Response
-#
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def get_questionnaire_detail(request, pk): # o 'name' si usas lookup_field='name'
-#     questionnaire = get_object_or_404(Questionnaire.objects.prefetch_related('questions__options'), pk=pk)
-#     serializer = QuestionnaireDetailSerializer(questionnaire)
-#     return Response(serializer.data)
-
-# Añadir esta vista
+    
 class SubmitQuestionnaireAnswersView(APIView):
     """
     Vista para recibir (POST) las respuestas de un usuario a un cuestionario específico.
@@ -56,8 +45,8 @@ class SubmitQuestionnaireAnswersView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    @transaction.atomic # Asegura que todas las operaciones de BD se hagan juntas o ninguna
-    def post(self, request, pk): # 'pk' es el ID del Questionnaire desde la URL
+    @transaction.atomic
+    def post(self, request, pk):
         try:
             questionnaire = Questionnaire.objects.get(pk=pk)
         except Questionnaire.DoesNotExist:
@@ -75,13 +64,10 @@ class SubmitQuestionnaireAnswersView(APIView):
                 question_id = answer_data['question_id']
                 option_id = answer_data['selected_option_id']
 
-                # Re-validar aquí o confiar en la validación del serializer
-                # Es más seguro re-validar por si acaso
                 try:
                     question = Question.objects.select_related('questionnaire').get(pk=question_id)
                     option = AnswerOption.objects.get(pk=option_id, question=question)
                 except (Question.DoesNotExist, AnswerOption.DoesNotExist):
-                    # Esto no debería pasar si el serializer validó bien, pero por si acaso
                     return Response({"error": f"Datos inválidos para pregunta {question_id} u opción {option_id}"}, status=status.HTTP_400_BAD_REQUEST)
 
                 # Asegurarse que la pregunta pertenece al cuestionario de la URL
@@ -95,55 +81,210 @@ class SubmitQuestionnaireAnswersView(APIView):
                         selected_option=option
                     )
                 )
-                # Sumar al score si aplica (podría hacerse después también)
+                # Sumar al score si aplica
                 if questionnaire.type in ['GERDQ', 'RSI']:
                     total_score += option.value
 
-            # 2. Borrar respuestas anteriores de ESTE usuario para ESTE cuestionario (si se permite re-submit)
-            # UserAnswer.objects.filter(user=user, question__questionnaire=questionnaire).delete()
-
-            # 3. Crear todas las respuestas nuevas eficientemente
+            # 2. Crear todas las respuestas nuevas eficientemente
             UserAnswer.objects.bulk_create(answers_to_create)
 
-            # 4. Crear el registro de finalización
-            # Asumimos que esta sumisión es parte del onboarding.
-            # Si no fuera siempre así, el frontend debería indicarlo.
+            # 3. Crear el registro de finalización
             completion = QuestionnaireCompletion.objects.create(
                 user=user,
                 questionnaire=questionnaire,
                 score=total_score if questionnaire.type in ['GERDQ', 'RSI'] else None,
-                is_onboarding=True # Marcar como parte del onboarding
+                is_onboarding=True
             )
 
-            # 5. (Lógica futura) Verificar si el onboarding está completo
-            # check_and_update_onboarding_status(user)
-
-            # 6. Devolver respuesta (puedes incluir el score o un mensaje)
-            response_data = {
-                "message": f"Respuestas para '{questionnaire.title}' enviadas correctamente.",
-                "completion_id": completion.id,
-            }
+            # 4. Intentar asignar un programa si ya completó ambos cuestionarios
+            assign_program = False
             if questionnaire.type in ['GERDQ', 'RSI']:
-                response_data["score"] = total_score
-                # Aquí podrías añadir lógica para determinar el emoji basado en el score
+                # Verificar si el usuario ha completado ambos cuestionarios
+                gerdq_done = QuestionnaireCompletion.objects.filter(
+                    user=user, 
+                    questionnaire__type='GERDQ'
+                ).exists()
+                
+                rsi_done = QuestionnaireCompletion.objects.filter(
+                    user=user, 
+                    questionnaire__type='RSI'
+                ).exists()
+                
+                if gerdq_done and rsi_done:
+                    assign_program = True
+                        
+            if assign_program:
+                # Primero, clasificar al usuario según la guía ERGE 2019
+                from profiles.services import PhenotypeClassificationService
+                phenotype_result = PhenotypeClassificationService.classify_user(user)
+                
+                # Luego, asignar programa basado en la clasificación
+                from programs.services import ProgramAssignmentService
+                user_program = ProgramAssignmentService.assign_program(user)
+                
+                # Si se asignó correctamente, incluir información en la respuesta
+                if user_program:
+                    response_data = {
+                        "message": f"Respuestas para '{questionnaire.title}' enviadas correctamente.",
+                        "completion_id": completion.id,
+                        "phenotype": {
+                            "code": phenotype_result['phenotype'],
+                            "scenario": phenotype_result['scenario']
+                        },
+                        "program_assigned": {
+                            "id": user_program.program.id,
+                            "name": user_program.program.name,
+                            "type": user_program.program.type
+                        }
+                    }
+                else:
+                    response_data = {
+                        "message": f"Respuestas para '{questionnaire.title}' enviadas correctamente.",
+                        "completion_id": completion.id,
+                        "phenotype": {
+                            "code": phenotype_result['phenotype'],
+                            "scenario": phenotype_result['scenario']
+                        },
+                        "warning": "No se pudo asignar un programa automáticamente."
+                    }
+            else:
+                # Respuesta estándar sin asignación de programa
+                response_data = {
+                    "message": f"Respuestas para '{questionnaire.title}' enviadas correctamente.",
+                    "completion_id": completion.id,
+                }
+            
+            # 5. Marcar el onboarding como completo si ha terminado todos los cuestionarios
+            try:
+                user_profile = user.profile
+                if not user_profile.onboarding_complete:
+                    # Verificar si ha completado todos los cuestionarios necesarios
+                    all_questionnaires_done = all([
+                        QuestionnaireCompletion.objects.filter(
+                            user=user, 
+                            questionnaire__type=q_type,
+                            is_onboarding=True
+                        ).exists() 
+                        for q_type in ['GERDQ', 'RSI']
+                    ]) 
+                    
+                    # También verificar si completó la información básica
+                    profile_complete = (
+                        user_profile.weight_kg is not None and 
+                        user_profile.height_cm is not None
+                    )
+                    
+                    if all_questionnaires_done and profile_complete:
+                        user_profile.onboarding_complete = True
+                        user_profile.save()
+                        response_data["onboarding_complete"] = True
+            except Exception as e:
+                # Si hay algún error actualizando el perfil, solo lo registramos
+                print(f"Error al actualizar estado de onboarding: {e}")
 
             return Response(response_data, status=status.HTTP_201_CREATED)
-
         else:
-            # Si la validación del serializer falla
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+class UserQuestionnaireCompletionsView(APIView):
+    """
+    Vista para obtener los completions de cuestionarios del usuario actual.
+    Esto es útil para verificar las puntuaciones y estado de los cuestionarios.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        completions = QuestionnaireCompletion.objects.filter(user=user).select_related('questionnaire')
+        
+        data = []
+        for completion in completions:
+            data.append({
+                'id': completion.id,
+                'questionnaire': {
+                    'id': completion.questionnaire.id,
+                    'name': completion.questionnaire.name,
+                    'title': completion.questionnaire.title,
+                    'type': completion.questionnaire.type,
+                },
+                'score': completion.score,
+                'is_onboarding': completion.is_onboarding,
+                'completed_at': completion.completed_at,
+            })
+            
+        return Response(data)
 
-# (Función auxiliar placeholder para futura lógica de completar onboarding)
-# def check_and_update_onboarding_status(user):
-#     profile = user.profile
-#     if not profile.onboarding_complete:
-#         # Verificar si todas las QuestionnaireCompletion necesarias con is_onboarding=True existen
-#         gerdq_done = QuestionnaireCompletion.objects.filter(user=user, questionnaire__type='GERDQ', is_onboarding=True).exists()
-#         rsi_done = QuestionnaireCompletion.objects.filter(user=user, questionnaire__type='RSI', is_onboarding=True).exists()
-#         habits_done = QuestionnaireCompletion.objects.filter(user=user, questionnaire__type='HABITS', is_onboarding=True).exists()
-#         # Asumiendo que también hay un paso de datos generales...
-#         # general_data_done = profile.weight_kg is not None and profile.height_cm is not None # O un flag específico
+# --- Nuevas vistas para hábitos ---
 
-#         if gerdq_done and rsi_done and habits_done: # Añadir más condiciones si es necesario
-#             profile.onboarding_complete = True
-#             profile.save()
+class HabitQuestionsView(generics.ListAPIView):
+    """
+    Vista para obtener todas las preguntas del cuestionario de hábitos.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = HabitQuestionSerializer
+    queryset = HabitQuestion.objects.prefetch_related('options').all()
+
+class SubmitHabitQuestionnaireView(APIView):
+    """
+    Vista para enviar las respuestas al cuestionario de hábitos.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Espera un JSON como:
+        {
+            "answers": [
+                {"question_id": 1, "option_id": 3},
+                {"question_id": 2, "option_id": 1},
+                ...
+            ]
+        }
+        """
+        answers_data = request.data.get('answers', [])
+        
+        if not answers_data:
+            return Response({
+                'error': 'No se proporcionaron respuestas'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validar y guardar las respuestas
+        saved_answers = []
+        for answer in answers_data:
+            question_id = answer.get('question_id')
+            option_id = answer.get('option_id')
+            
+            try:
+                question = HabitQuestion.objects.get(id=question_id)
+                option = HabitOption.objects.get(id=option_id, question=question)
+            except (HabitQuestion.DoesNotExist, HabitOption.DoesNotExist):
+                return Response({
+                    'error': f'Pregunta u opción inválida: {question_id}, {option_id}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Guardar la respuesta
+            user_answer, created = UserHabitAnswer.objects.update_or_create(
+                user=request.user,
+                question=question,
+                is_onboarding=True,
+                defaults={'selected_option': option}
+            )
+            
+            saved_answers.append(user_answer)
+        
+        # Configurar el seguimiento de hábitos para el usuario
+        from recommendations.services import HabitTrackingService
+        trackers = HabitTrackingService.setup_habit_tracking(request.user)
+        
+        # Generar recomendaciones basadas en el perfil actual
+        from recommendations.services import RecommendationService
+        recommendations = RecommendationService.generate_recommendations_for_user(request.user)
+        prioritized = RecommendationService.prioritize_recommendations(request.user)
+        
+        return Response({
+            'message': 'Respuestas guardadas con éxito.',
+            'answers_count': len(saved_answers),
+            'trackers_created': len(trackers),
+            'recommendations_generated': len(recommendations),
+            'prioritized_recommendations': len(prioritized)
+        }, status=status.HTTP_201_CREATED)

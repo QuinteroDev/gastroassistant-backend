@@ -9,9 +9,8 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
-  Image,
-  Dimensions,
-  Animated
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -19,90 +18,40 @@ import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// URL Base para la API
+const API_URL = 'http://192.168.1.48:8000';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-// Array de consejos sobre gastritis y reflujo
-const healthTips = [
-  {
-    title: "¿Qué es el reflujo gastroesofágico?",
-    content: "El reflujo gastroesofágico (ERGE) es una afección digestiva en la que el ácido del estómago vuelve al esófago. Esto puede causar irritación del revestimiento del esófago, causando síntomas como acidez, regurgitación, dificultad para tragar y sensación de que hay un bulto en la garganta.",
-    icon: "medical-outline"
-  },
-  {
-    title: "Consejos para manejar el reflujo",
-    content: "Mantén un peso saludable, come porciones más pequeñas, evita acostarte después de comer, eleva la cabecera de tu cama, evita alimentos que desencadenen el reflujo (como alimentos grasos o picantes, chocolate, menta, café y alcohol) y deja de fumar si fumas.",
-    icon: "leaf-outline"
-  },
-  {
-    title: "Signos de alerta de gastritis",
-    content: "La gastritis puede manifestarse con dolor abdominal, náuseas, vómitos, sensación de llenura, acidez estomacal o pérdida de apetito. Si experimentas sangrado digestivo (heces negras o vómito con sangre), dolor intenso o persistente, debes buscar atención médica inmediata.",
-    icon: "warning-outline"
-  }
-];
+// Colores para cada tipo de programa
+const programColors = {
+  'A': ['#0077B6', '#00B4D8'], // GerdQ y RSI positivos
+  'B': ['#0096C7', '#48CAE4'], // GerdQ positivo, RSI negativo
+  'C': ['#023E8A', '#0077B6'], // GerdQ negativo, RSI positivo
+  'D': ['#03045E', '#023E8A']  // GerdQ y RSI negativos
+};
 
-// Acciones rápidas para la pantalla principal
-const quickActions = [
-  {
-    title: "Registrar síntomas",
-    icon: "clipboard-outline",
-    color: "#00B4D8",
-    route: "Tracker"
-  },
-  {
-    title: "Consejos dietéticos",
-    icon: "nutrition-outline",
-    color: "#0096C7",
-    route: "Diet"
-  },
-  {
-    title: "Medicamentos",
-    icon: "medical-outline",
-    color: "#0077B6",
-    route: "Medications"
-  },
-  {
-    title: "Mi perfil",
-    icon: "person-outline",
-    color: "#023E8A",
-    route: "Profile"
-  }
-];
-
-const { width } = Dimensions.get('window');
+// Descripciones cortas para cada programa
+const programDescriptions = {
+  'A': 'Este programa está diseñado para personas con síntomas tanto de reflujo gastroesofágico como de reflujo laringofaríngeo. Incluye recomendaciones específicas para tratar ambas condiciones.',
+  'B': 'Este programa se enfoca en el manejo del reflujo gastroesofágico. Incluye estrategias dietéticas y de estilo de vida para reducir la acidez y mejorar tu digestión.',
+  'C': 'Este programa está especializado en el manejo del reflujo laringofaríngeo. Se centra en reducir la irritación de la garganta y los síntomas respiratorios asociados.',
+  'D': 'Este programa preventivo te ayudará a mantener una buena salud digestiva y prevenir futuros problemas. Incluye hábitos saludables para tu sistema digestivo.'
+};
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const [selectedTip, setSelectedTip] = useState(0);
-  const [fadeAnim] = useState(new Animated.Value(1));
-  const [userName, setUserName] = useState("Usuario");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("Usuario");
+  const [userProgram, setUserProgram] = useState<any>(null);
 
-  // Efecto de desvanecimiento para los consejos
-  const fadeOut = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setSelectedTip(prev => (prev + 1) % healthTips.length);
-      fadeIn();
-    });
-  };
-
-  const fadeIn = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  // Verificar token al cargar la pantalla
+  // Verificar token y cargar datos al iniciar
   useEffect(() => {
-    const checkAuth = async () => {
-      console.log("Verificando token en HomeScreen...");
+    const checkAuthAndLoadData = async () => {
       const token = await SecureStore.getItemAsync('authToken');
-      console.log("Token en HomeScreen:", token ? "Existe" : "No existe");
       
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
@@ -110,29 +59,62 @@ export default function HomeScreen() {
           index: 0,
           routes: [{ name: 'Login' }],
         });
+        return;
       }
       
-      // Simulamos obtener el nombre del usuario (en una app real esto vendría del backend)
-      setUserName("María");
+      try {
+        // Cargar datos del perfil
+        const profileResponse = await fetch(`${API_URL}/api/profiles/me/`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          if (profileData.first_name) {
+            setUserName(profileData.first_name);
+          }
+        }
+        
+        // Cargar programa asignado
+        const programResponse = await fetch(`${API_URL}/api/programs/my-program/`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (programResponse.ok) {
+          const programData = await programResponse.json();
+          setUserProgram(programData);
+        } else if (programResponse.status !== 404) {
+          // Solo mostrar error si no es un 404 (programa no encontrado)
+          const errorText = await programResponse.text();
+          console.error("Error al cargar programa:", errorText);
+          setError("Ocurrió un error al cargar tu programa. Por favor, intenta más tarde.");
+        }
+      } catch (err) {
+        console.error("Error cargando datos:", err);
+        setError("Error al cargar los datos de tu programa. Por favor, intenta más tarde.");
+      } finally {
+        setIsLoading(false);
+      }
     };
     
-    checkAuth();
-
-    // Cambiar el consejo cada 30 segundos con animación
-    const interval = setInterval(() => {
-      fadeOut();
-    }, 30000);
-
-    return () => clearInterval(interval);
+    checkAuthAndLoadData();
   }, [navigation]);
 
   // Función para navegar a diferentes secciones
   const navigateTo = (route: keyof RootStackParamList) => {
-    if (Object.keys(RootStackParamList).includes(route)) {
+    // Solo verifica si la ruta existe, sin usar Object.keys(RootStackParamList)
+    try {
       navigation.navigate(route);
-    } else {
-      console.log(`La ruta ${route} aún no está implementada`);
-      // Aquí podrías mostrar un mensaje al usuario
+    } catch (error) {
+      console.log(`La ruta ${route} aún no está implementada`, error);
     }
   };
 
@@ -151,145 +133,104 @@ export default function HomeScreen() {
         <View style={styles.greetingSection}>
           <Text style={styles.greeting}>¡Hola, {userName}!</Text>
           <Text style={styles.greetingSubtitle}>
-            ¿Cómo te sientes hoy?
+            Bienvenido a tu programa personalizado
           </Text>
-          
-          {/* Selector de estado de ánimo */}
-          <View style={styles.moodSelector}>
-            <TouchableOpacity style={styles.moodItem}>
-              <View style={[styles.moodIcon, { backgroundColor: '#4CAF50' }]}>
-                <Ionicons name="happy-outline" size={24} color="#fff" />
-              </View>
-              <Text style={styles.moodText}>Bien</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.moodItem}>
-              <View style={[styles.moodIcon, { backgroundColor: '#FFC107' }]}>
-                <Ionicons name="sad-outline" size={24} color="#fff" />
-              </View>
-              <Text style={styles.moodText}>Regular</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.moodItem}>
-              <View style={[styles.moodIcon, { backgroundColor: '#F44336' }]}>
-                <Ionicons name="warning-outline" size={24} color="#fff" />
-              </View>
-              <Text style={styles.moodText}>Mal</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
-        {/* Acciones rápidas */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.sectionTitle}>Acciones rápidas</Text>
-          <View style={styles.quickActionsGrid}>
-            {quickActions.map((action, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.actionItem}
-                onPress={() => navigateTo(action.route as keyof RootStackParamList)}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0077B6" />
+            <Text style={styles.loadingText}>Cargando tu programa...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={40} color="#d32f2f" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              })}
+            >
+              <Text style={styles.retryButtonText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : !userProgram ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0077B6" />
+            <Text style={styles.loadingText}>Preparando tu experiencia...</Text>
+          </View>
+        ) : (
+          /* Programa asignado */
+          <View style={styles.programContainer}>
+            <LinearGradient
+              colors={programColors[userProgram.program.type] || ['#0077B6', '#00B4D8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.programHeader}
+            >
+              <View style={styles.programTitleContainer}>
+                <Ionicons name="rocket-outline" size={30} color="#ffffff" />
+                <Text style={styles.programTitle}>Tu Programa</Text>
+              </View>
+              <Text style={styles.programName}>{userProgram.program.name}</Text>
+            </LinearGradient>
+            
+            <View style={styles.programContent}>
+              <Text style={styles.programDescription}>
+                {programDescriptions[userProgram.program.type] || 
+                 'Este programa ha sido personalizado según tus respuestas a los cuestionarios.'}
+              </Text>
+              
+              <View style={styles.programInfoBox}>
+                <Ionicons name="information-circle-outline" size={24} color="#0077B6" />
+                <Text style={styles.programInfoText}>
+                  Este programa ha sido asignado basado en tus respuestas a los cuestionarios GerdQ y RSI.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.startProgramButton}
+                onPress={() => Alert.alert('Programa en desarrollo', 'Estamos preparando los detalles de tu programa. Pronto estará disponible con todas las recomendaciones personalizadas.')}
               >
-                <View style={[styles.actionIcon, { backgroundColor: action.color }]}>
-                  <Ionicons name={action.icon} size={22} color="#fff" />
-                </View>
-                <Text style={styles.actionText}>{action.title}</Text>
+                <Text style={styles.startProgramButtonText}>Ver Detalles del Programa</Text>
+                <Ionicons name="arrow-forward" size={20} color="#ffffff" />
               </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Tarjeta de información con consejos */}
-        <View style={styles.infoCardContainer}>
-          <Text style={styles.sectionTitle}>Consejo del día</Text>
-          <View style={styles.infoCard}>
-            <View style={styles.infoCardHeader}>
-              <View style={styles.infoIconContainer}>
-                <Ionicons 
-                  name={healthTips[selectedTip].icon} 
-                  size={24} 
-                  color="#0077B6" 
-                />
-              </View>
-              <Animated.Text 
-                style={[styles.infoCardTitle, { opacity: fadeAnim }]}
-              >
-                {healthTips[selectedTip].title}
-              </Animated.Text>
-            </View>
-            
-            <Animated.Text 
-              style={[styles.infoCardContent, { opacity: fadeAnim }]}
-            >
-              {healthTips[selectedTip].content}
-            </Animated.Text>
-            
-            {/* Indicadores de página */}
-            <View style={styles.dotsContainer}>
-              {healthTips.map((_, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  onPress={() => {
-                    fadeOut();
-                    setTimeout(() => setSelectedTip(index), 200);
-                  }}
-                >
-                  <View 
-                    style={[
-                      styles.dot, 
-                      index === selectedTip ? styles.activeDot : {}
-                    ]} 
-                  />
-                </TouchableOpacity>
-              ))}
             </View>
           </View>
-        </View>
-
-        {/* Resumen del seguimiento */}
-        <View style={styles.trackingSummary}>
-          <View style={styles.trackingHeader}>
-            <Text style={styles.sectionTitle}>Tu progreso</Text>
-            <TouchableOpacity 
-              style={styles.viewAllButton}
-              onPress={() => navigateTo('Tracker')}
-            >
-              <Text style={styles.viewAllText}>Ver todo</Text>
-              <Ionicons name="chevron-forward" size={16} color="#0077B6" />
-            </TouchableOpacity>
+        )}
+        
+        {/* Sección Próximamente */}
+        <View style={styles.comingSoonContainer}>
+          <Text style={styles.comingSoonTitle}>Próximamente</Text>
+          <Text style={styles.comingSoonText}>
+            Estamos trabajando en nuevas funcionalidades para mejorar tu experiencia y ayudarte a gestionar mejor tu salud digestiva. Pronto podrás acceder a:
+          </Text>
+          
+          <View style={styles.featureItem}>
+            <Ionicons name="calendar-outline" size={22} color="#0077B6" style={styles.featureIcon} />
+            <View style={styles.featureContent}>
+              <Text style={styles.featureName}>Seguimiento diario</Text>
+              <Text style={styles.featureDescription}>Registra tus síntomas, alimentos y medicamentos para identificar patrones.</Text>
+            </View>
           </View>
           
-          <View style={styles.progressCard}>
-            <View style={styles.progressItem}>
-              <View style={styles.progressCircle}>
-                <Text style={styles.progressNumber}>7</Text>
-                <Text style={styles.progressDays}>días</Text>
-              </View>
-              <Text style={styles.progressLabel}>Seguimiento</Text>
-            </View>
-            
-            <View style={styles.progressDivider} />
-            
-            <View style={styles.progressItem}>
-              <View style={[styles.progressCircle, { backgroundColor: '#CAF0F8' }]}>
-                <Text style={[styles.progressNumber, { color: '#0077B6' }]}>3</Text>
-                <Text style={[styles.progressDays, { color: '#0077B6' }]}>síntomas</Text>
-              </View>
-              <Text style={styles.progressLabel}>Última semana</Text>
+          <View style={styles.featureItem}>
+            <Ionicons name="book-outline" size={22} color="#0077B6" style={styles.featureIcon} />
+            <View style={styles.featureContent}>
+              <Text style={styles.featureName}>Planes de alimentación</Text>
+              <Text style={styles.featureDescription}>Recomendaciones dietéticas personalizadas para tu condición.</Text>
             </View>
           </View>
-        </View>
-        
-        {/* Consejo dietético destacado */}
-        <View style={styles.dietTipContainer}>
-          <View style={styles.dietTipHeader}>
-            <Ionicons name="nutrition-outline" size={22} color="#0077B6" />
-            <Text style={styles.dietTipTitle}>Consejo dietético</Text>
+          
+          <View style={styles.featureItem}>
+            <Ionicons name="chatbubbles-outline" size={22} color="#0077B6" style={styles.featureIcon} />
+            <View style={styles.featureContent}>
+              <Text style={styles.featureName}>Asistente virtual</Text>
+              <Text style={styles.featureDescription}>Consultas y recordatorios para ayudarte a seguir tu tratamiento.</Text>
+            </View>
           </View>
-          <Text style={styles.dietTipContent}>
-            Las comidas ricas en grasas pueden empeorar el reflujo. Prueba hoy 
-            alimentos más ligeros como verduras al vapor, pescado a la plancha 
-            o avena con frutas.
-          </Text>
         </View>
       </ScrollView>
       
@@ -304,20 +245,26 @@ export default function HomeScreen() {
         
         <TouchableOpacity 
           style={styles.tabItem}
-          onPress={() => navigation.navigate('Tracker')}
+          onPress={() => Alert.alert('Próximamente', 'Esta sección estará disponible pronto.')}
         >
-          <Ionicons name="calendar-outline" size={24} color="#0077B6" />
-          <Text style={styles.tabLabel}>Tracker</Text>
+          <Ionicons name="calendar-outline" size={24} color="#666666" />
+          <Text style={styles.tabLabelInactive}>Tracker</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="analytics-outline" size={24} color="#0077B6" />
-          <Text style={styles.tabLabel}>Estadísticas</Text>
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => Alert.alert('Próximamente', 'Esta sección estará disponible pronto.')}
+        >
+          <Ionicons name="analytics-outline" size={24} color="#666666" />
+          <Text style={styles.tabLabelInactive}>Estadísticas</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="person-outline" size={24} color="#0077B6" />
-          <Text style={styles.tabLabel}>Perfil</Text>
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => Alert.alert('Próximamente', 'Esta sección estará disponible pronto.')}
+        >
+          <Ionicons name="person-outline" size={24} color="#666666" />
+          <Text style={styles.tabLabelInactive}>Perfil</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -334,12 +281,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
+    flexGrow: 1,
     paddingBottom: 24,
   },
   greetingSection: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 10,
+    paddingBottom: 20,
   },
   greeting: {
     fontSize: 26,
@@ -351,230 +299,166 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  moodSelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  loadingText: {
     marginTop: 16,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  moodItem: {
-    alignItems: 'center',
-    width: (width - 80) / 3,
-  },
-  moodIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  moodText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  quickActionsContainer: {
-    paddingHorizontal: 20,
-    marginTop: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0077B6',
-    marginBottom: 12,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  actionItem: {
-    width: (width - 50) / 2,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  actionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  actionText: {
-    fontSize: 15,
-    color: '#444',
-    fontWeight: '500',
-    flex: 1,
-  },
-  infoCardContainer: {
-    paddingHorizontal: 20,
-    marginTop: 15,
-  },
-  infoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  infoCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#CAF0F8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  infoCardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0077B6',
-    flex: 1,
-  },
-  infoCardContent: {
     fontSize: 16,
-    color: '#444',
-    lineHeight: 22,
-    minHeight: 110,
+    color: '#666',
   },
-  dotsContainer: {
-    flexDirection: 'row',
+  errorContainer: {
+    flex: 1,
     justifyContent: 'center',
-    marginTop: 15,
+    alignItems: 'center',
+    padding: 20,
+    marginTop: 30,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#cccccc',
-    marginHorizontal: 4,
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 20,
   },
-  activeDot: {
+  retryButton: {
     backgroundColor: '#0077B6',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  trackingSummary: {
+    paddingVertical: 10,
     paddingHorizontal: 20,
-    marginTop: 24,
+    borderRadius: 8,
   },
-  trackingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
   },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  viewAllText: {
-    color: '#0077B6',
-    fontSize: 14,
-    marginRight: 4,
-  },
-  progressCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  programContainer: {
+    marginHorizontal: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'white',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 4,
+    marginBottom: 24,
   },
-  progressItem: {
-    alignItems: 'center',
-    flex: 1,
+  programHeader: {
+    padding: 20,
   },
-  progressCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#0077B6',
-    justifyContent: 'center',
+  programTitleContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
-  progressNumber: {
+  programTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginLeft: 10,
+  },
+  programName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#ffffff',
   },
-  progressDays: {
-    fontSize: 12,
-    color: '#ffffff',
-    marginTop: -2,
+  programContent: {
+    padding: 20,
   },
-  progressLabel: {
+  programDescription: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  programInfoBox: {
+    flexDirection: 'row',
+    backgroundColor: '#E6F7FF',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+    alignItems: 'flex-start',
+  },
+  programInfoText: {
     fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
+    color: '#0077B6',
+    marginLeft: 10,
+    flex: 1,
+    lineHeight: 20,
   },
-  progressDivider: {
-    width: 1,
-    backgroundColor: '#e0e0e0',
-    marginHorizontal: 15,
-  },
-  dietTipContainer: {
-    marginHorizontal: 20,
-    marginTop: 24,
-    marginBottom: 10,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#0077B6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  dietTipHeader: {
+  startProgramButton: {
+    backgroundColor: '#0077B6',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
   },
-  dietTipTitle: {
+  startProgramButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#0077B6',
-    marginLeft: 8,
+    marginRight: 10,
   },
-  dietTipContent: {
-    fontSize: 15,
-    color: '#444',
-    lineHeight: 21,
+  // Sección de proximamente
+  comingSoonContainer: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  comingSoonTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#005f73',
+    marginBottom: 12,
+  },
+  comingSoonText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    alignItems: 'flex-start',
+  },
+  featureIcon: {
+    backgroundColor: '#E6F7FF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+    paddingTop: 8,
+    paddingLeft: 9,
+  },
+  featureContent: {
+    flex: 1,
+  },
+  featureName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#005f73',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
   tabBar: {
     flexDirection: 'row',
@@ -594,7 +478,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
   activeTab: {
     borderBottomWidth: 3,
@@ -605,5 +489,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     color: '#0077B6',
+    fontWeight: 'bold',
+  },
+  tabLabelInactive: {
+    fontSize: 12,
+    marginTop: 4,
+    color: '#666666',
   },
 });

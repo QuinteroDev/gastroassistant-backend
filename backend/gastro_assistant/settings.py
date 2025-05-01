@@ -49,6 +49,9 @@ INSTALLED_APPS = [
      'users',
      'profiles',
      'questionnaires',
+     'programs',
+     'recommendations',
+     'habits',
 ]
 
 MIDDLEWARE = [
@@ -109,9 +112,6 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-# Archivos estáticos
-STATIC_URL = 'static/'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
@@ -124,3 +124,32 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated', 
     ],
 }
+
+
+# Configuración específica para JWT y Token Authentication
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Mantén un solo sistema de autenticación principal para evitar confusiones
+        'rest_framework.authentication.TokenAuthentication',
+        # Puedes conservar SessionAuthentication para el admin de Django
+        'rest_framework.authentication.SessionAuthentication',
+        # Si no estás usando JWT, comenta esta línea
+        # 'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated', 
+    ],
+}
+
+# Configuración para CSRF si usas peticiones desde un frontend separado
+CSRF_TRUSTED_ORIGINS = ['http://localhost:19006', 'http://192.168.1.48:19006']
+CSRF_COOKIE_SAMESITE = 'Lax'  # En producción con HTTPS, usar 'None'
+SESSION_COOKIE_SAMESITE = 'Lax'  # En producción con HTTPS, usar 'None'
+
+# Si estás en desarrollo sin HTTPS
+CSRF_COOKIE_SECURE = False  # En producción con HTTPS, usar True
+SESSION_COOKIE_SECURE = False  # En producción con HTTPS, usar True
+
+# Configuración de URLs de archivos estáticos
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')  # Para collectstatic

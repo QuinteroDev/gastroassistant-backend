@@ -1,0 +1,186 @@
+
+
+[
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 1,
+    "fields": {
+      "recommendation_type": 1,
+      "title": "El peso y tus síntomas digestivos",
+      "content": "Tu índice de masa corporal (IMC) sugiere que podrías tener un exceso de peso corporal. Esto no es una crítica, sino una información relevante que puede ayudarte a entender mejor tus síntomas digestivos. El exceso de peso abdominal puede aumentar la presión en el estómago y favorecer el reflujo. Por eso, una pequeña mejora en tu composición corporal puede tener un gran impacto positivo. Trabajar poco a poco tu alimentación, el movimiento y el bienestar general es una estrategia clave.",
+      "condition_value": "BMI_OVER_25",
+      "tools": "Plan de movimiento moderado, Revisión de pautas alimentarias progresivas, Seguimiento de hábitos digestivos clave",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 2,
+    "fields": {
+      "recommendation_type": 2,
+      "title": "Manejo de la hernia de hiato",
+      "content": "La hernia de hiato puede debilitar la barrera que separa el estómago del esófago, facilitando que los ácidos asciendan con más facilidad. Esto puede estar influyendo en tus síntomas. En tu caso, trabajar la respiración diafragmática y cuidar la postura abdominal puede ayudarte.",
+      "condition_value": "YES",
+      "tools": "Ejercicios de respiración diafragmática, Posturas correctas, Evitar presión abdominal",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 3,
+    "fields": {
+      "recommendation_type": 3,
+      "title": "Mejorando la función esofágica",
+      "content": "Algunas personas tienen alteraciones en la forma en la que el esófago empuja los alimentos hacia el estómago. Si este movimiento está debilitado, el ácido puede quedar más tiempo en el esófago. Masticar bien, comer despacio y evitar mezclar alimentos sólidos con bebidas frías puede ayudarte.",
+      "condition_value": "YES",
+      "tools": "Alimentación suave, Registro de sensaciones, Técnicas de masticación",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 4,
+    "fields": {
+      "recommendation_type": 4,
+      "title": "Estrategias para el vaciamiento gástrico lento",
+      "content": "Cuando el estómago tarda mucho en vaciarse, aumenta la presión interna y eso puede favorecer el reflujo. En tu caso, hacer comidas pequeñas, repartidas y con bajo contenido graso puede ayudarte a sentirte mejor.",
+      "condition_value": "YES",
+      "tools": "Comidas fraccionadas, Pautas de vaciamiento, Control de volumen",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 5,
+    "fields": {
+      "recommendation_type": 5,
+      "title": "Mejorando la salivación",
+      "content": "La saliva ayuda a neutralizar el ácido que asciende al esófago. Si tienes poca salivación, el aclaramiento natural se debilita. Beber agua a lo largo del día, evitar el tabaco y revisar efectos secundarios de medicamentos puede ser clave para mejorar.",
+      "condition_value": "YES",
+      "tools": "Hidratación adecuada, Higiene bucal, Evitar alcohol/tabaco",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 6,
+    "fields": {
+      "recommendation_type": 6,
+      "title": "Mejorando el tránsito intestinal",
+      "content": "El estreñimiento aumenta la presión abdominal y puede empeorar el reflujo. Mejorar tu evacuación puede tener un impacto positivo. Te recomendamos hidratarte bien, incluir fibra y usar un taburete para adoptar una mejor postura al defecar.",
+      "condition_value": "YES",
+      "tools": "Aumento de fibra, Uso de taburete, Hidratación adecuada, Actividad física",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 7,
+    "fields": {
+      "recommendation_type": 7,
+      "title": "El estrés y tu digestión",
+      "content": "El estrés puede hacer que el cuerpo esté más sensible a los estímulos digestivos. Muchas personas sienten que sus síntomas aumentan en periodos de tensión. Trabajar el bienestar emocional también es parte del cuidado digestivo.",
+      "condition_value": "YES",
+      "tools": "Respiración consciente, Relajación guiada, Diario emocional",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 8,
+    "fields": {
+      "recommendation_type": 7,
+      "title": "Manejo ocasional del estrés",
+      "content": "Notas que a veces el estrés influye en tus síntomas digestivos. Esto es normal y parte de la conexión mente-intestino. Tener algunas estrategias básicas de manejo del estrés puede ser beneficioso para tu bienestar digestivo.",
+      "condition_value": "SOMETIMES",
+      "tools": "Técnicas de relajación básicas, Mindfulness simple",
+      "order": 2,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 9,
+    "fields": {
+      "recommendation_type": 8,
+      "title": "ERGE Erosiva: Cuidados específicos",
+      "content": "Tu perfil corresponde a Enfermedad por Reflujo Gastroesofágico Erosiva, lo que significa que el ácido ha causado lesiones visibles en tu esófago. Este tipo de reflujo requiere tratamiento médico específico además de cambios en el estilo de vida.",
+      "condition_value": "EROSIVE",
+      "tools": "Seguimiento médico regular, Elevación de la cabecera, Evitar irritantes",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 10,
+    "fields": {
+      "recommendation_type": 8,
+      "title": "ERGE No Erosiva: Estrategia integral",
+      "content": "Tu perfil corresponde a Enfermedad por Reflujo Gastroesofágico No Erosiva (NERD), lo que significa que tienes síntomas de reflujo sin lesiones visibles en el esófago. Los cambios en el estilo de vida pueden ser especialmente efectivos en tu caso.",
+      "condition_value": "NERD",
+      "tools": "Control de desencadenantes, Gestión del estrés, Hábitos alimentarios",
+      "order": 2,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 11,
+    "fields": {
+      "recommendation_type": 8,
+      "title": "Reflujo Extraesofágico: Abordaje específico",
+      "content": "Tu perfil corresponde a Reflujo Extraesofágico, lo que significa que el reflujo está afectando principalmente estructuras fuera del esófago, como la garganta o vías respiratorias. Este tipo de reflujo requiere un abordaje específico.",
+      "condition_value": "EXTRAESOPHAGEAL",
+      "tools": "Hidratación laríngea, Evitar irritantes, Técnicas de respiración",
+      "order": 3,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 12,
+    "fields": {
+      "recommendation_type": 9,
+      "title": "Mejorando el control de porciones",
+      "content": "Comer en exceso aumenta la presión en el estómago y puede debilitar la válvula que evita el reflujo. Aprender a reconocer la saciedad y servir porciones adecuadas puede ayudarte a reducir tus síntomas de reflujo.",
+      "condition_value": "MEAL_SIZE_LOW",
+      "tools": "Control de porciones, Conciencia alimentaria, Técnicas de saciedad",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 13,
+    "fields": {
+      "recommendation_type": 9,
+      "title": "Tiempo adecuado entre cena y acostarse",
+      "content": "Acostarse con el estómago lleno es una de las principales causas de reflujo nocturno. Intenta cenar al menos 3 horas antes de acostarte para dar tiempo a que el estómago se vacíe parcialmente.",
+      "condition_value": "DINNER_TIME_LOW",
+      "tools": "Planificación de horarios, Cenas ligeras, Infusiones digestivas",
+      "order": 2,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 14,
+    "fields": {
+      "recommendation_type": 9,
+      "title": "Evitar tumbarse después de las comidas",
+      "content": "La posición horizontal facilita que los ácidos del estómago suban hacia el esófago. Intenta mantener una posición vertical o ligeramente inclinada durante al menos 30-60 minutos después de comer.",
+      "condition_value": "LIE_DOWN_LOW",
+      "tools": "Actividades post-comida, Posturas correctas",
+      "order": 3,
+      "is_active": true
+    }
+  }
+]

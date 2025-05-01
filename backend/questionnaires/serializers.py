@@ -1,6 +1,7 @@
 # questionnaires/serializers.py
 from rest_framework import serializers
 from .models import Questionnaire, Question, AnswerOption
+from .models import HabitQuestion, HabitOption, UserHabitAnswer # Asegúrate de importar los modelos necesarios
 
 class AnswerOptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,3 +58,22 @@ class UserAnswerInputSerializer(serializers.Serializer):
 class QuestionnaireSubmitSerializer(serializers.Serializer):
     answers = UserAnswerInputSerializer(many=True)
 
+class HabitOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HabitOption
+        fields = ['id', 'text', 'value', 'order']
+
+class HabitQuestionSerializer(serializers.ModelSerializer):
+    options = HabitOptionSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = HabitQuestion
+        fields = ['id', 'habit_type', 'text', 'description', 'options']
+
+class UserHabitAnswerSerializer(serializers.ModelSerializer):
+    question = HabitQuestionSerializer(read_only=True)
+    selected_option = HabitOptionSerializer(read_only=True)
+    
+    class Meta:
+        model = UserHabitAnswer
+        fields = ['id', 'question', 'selected_option', 'answered_at', 'is_onboarding']

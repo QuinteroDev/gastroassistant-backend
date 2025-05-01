@@ -1,0 +1,483 @@
+
+[
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 1,
+    "fields": {
+      "question": 1,
+      "text": "Siempre como más de lo que debería",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 2,
+    "fields": {
+      "question": 1,
+      "text": "A menudo me paso con la cantidad",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 3,
+    "fields": {
+      "question": 1,
+      "text": "A veces me cuesta controlarlo",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 4,
+    "fields": {
+      "question": 1,
+      "text": "Suelo comer lo justo y me siento bien",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 5,
+    "fields": {
+      "question": 2,
+      "text": "Menos de 1 hora",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 6,
+    "fields": {
+      "question": 2,
+      "text": "Entre 1 y 2 horas",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 7,
+    "fields": {
+      "question": 2,
+      "text": "Entre 2 y 3 horas",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 8,
+    "fields": {
+      "question": 2,
+      "text": "Más de 3 horas",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 9,
+    "fields": {
+      "question": 3,
+      "text": "Siempre",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 10,
+    "fields": {
+      "question": 3,
+      "text": "A menudo",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 11,
+    "fields": {
+      "question": 3,
+      "text": "A veces",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 12,
+    "fields": {
+      "question": 3,
+      "text": "Rara vez o nunca",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 13,
+    "fields": {
+      "question": 4,
+      "text": "Sí, con frecuencia",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 14,
+    "fields": {
+      "question": 4,
+      "text": "A veces",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 15,
+    "fields": {
+      "question": 4,
+      "text": "Rara vez",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 16,
+    "fields": {
+      "question": 4,
+      "text": "No, nunca tengo síntomas nocturnos",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 17,
+    "fields": {
+      "question": 5,
+      "text": "Sí, todos los días",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 18,
+    "fields": {
+      "question": 5,
+      "text": "Sí, ocasionalmente",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 19,
+    "fields": {
+      "question": 5,
+      "text": "Lo he dejado",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 20,
+    "fields": {
+      "question": 5,
+      "text": "Nunca he fumado",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 21,
+    "fields": {
+      "question": 6,
+      "text": "Sí, frecuentemente",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 22,
+    "fields": {
+      "question": 6,
+      "text": "Sí, a veces",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 23,
+    "fields": {
+      "question": 6,
+      "text": "Muy ocasionalmente",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 24,
+    "fields": {
+      "question": 6,
+      "text": "Nunca",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 25,
+    "fields": {
+      "question": 7,
+      "text": "No, nada de ejercicio",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 26,
+    "fields": {
+      "question": 7,
+      "text": "Muy poco / esporádico",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 27,
+    "fields": {
+      "question": 7,
+      "text": "Algunas veces pero sin regularidad",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 28,
+    "fields": {
+      "question": 7,
+      "text": "Sí, con frecuencia",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 29,
+    "fields": {
+      "question": 8,
+      "text": "No los evito aunque me sienten mal",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 30,
+    "fields": {
+      "question": 8,
+      "text": "A veces los evito",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 31,
+    "fields": {
+      "question": 8,
+      "text": "Suelo evitarlos",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 32,
+    "fields": {
+      "question": 8,
+      "text": "Los tengo totalmente identificados y evitados",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 33,
+    "fields": {
+      "question": 9,
+      "text": "Sí, y no hago nada al respecto",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 34,
+    "fields": {
+      "question": 9,
+      "text": "Sí, y lo intento manejar sin éxito",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 35,
+    "fields": {
+      "question": 9,
+      "text": "Lo manejo con herramientas o apoyo ocasional",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 36,
+    "fields": {
+      "question": 9,
+      "text": "Estoy trabajando activamente en ello (relajación, terapia, etc.)",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 37,
+    "fields": {
+      "question": 10,
+      "text": "Siempre",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 38,
+    "fields": {
+      "question": 10,
+      "text": "A menudo",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 39,
+    "fields": {
+      "question": 10,
+      "text": "A veces",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 40,
+    "fields": {
+      "question": 10,
+      "text": "Rara vez o nunca",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 41,
+    "fields": {
+      "question": 11,
+      "text": "Muy poca, menos de 1 litro diario",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 42,
+    "fields": {
+      "question": 11,
+      "text": "Aproximadamente 1 litro",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 43,
+    "fields": {
+      "question": 11,
+      "text": "Entre 1,5 y 2 litros",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 44,
+    "fields": {
+      "question": 11,
+      "text": "Más de 2 litros y de forma repartida",
+      "value": 3,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 45,
+    "fields": {
+      "question": 12,
+      "text": "No, como muy rápido y apenas mastico",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 46,
+    "fields": {
+      "question": 12,
+      "text": "Lo intento, pero me cuesta",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 47,
+    "fields": {
+      "question": 12,
+      "text": "Suelo masticar bien la mayor parte del tiempo",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 48,
+    "fields": {
+      "question": 12,
+      "text": "Siempre mastico despacio y con calma",
+      "value": 3,
+      "order": 4
+    }
+  }
+]

@@ -1,441 +1,390 @@
 // screens/TrackerScreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  Alert,
   ScrollView,
   TouchableOpacity,
+  SafeAreaView,
   Platform,
+  StatusBar,
   ActivityIndicator,
-  Animated,
-  Dimensions,
+  Alert,
+  Modal,
   TextInput
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import api from '../utils/api';
+import { getData } from '../utils/storage';
 import HeaderComponent from '../components/HeaderComponent';
 
-type TrackerScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Tracker'>;
+type TrackerNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Tracker'>;
 
-const { width } = Dimensions.get('window');
-
-// Componente para selección de fecha con calendario visual
-const DateSelector = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [calendarVisible, setCalendarVisible] = useState(false);
-  
-  // Función para formatear la fecha
-  const formatDate = (date) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('es-ES', options);
+// Interfaz para hábito a seguir
+interface HabitTracker {
+  id: number;
+  habit: {
+    id: number;
+    habit_type: string;
+    text: string;
+    description: string;
   };
-  
-  // Función para cambiar el día
-  const changeDay = (days) => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(selectedDate.getDate() + days);
-    setSelectedDate(newDate);
+  is_active: boolean;
+  is_promoted: boolean;
+  current_score: number;
+  target_score: number;
+  streak?: {
+    current_streak: number;
+    longest_streak: number;
+    last_log_date: string;
   };
+}
 
-  // Genera los días de la semana para la vista de calendario
-  const generateWeekDays = () => {
-    const currentDate = new Date(selectedDate);
-    const startOfWeek = new Date(currentDate);
-    const day = currentDate.getDay();
-    const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1); // Ajustar cuando el día es domingo
-    startOfWeek.setDate(diff);
-
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      weekDays.push(date);
-    }
-    return weekDays;
-  };
-
-  const weekDays = generateWeekDays();
-  
-  return (
-    <View style={styles.dateContainer}>
-      {/* Fecha principal con flechas de navegación */}
-      <View style={styles.dateSelector}>
-        <TouchableOpacity 
-          style={styles.dateButton}
-          onPress={() => changeDay(-1)}
-        >
-          <Ionicons name="chevron-back" size={24} color="#0077B6" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.dateTouchable}
-          onPress={() => setCalendarVisible(!calendarVisible)}
-        >
-          <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
-          <Ionicons name={calendarVisible ? "chevron-up" : "chevron-down"} size={16} color="#0077B6" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.dateButton}
-          onPress={() => changeDay(1)}
-        >
-          <Ionicons name="chevron-forward" size={24} color="#0077B6" />
-        </TouchableOpacity>
-      </View>
-      
-      {/* Vista de calendario de la semana */}
-      {calendarVisible && (
-        <View style={styles.calendarView}>
-          <View style={styles.weekDaysContainer}>
-            {weekDays.map((date, index) => {
-              const isSelected = date.toDateString() === selectedDate.toDateString();
-              const dayName = date.toLocaleDateString('es-ES', { weekday: 'short' }).substring(0, 2);
-              const dayNumber = date.getDate();
-              
-              return (
-                <TouchableOpacity 
-                  key={index}
-                  style={[
-                    styles.weekDay,
-                    isSelected ? styles.selectedWeekDay : {}
-                  ]}
-                  onPress={() => setSelectedDate(date)}
-                >
-                  <Text style={[styles.weekDayName, isSelected ? styles.selectedWeekDayText : {}]}>
-                    {dayName}
-                  </Text>
-                  <Text style={[styles.weekDayNumber, isSelected ? styles.selectedWeekDayText : {}]}>
-                    {dayNumber}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
-    </View>
-  );
-};
-
-// Componente para el slider de intensidad
-const IntensitySlider = () => {
-  const [intensity, setIntensity] = useState(1);
-  
-  return (
-    <View style={styles.intensityContainer}>
-      <Text style={styles.intensityTitle}>Intensidad de los síntomas</Text>
-      
-      <View style={styles.sliderContainer}>
-        <TouchableOpacity 
-          style={[styles.intensityOption, intensity === 1 ? styles.intensitySelected : {}]}
-          onPress={() => setIntensity(1)}
-        >
-          <Text style={[styles.intensityText, intensity === 1 ? styles.intensitySelectedText : {}]}>1</Text>
-          <Text style={styles.intensityLabel}>Leve</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.intensityOption, intensity === 2 ? styles.intensitySelected : {}]}
-          onPress={() => setIntensity(2)}
-        >
-          <Text style={[styles.intensityText, intensity === 2 ? styles.intensitySelectedText : {}]}>2</Text>
-          <Text style={styles.intensityLabel}>Moderado</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.intensityOption, intensity === 3 ? styles.intensitySelected : {}]}
-          onPress={() => setIntensity(3)}
-        >
-          <Text style={[styles.intensityText, intensity === 3 ? styles.intensitySelectedText : {}]}>3</Text>
-          <Text style={styles.intensityLabel}>Intenso</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
+// Interfaz para registro de hábito
+interface HabitLog {
+  id: number;
+  tracker_id: number;
+  date: string;
+  completion_level: number;
+  notes: string;
+}
 
 export default function TrackerScreen() {
-  const navigation = useNavigation<TrackerScreenNavigationProp>();
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedSymptoms, setSelectedSymptoms] = useState([]);
-  const [selectedMeals, setSelectedMeals] = useState([]);
-  const [notes, setNotes] = useState('');
-
-  // Lista de síntomas disponibles
-  const symptoms = [
-    { id: 1, name: 'Acidez', icon: 'flame-outline', color: '#FF6B6B' },
-    { id: 2, name: 'Regurgitación', icon: 'water-outline', color: '#0096C7' },
-    { id: 3, name: 'Dolor', icon: 'medical-outline', color: '#FF9F1C' },
-    { id: 4, name: 'Insomnio', icon: 'bed-outline', color: '#6C757D' },
-    { id: 5, name: 'Tos', icon: 'fitness-outline', color: '#4CAF50' },
-    { id: 6, name: 'Náuseas', icon: 'medical-outline', color: '#9C27B0' },
-  ];
-
-  // Lista de comidas para registrar
-  const meals = [
-    { id: 1, name: 'Desayuno', icon: 'sunny-outline', color: '#FF9F1C' },
-    { id: 2, name: 'Almuerzo', icon: 'restaurant-outline', color: '#0077B6' },
-    { id: 3, name: 'Cena', icon: 'moon-outline', color: '#6F42C1' },
-    { id: 4, name: 'Snack', icon: 'cafe-outline', color: '#28A745' },
-  ];
-
-  // Animación para el botón de guardar
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const navigation = useNavigation<TrackerNavigationProp>();
+  const [habitTrackers, setHabitTrackers] = useState<HabitTracker[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const animateButton = () => {
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
+  // Estado para el modal de registro
+  const [logModalVisible, setLogModalVisible] = useState<boolean>(false);
+  const [selectedTracker, setSelectedTracker] = useState<HabitTracker | null>(null);
+  const [completionLevel, setCompletionLevel] = useState<number | null>(null);
+  const [notes, setNotes] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   
-  // Verificar token al cargar la pantalla
+  // Fecha actual
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Cargar hábitos al inicio
   useEffect(() => {
-    const checkAuth = async () => {
-      console.log("Verificando token en TrackerScreen...");
-      const token = await SecureStore.getItemAsync('authToken');
-      console.log("Token en TrackerScreen:", token ? "Existe" : "No existe");
-      
+    const fetchHabitTrackers = async () => {
+      const token = await getData('authToken');
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
           index: 0,
           routes: [{ name: 'Login' }],
         });
+        return;
+      }
+      
+      try {
+        const response = await api.get('/api/habits/my-trackers/');
+        
+        if (response.data) {
+          console.log("Hábitos cargados:", response.data);
+          setHabitTrackers(response.data);
+        }
+      } catch (err) {
+        console.error("Error al cargar hábitos:", err);
+        setError("Error al cargar tus hábitos para seguimiento");
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    checkAuth();
+    fetchHabitTrackers();
   }, [navigation]);
-
-  // Manejar la selección de síntomas
-  const toggleSymptom = (symptomId) => {
-    if (selectedSymptoms.includes(symptomId)) {
-      setSelectedSymptoms(selectedSymptoms.filter(id => id !== symptomId));
-    } else {
-      setSelectedSymptoms([...selectedSymptoms, symptomId]);
-    }
+  
+  // Abrir modal para registrar hábito
+  const openLogModal = (tracker: HabitTracker) => {
+    setSelectedTracker(tracker);
+    setCompletionLevel(null);
+    setNotes('');
+    setLogModalVisible(true);
   };
-
-  // Manejar la selección de comidas
-  const toggleMeal = (mealId) => {
-    if (selectedMeals.includes(mealId)) {
-      setSelectedMeals(selectedMeals.filter(id => id !== mealId));
-    } else {
-      setSelectedMeals([...selectedMeals, mealId]);
+  
+  // Registrar cumplimiento de hábito
+  const logHabit = async () => {
+    if (!selectedTracker || completionLevel === null) {
+      Alert.alert("Error", "Por favor, selecciona un nivel de cumplimiento");
+      return;
     }
-  };
-
-  // Manejar el guardado del registro
-  const saveRecord = () => {
-    animateButton();
-    setIsLoading(true);
     
-    // Simular un tiempo de guardado
-    setTimeout(() => {
-      setIsLoading(false);
-      Alert.alert(
-        "Registro guardado", 
-        "Tu registro diario ha sido guardado correctamente.",
-        [{ text: "OK", onPress: () => navigation.navigate('Home') }]
-      );
-    }, 1500);
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Usamos el HeaderComponent con botón de retroceso */}
-      <HeaderComponent 
-        showBackButton={true} 
-        onBackPress={() => navigation.navigate('Home')}
-      />
+    setIsSubmitting(true);
+    
+    try {
+      const logData = {
+        habit_id: selectedTracker.habit.id,
+        date: today,
+        completion_level: completionLevel,
+        notes: notes
+      };
       
-      <ScrollView 
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
+      const response = await api.post('/api/habits/log/', logData);
+      
+      console.log("Hábito registrado:", response.data);
+      
+      // Actualizar el estado local
+      const updatedTrackers = habitTrackers.map(tracker => 
+        tracker.id === selectedTracker.id 
+          ? {
+              ...tracker,
+              current_score: completionLevel >= 2 ? tracker.current_score + 1 : tracker.current_score,
+              streak: {
+                ...tracker.streak,
+                current_streak: completionLevel >= 2 
+                  ? (tracker.streak?.current_streak || 0) + 1 
+                  : 0,
+                longest_streak: completionLevel >= 2 
+                  ? Math.max((tracker.streak?.longest_streak || 0), (tracker.streak?.current_streak || 0) + 1)
+                  : (tracker.streak?.longest_streak || 0),
+                last_log_date: today
+              }
+            }
+          : tracker
+      );
+      
+      setHabitTrackers(updatedTrackers);
+      setLogModalVisible(false);
+      
+      // Mostrar mensaje de éxito
+      Alert.alert("Hábito Registrado", "Has registrado tu hábito correctamente para hoy.");
+    } catch (err) {
+      console.error("Error al registrar hábito:", err);
+      Alert.alert("Error", "No se pudo registrar el hábito. Intenta nuevamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Función para obtener el color según el nivel de cumplimiento
+  const getCompletionColor = (level: number): string => {
+    switch (level) {
+      case 0: return '#dc3545'; // Rojo - No completado
+      case 1: return '#fd7e14'; // Naranja - Parcialmente completado
+      case 2: return '#20c997'; // Verde claro - Mayormente completado
+      case 3: return '#198754'; // Verde - Completamente logrado
+      default: return '#6c757d'; // Gris - No definido
+    }
+  };
+  
+  // Convertir nivel de cumplimiento a texto
+  const getCompletionText = (level: number): string => {
+    switch (level) {
+      case 0: return 'No completado';
+      case 1: return 'Parcialmente completado';
+      case 2: return 'Mayormente completado';
+      case 3: return 'Completamente logrado';
+      default: return 'No registrado';
+    }
+  };
+  
+  // Renderizar tarjeta de hábito
+  const renderHabitCard = (tracker: HabitTracker) => {
+    const progress = (tracker.current_score / tracker.target_score) * 100;
+    
+    return (
+      <View 
+        key={tracker.id} 
+        style={[
+          styles.habitCard,
+          tracker.is_promoted && styles.promotedCard
+        ]}
       >
-        <Text style={styles.title}>Mi Registro Diario</Text>
-        
-        <DateSelector />
-        
-        {/* Tarjeta de resumen rápido */}
-        <View style={styles.quickSummaryCard}>
-          <View style={styles.summaryHeader}>
-            <Ionicons name="analytics-outline" size={22} color="#0077B6" />
-            <Text style={styles.summaryTitle}>Resumen rápido</Text>
-          </View>
-          <View style={styles.summaryContent}>
-            <View style={styles.summaryItem}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#E6F7FF' }]}>
-                <Ionicons name="medical-outline" size={18} color="#0077B6" />
-              </View>
-              <Text style={styles.summaryText}>
-                {selectedSymptoms.length === 0 ? 
-                  "No has reportado síntomas hoy" : 
-                  `${selectedSymptoms.length} síntoma(s) reportado(s)`
-                }
-              </Text>
+        <View style={styles.habitHeader}>
+          {tracker.is_promoted && (
+            <View style={styles.promotedBadge}>
+              <Ionicons name="star" size={12} color="#ffffff" />
+              <Text style={styles.promotedText}>Destacado</Text>
             </View>
-            <View style={styles.summaryItem}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#E6F7FF' }]}>
-                <Ionicons name="restaurant-outline" size={18} color="#0077B6" />
-              </View>
-              <Text style={styles.summaryText}>
-                {selectedMeals.length === 0 ? 
-                  "No has registrado comidas hoy" : 
-                  `${selectedMeals.length} comida(s) registrada(s)`
-                }
-              </Text>
-            </View>
-          </View>
+          )}
+          <Text style={styles.habitTitle}>{tracker.habit.text}</Text>
         </View>
         
-        {/* Sección de síntomas */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Síntomas</Text>
-            <Text style={styles.sectionSubtitle}>Selecciona los síntomas que has experimentado hoy</Text>
-          </View>
-          
-          <View style={styles.symptomGrid}>
-            {symptoms.map((symptom) => (
-              <TouchableOpacity 
-                key={symptom.id} 
-                style={[
-                  styles.symptomButton,
-                  selectedSymptoms.includes(symptom.id) ? {
-                    backgroundColor: symptom.color + '20',
-                    borderColor: symptom.color
-                  } : {}
-                ]}
-                onPress={() => toggleSymptom(symptom.id)}
-              >
-                <View style={[
-                  styles.symptomIcon, 
-                  { backgroundColor: selectedSymptoms.includes(symptom.id) ? symptom.color : '#f1f1f1' }
-                ]}>
-                  <Ionicons 
-                    name={symptom.icon} 
-                    size={22} 
-                    color={selectedSymptoms.includes(symptom.id) ? '#ffffff' : '#757575'} 
-                  />
-                </View>
-                <Text style={[
-                  styles.symptomText,
-                  selectedSymptoms.includes(symptom.id) ? { color: symptom.color, fontWeight: '500' } : {}
-                ]}>
-                  {symptom.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        {tracker.habit.description && (
+          <Text style={styles.habitDescription}>{tracker.habit.description}</Text>
+        )}
         
-        {/* Componente de intensidad de síntomas */}
-        {selectedSymptoms.length > 0 && <IntensitySlider />}
-        
-        {/* Sección de comidas */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Comidas</Text>
-            <Text style={styles.sectionSubtitle}>Selecciona las comidas que has realizado hoy</Text>
-          </View>
-          
-          <View style={styles.mealsContainer}>
-            {meals.map((meal) => (
-              <TouchableOpacity 
-                key={meal.id} 
-                style={[
-                  styles.mealButton,
-                  selectedMeals.includes(meal.id) ? {
-                    backgroundColor: meal.color + '20',
-                    borderColor: meal.color
-                  } : {}
-                ]}
-                onPress={() => toggleMeal(meal.id)}
-              >
-                <View style={[
-                  styles.mealIcon, 
-                  { backgroundColor: selectedMeals.includes(meal.id) ? meal.color : '#f1f1f1' }
-                ]}>
-                  <Ionicons 
-                    name={meal.icon} 
-                    size={22} 
-                    color={selectedMeals.includes(meal.id) ? '#ffffff' : '#757575'} 
-                  />
-                </View>
-                <Text style={[
-                  styles.mealText,
-                  selectedMeals.includes(meal.id) ? { color: meal.color, fontWeight: '500' } : {}
-                ]}>
-                  {meal.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-        
-        {/* Sección de notas */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Notas adicionales</Text>
-            <Text style={styles.sectionSubtitle}>Añade cualquier observación relevante</Text>
-          </View>
-          
-          <TextInput
-            style={styles.notesInput}
-            multiline={true}
-            numberOfLines={4}
-            placeholder="Escribe aquí tus notas... (opcional)"
-            placeholderTextColor="#aaa"
-            value={notes}
-            onChangeText={setNotes}
+        <View style={styles.progressBarContainer}>
+          <View 
+            style={[
+              styles.progressBar, 
+              { width: `${Math.min(100, progress)}%` }
+            ]} 
           />
         </View>
         
-        {/* Botón para guardar el registro */}
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <View style={styles.habitStats}>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Puntuación</Text>
+            <Text style={styles.statValue}>{tracker.current_score}/{tracker.target_score}</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Racha actual</Text>
+            <Text style={styles.statValue}>{tracker.streak?.current_streak || 0} días</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Mejor racha</Text>
+            <Text style={styles.statValue}>{tracker.streak?.longest_streak || 0} días</Text>
+          </View>
+        </View>
+        
+        <TouchableOpacity
+          style={styles.logButton}
+          onPress={() => openLogModal(tracker)}
+        >
+          <Text style={styles.logButtonText}>Registrar Hoy</Text>
+          <Ionicons name="add-circle-outline" size={18} color="#ffffff" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+  
+  return (
+    <SafeAreaView style={styles.container}>
+      <HeaderComponent />
+      
+      {isLoading ? (
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#0077B6" />
+          <Text style={styles.loadingText}>Cargando hábitos para seguimiento...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.centerContent}>
+          <Ionicons name="alert-circle-outline" size={48} color="#d32f2f" />
+          <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
-            style={styles.saveButton}
-            onPress={saveRecord}
-            disabled={isLoading}
-            activeOpacity={0.8}
+            style={styles.retryButton}
+            onPress={() => navigation.navigate('Home')}
           >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <>
-                <Ionicons name="save-outline" size={20} color="#ffffff" style={styles.saveIcon} />
-                <Text style={styles.saveButtonText}>Guardar Registro</Text>
-              </>
-            )}
+            <Text style={styles.retryButtonText}>Volver al Inicio</Text>
           </TouchableOpacity>
-        </Animated.View>
-      </ScrollView>
+        </View>
+      ) : habitTrackers.length === 0 ? (
+        <View style={styles.centerContent}>
+          <Ionicons name="clipboard-outline" size={48} color="#0077B6" />
+          <Text style={styles.noHabitsText}>No hay hábitos configurados para seguimiento</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.retryButtonText}>Volver al Inicio</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.headerSection}>
+            <Text style={styles.headerTitle}>Seguimiento de Hábitos</Text>
+            <Text style={styles.headerSubtitle}>
+              Registra tus hábitos diariamente para mejorar tu salud digestiva
+            </Text>
+          </View>
+          
+          <View style={styles.habitsList}>
+            {habitTrackers.map(tracker => renderHabitCard(tracker))}
+          </View>
+          
+          <View style={styles.tipsSection}>
+            <Text style={styles.tipsTitle}>Consejos para formar hábitos</Text>
+            <Text style={styles.tipsText}>
+              Mantener una racha de al menos 21 días ayuda a establecer un hábito permanente.
+              Registra tu progreso diariamente y trata de lograr pequeñas mejoras consistentes.
+            </Text>
+          </View>
+        </ScrollView>
+      )}
+      
+      {/* Modal para registrar hábito */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={logModalVisible}
+        onRequestClose={() => setLogModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Registrar Hábito</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setLogModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {selectedTracker && (
+              <View style={styles.modalContent}>
+                <Text style={styles.modalHabitTitle}>{selectedTracker.habit.text}</Text>
+                <Text style={styles.modalDate}>Fecha: {today}</Text>
+                
+                <Text style={styles.modalSectionTitle}>Nivel de cumplimiento:</Text>
+                
+                {[0, 1, 2, 3].map(level => (
+                  <TouchableOpacity
+                    key={level}
+                    style={[
+                      styles.completionOption,
+                      completionLevel === level && styles.selectedCompletionOption,
+                      { borderColor: getCompletionColor(level) }
+                    ]}
+                    onPress={() => setCompletionLevel(level)}
+                  >
+                    <View style={[
+                      styles.completionCircle,
+                      { backgroundColor: getCompletionColor(level) }
+                    ]}>
+                      {completionLevel === level && (
+                        <Ionicons name="checkmark" size={18} color="white" />
+                      )}
+                    </View>
+                    <Text style={styles.completionText}>{getCompletionText(level)}</Text>
+                  </TouchableOpacity>
+                ))}
+                
+                <Text style={styles.modalSectionTitle}>Notas (opcional):</Text>
+                <TextInput
+                  style={styles.notesInput}
+                  placeholder="Añade tus observaciones..."
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline={true}
+                  maxLength={200}
+                />
+                
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={logHabit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Guardar Registro</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
       
       {/* Barra de navegación inferior */}
       <View style={styles.tabBar}>
         <TouchableOpacity 
           style={styles.tabItem}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.replace('Home')}
         >
-          <Ionicons name="home-outline" size={24} color="#0077B6" />
-          <Text style={styles.tabLabel}>Inicio</Text>
+          <Ionicons name="home-outline" size={24} color="#666666" />
+          <Text style={styles.tabLabelInactive}>Inicio</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -445,14 +394,20 @@ export default function TrackerScreen() {
           <Text style={styles.tabLabel}>Tracker</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="analytics-outline" size={24} color="#0077B6" />
-          <Text style={styles.tabLabel}>Estadísticas</Text>
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => Alert.alert('Próximamente', 'Esta sección estará disponible pronto.')}
+        >
+          <Ionicons name="analytics-outline" size={24} color="#666666" />
+          <Text style={styles.tabLabelInactive}>Estadísticas</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="person-outline" size={24} color="#0077B6" />
-          <Text style={styles.tabLabel}>Perfil</Text>
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => Alert.alert('Próximamente', 'Esta sección estará disponible pronto.')}
+        >
+          <Ionicons name="person-outline" size={24} color="#666666" />
+          <Text style={styles.tabLabelInactive}>Perfil</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -463,300 +418,276 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#E6F7FF',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   scrollContainer: {
-    flex: 1,
+    flexGrow: 1,
+    paddingBottom: 80, // Espacio para la barra de navegación
   },
-  content: {
-    padding: 16,
-    paddingBottom: 100,
+  headerSection: {
+    padding: 20,
+    paddingBottom: 10,
   },
-  title: {
-    fontSize: 26,
+  headerTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#005f73',
-    marginVertical: 16,
+    marginBottom: 8,
   },
-  dateContainer: {
-    marginBottom: 20,
-  },
-  dateSelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  dateTouchable: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateButton: {
-    padding: 8,
-  },
-  dateText: {
+  headerSubtitle: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#212529',
-    marginRight: 5,
-    textAlign: 'center',
-  },
-  calendarView: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  weekDaysContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  weekDay: {
-    alignItems: 'center',
-    width: (width - 80) / 7,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  selectedWeekDay: {
-    backgroundColor: '#0077B6',
-  },
-  weekDayName: {
-    fontSize: 12,
     color: '#666',
-    marginBottom: 4,
+    lineHeight: 22,
   },
-  weekDayNumber: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+  habitsList: {
+    padding: 16,
   },
-  selectedWeekDayText: {
-    color: '#fff',
-  },
-  quickSummaryCard: {
+  habitCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+  promotedCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#4caf50',
   },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0077B6',
-    marginLeft: 8,
-  },
-  summaryContent: {
-    marginTop: 4,
-  },
-  summaryItem: {
+  habitHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
   },
-  summaryIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  promotedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4caf50',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 8,
+  },
+  promotedText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  habitTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#212529',
+    flex: 1,
+  },
+  habitDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#4caf50',
+    borderRadius: 4,
+  },
+  habitStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0077B6',
+  },
+  logButton: {
+    backgroundColor: '#0077B6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  logButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  tipsSection: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  tipsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#005f73',
+    marginBottom: 8,
+  },
+  tipsText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6c757d',
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#d32f2f',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  noHabitsText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#0077B6',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  // Estilos para el modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#005f73',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  modalContent: {
+    padding: 16,
+  },
+  modalHabitTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#212529',
+    marginBottom: 8,
+  },
+  modalDate: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#005f73',
+    marginBottom: 12,
+    marginTop: 16,
+  },
+  completionOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 2,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  selectedCompletionOption: {
+    backgroundColor: 'rgba(0, 119, 182, 0.05)',
+  },
+  completionCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  summaryText: {
-    fontSize: 14,
-    color: '#444',
-  },
-  section: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  sectionHeader: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0077B6',
-    marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  symptomGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  symptomButton: {
-    width: '48%',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    flexDirection: 'row',
-  },
-  symptomIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  symptomText: {
-    color: '#495057',
-    fontSize: 14,
-    flex: 1,
-  },
-  intensityContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  intensityTitle: {
+  completionText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0077B6',
-    marginBottom: 16,
-  },
-  sliderContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  intensityOption: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '30%',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  intensitySelected: {
-    backgroundColor: '#0077B620',
-    borderColor: '#0077B6',
-  },
-  intensityText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#666',
-    marginBottom: 4,
-  },
-  intensitySelectedText: {
-    color: '#0077B6',
-  },
-  intensityLabel: {
-    fontSize: 12,
-    color: '#777',
-  },
-  mealsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  mealButton: {
-    width: '48%',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    flexDirection: 'row',
-  },
-  mealIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  mealText: {
-    color: '#495057',
-    fontSize: 14,
+    color: '#333',
   },
   notesInput: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#ced4da',
+    borderRadius: 8,
     padding: 12,
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
     minHeight: 100,
     textAlignVertical: 'top',
   },
   saveButton: {
     backgroundColor: '#0077B6',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  saveIcon: {
-    marginRight: 8,
+    marginTop: 20,
   },
   saveButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
+  // Estilos para la barra de navegación
   tabBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -764,6 +695,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -774,7 +709,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
   activeTab: {
     borderBottomWidth: 3,
@@ -785,5 +720,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     color: '#0077B6',
+    fontWeight: 'bold',
+  },
+  tabLabelInactive: {
+    fontSize: 12,
+    marginTop: 4,
+    color: '#666666',
   },
 });

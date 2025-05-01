@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  Button,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -14,30 +13,52 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../App';
-import HeaderComponent from '../components/HeaderComponent'; // Importamos el componente de header
-
-// URL Base para la API
-const API_URL = 'http://192.168.1.48:8000';
-const HABITS_QUESTIONNAIRE_ID = 4; // Asumiendo que el ID del cuestionario de Hábitos es 4
+import HeaderComponent from '../components/HeaderComponent';
+import api from '../utils/api';
+import { getData } from '../utils/storage';
+import { Ionicons } from '@expo/vector-icons';
 
 type OnboardingHabitsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingHabits'>;
 
+// Interfaz para la respuesta de pregunta de hábito
+interface HabitAnswer {
+  question_id: number;
+  option_id: number;
+}
+
+// Interfaz para pregunta de hábito
+interface HabitQuestion {
+  id: number;
+  habit_type: string;
+  text: string;
+  description: string;
+  options: HabitOption[];
+}
+
+// Interfaz para opción de respuesta
+interface HabitOption {
+  id: number;
+  text: string;
+  value: number;
+  order: number;
+}
+
 export default function OnboardingHabitsScreen() {
   const navigation = useNavigation<OnboardingHabitsNavigationProp>();
-  const [questionnaire, setQuestionnaire] = useState<any>(null);
+  
+  // Estado para preguntas, respuestas y UI
+  const [habitQuestions, setHabitQuestions] = useState<HabitQuestion[]>([]);
   const [answers, setAnswers] = useState<{[key: number]: number}>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Verificar token al cargar la pantalla
+  
+  // Verificar token y cargar preguntas
   useEffect(() => {
-    const checkAuth = async () => {
+    const initializeScreen = async () => {
       console.log("Verificando token en OnboardingHabitsScreen...");
-      const token = await SecureStore.getItemAsync('authToken');
-      console.log("Token en OnboardingHabitsScreen:", token ? "Existe" : "No existe");
+      const token = await getData('authToken');
       
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
@@ -48,84 +69,39 @@ export default function OnboardingHabitsScreen() {
         return;
       }
       
-      // Si hay token, cargar el cuestionario
-      fetchQuestionnaire(token);
+      fetchHabitQuestions();
     };
     
-    checkAuth();
+    initializeScreen();
   }, [navigation]);
-
-  // Función para cargar el cuestionario
-  const fetchQuestionnaire = async (token: string | null = null) => {
+  
+  // Función para cargar las preguntas de hábitos
+  const fetchHabitQuestions = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      if (!token) {
-        token = await SecureStore.getItemAsync('authToken');
-        if (!token) {
-          throw new Error('No se encontró token de autenticación');
-        }
+      console.log("Obteniendo preguntas de hábitos...");
+      const response = await api.get('/api/questionnaires/habits/');
+      
+      if (response.data && Array.isArray(response.data)) {
+        console.log(`Se obtuvieron ${response.data.length} preguntas de hábitos`);
+        setHabitQuestions(response.data);
+      } else {
+        console.error("Formato de respuesta inesperado:", response.data);
+        setError("Error al cargar las preguntas de hábitos. Formato de datos incorrecto.");
       }
-
-      console.log("Obteniendo cuestionario de Hábitos...");
-      const response = await fetch(`${API_URL}/api/questionnaires/${HABITS_QUESTIONNAIRE_ID}/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      console.log("Respuesta status:", response.status);
-      
-      if (!response.ok) {
-        const responseText = await response.text();
-        console.log("Error response:", responseText);
-        let errorData;
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (e) {
-          errorData = { detail: responseText };
-        }
-        throw new Error(errorData.detail || `Error ${response.status}`);
-      }
-      
-      const responseText = await response.text();
-      console.log("Respuesta recibida, parseando JSON...");
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log("Datos del cuestionario de Hábitos:", 
-          data ? `ID:${data.id}, Preguntas:${data.questions?.length || 0}` : "No hay datos");
-        
-        // Verificar la estructura de datos
-        if (data && data.questions) {
-          data.questions.forEach((q: any, i: number) => {
-            console.log(`Pregunta ${i+1}: ID:${q.id}, Opciones:${q.options?.length || 0}`);
-            if (q.options && q.options.length > 0) {
-              console.log(`  Opción 1: ID:${q.options[0].id}, Texto:"${q.options[0].text}"`);
-            }
-          });
-        }
-        
-        setQuestionnaire(data);
-      } catch (e) {
-        console.error("Error al parsear JSON:", e);
-        throw new Error('Error al parsear los datos del cuestionario de Hábitos');
-      }
-      
     } catch (err) {
-      console.error("Error loading questionnaire:", err);
-      const message = err instanceof Error ? err.message : 'Error al cargar el cuestionario de Hábitos';
+      console.error("Error al cargar preguntas de hábitos:", err);
+      let message = "Error al cargar el cuestionario de hábitos";
       
-      if (message.includes('token') || message.includes('401')) {
+      if (err.response && err.response.status === 401) {
+        message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+        
         Alert.alert(
           "Sesión expirada",
-          "Tu sesión ha expirado. Por favor inicia sesión nuevamente.",
+          message,
           [{ text: "Ir a Login", onPress: () => {
-            // El cierre de sesión ahora lo maneja el HeaderComponent
             navigation.reset({
               index: 0,
               routes: [{ name: 'Login' }],
@@ -140,7 +116,7 @@ export default function OnboardingHabitsScreen() {
     }
   };
   
-  // Manejar selección de respuesta
+  // Función para seleccionar una respuesta
   const handleSelectAnswer = (questionId: number, optionId: number) => {
     console.log(`Seleccionando respuesta: Pregunta ID=${questionId}, Opción ID=${optionId}`);
     setAnswers(prev => ({
@@ -149,232 +125,186 @@ export default function OnboardingHabitsScreen() {
     }));
   };
   
+  // Validar que todas las preguntas tienen respuesta
+  const validateAnswers = (): boolean => {
+    if (habitQuestions.length === 0) {
+      setError("No hay preguntas disponibles.");
+      return false;
+    }
+    
+    const answeredQuestionsCount = Object.keys(answers).length;
+    if (answeredQuestionsCount !== habitQuestions.length) {
+      setError(`Por favor, responde todas las preguntas. Has respondido ${answeredQuestionsCount} de ${habitQuestions.length}.`);
+      return false;
+    }
+    
+    return true;
+  };
+  
   // Enviar respuestas
   const handleSubmit = async () => {
-    if (
-      !questionnaire?.questions || 
-      questionnaire.questions.length === 0 || 
-      Object.keys(answers).length !== questionnaire.questions.length
-    ) {
-      Alert.alert('Incompleto', 'Por favor, responde todas las preguntas del cuestionario de Hábitos.');
+    if (!validateAnswers()) {
       return;
     }
-
+    
     setIsSubmitting(true);
     setError(null);
-
+    
     try {
-      const token = await SecureStore.getItemAsync('authToken');
-      if (!token) {
-        throw new Error('No se encontró token de autenticación');
-      }
-
-      // Formatear las respuestas para enviar al API
+      // Formatear las respuestas para enviar
       const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
         question_id: parseInt(questionId),
-        selected_option_id: optionId
+        option_id: optionId
       }));
-
-      console.log("Enviando respuestas de Hábitos:", answersData);
       
-      const response = await fetch(`${API_URL}/api/questionnaires/${HABITS_QUESTIONNAIRE_ID}/submit/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          answers: answersData
-        }),
+      console.log("Enviando respuestas de hábitos:", answersData);
+      
+      // Enviar datos al servidor
+      const response = await api.post('/api/questionnaires/habits/submit/', {
+        answers: answersData
       });
-
-      console.log("Respuesta status:", response.status);
       
-      const responseText = await response.text();
-      let data;
+      console.log("Respuestas de hábitos enviadas correctamente:", response.data);
       
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error("Error al parsear respuesta:", e);
-        data = { detail: responseText };
-      }
-
-      if (response.ok) {
-        console.log("Respuestas de Hábitos enviadas correctamente:", data);
-        
-        // Actualizar perfil para marcar onboarding como completado
-        try {
-          const updateResponse = await fetch(`${API_URL}/api/profiles/me/`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Token ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              onboarding_complete: true
-            }),
-          });
-          
-          if (!updateResponse.ok) {
-            console.error("Error al marcar onboarding como completado:", await updateResponse.text());
-          } else {
-            console.log("Onboarding marcado como completado correctamente");
-          }
-        } catch (updateErr) {
-          console.error("Error al actualizar perfil:", updateErr);
-        }
-        
-        // Mostrar resultado y navegar a Home
-        let message = 'Has completado el cuestionario de Hábitos y todo el proceso de onboarding. ';
-        if (data.score !== undefined) {
-          message += `\nTu puntuación es: ${data.score}`;
-        }
-        
-        Alert.alert(
-          "Proceso Completado",
-          message,
-          [
-            { 
-              text: "Ir al Inicio", 
-              onPress: () => {
-                // Navegar a Home, completando el proceso de onboarding
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Home' }],
-                });
-              }
-            }
-          ]
-        );
-      } else {
-        const errorMessage = data?.detail || 'Error al enviar las respuestas del cuestionario de Hábitos.';
-        throw new Error(errorMessage);
-      }
+      // Navegar directamente a la pantalla de resultados de fenotipo
+      console.log("Intentando navegar a PhenotypeResult...");
+      navigation.navigate('PhenotypeResult');
+      
+      // Mostrar mensaje de éxito después de iniciar la navegación
+      Alert.alert(
+        "Cuestionario Completado",
+        "Tus respuestas al cuestionario de hábitos han sido guardadas correctamente.",
+        [{ text: "Aceptar" }]
+      );
     } catch (err) {
-      console.error("Error al enviar respuestas de Hábitos:", err);
-      const message = err instanceof Error ? err.message : 'Error de red al enviar las respuestas';
+      console.error("Error al enviar respuestas de hábitos:", err);
+      let message = "Error al guardar tus respuestas";
       
-      if (message.includes('token') || message.includes('401')) {
+      if (err.response && err.response.status === 401) {
+        message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+        
         Alert.alert(
           "Sesión expirada",
-          "Tu sesión ha expirado. Por favor inicia sesión nuevamente.",
+          message,
           [{ text: "Ir a Login", onPress: () => {
-            // El cierre de sesión ahora lo maneja el HeaderComponent
             navigation.reset({
               index: 0,
               routes: [{ name: 'Login' }],
             });
           }}]
         );
+      } else if (err.response && err.response.data && err.response.data.detail) {
+        message = err.response.data.detail;
+        Alert.alert("Error", message);
       } else {
         setError(message);
-        Alert.alert("Error", message);
       }
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const allQuestionsAnswered = questionnaire?.questions && 
-    Object.keys(answers).length === questionnaire.questions.length;
-
+  
+  // Renderizar una pregunta individual
+  const renderQuestion = (question: HabitQuestion) => {
+    return (
+      <View key={question.id} style={styles.questionCard}>
+        <Text style={styles.questionText}>{question.text}</Text>
+        {question.description && (
+          <Text style={styles.questionDescription}>{question.description}</Text>
+        )}
+        
+        <View style={styles.optionsContainer}>
+          {question.options.map(option => (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.optionButton,
+                answers[question.id] === option.id && styles.selectedOption
+              ]}
+              onPress={() => handleSelectAnswer(question.id, option.id)}
+              disabled={isSubmitting}
+            >
+              <View style={styles.optionRow}>
+                <View style={styles.radioContainer}>
+                  <View style={styles.radioOuter}>
+                    {answers[question.id] === option.id && 
+                      <View style={styles.radioInner} />
+                    }
+                  </View>
+                </View>
+                <Text style={[
+                  styles.optionText,
+                  answers[question.id] === option.id && styles.selectedOptionText
+                ]}>
+                  {option.text}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  };
+  
   return (
     <View style={styles.container}>
-      {/* Implementamos el HeaderComponent */}
       <HeaderComponent />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardContainer}
       >
-      
-      {isLoading ? (
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#0077B6" />
-          <Text style={styles.loadingText}>Cargando cuestionario de Hábitos...</Text>
-        </View>
-      ) : error ? (
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Button title="Reintentar" onPress={() => fetchQuestionnaire()} />
-        </View>
-      ) : !questionnaire ? (
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>No se pudo cargar el cuestionario de Hábitos</Text>
-          <Button title="Volver" onPress={() => navigation.goBack()} />
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.content}>
-            <Text style={styles.title}>{questionnaire.title || 'Cuestionario de Hábitos'}</Text>
-            
-            <Text style={styles.description}>
-              {questionnaire.description || 'Por favor responde todas las preguntas sobre tus hábitos diarios.'}
-            </Text>
-            
-            {/* Renderizado seguro de preguntas */}
-            {questionnaire.questions && questionnaire.questions.length > 0 ? (
-              questionnaire.questions.map((question: any) => (
-                <View key={question.id} style={styles.questionCard}>
-                  <Text style={styles.questionText}>{question.text}</Text>
-                  
-                  {/* Renderizado seguro de opciones */}
-                  {question.options && question.options.length > 0 ? (
-                    question.options.map((option: any) => (
-                      <TouchableOpacity
-                        key={option.id}
-                        style={styles.optionButton}
-                        onPress={() => handleSelectAnswer(question.id, option.id)}
-                        disabled={isSubmitting}
-                      >
-                        <View style={styles.optionRow}>
-                          <View style={styles.radioContainer}>
-                            <View style={styles.radioOuter}>
-                              {answers[question.id] === option.id && 
-                                <View style={styles.radioInner} />
-                              }
-                            </View>
-                          </View>
-                          <Text style={styles.optionText}>
-                            {option.text}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    ))
-                  ) : (
-                    <Text style={styles.errorText}>No hay opciones disponibles para esta pregunta</Text>
-                  )}
-                </View>
-              ))
-            ) : (
-              <Text style={styles.errorText}>No hay preguntas disponibles en el cuestionario</Text>
-            )}
-            
-            <View style={styles.buttonContainer}>
+        {isLoading ? (
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" color="#0077B6" />
+            <Text style={styles.loadingText}>Cargando cuestionario de hábitos...</Text>
+          </View>
+        ) : error && habitQuestions.length === 0 ? (
+          <View style={styles.centerContent}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={fetchHabitQuestions}
+            >
+              <Text style={styles.retryButtonText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <View style={styles.content}>
+              <Text style={styles.title}>Hábitos Digestivos</Text>
+              
+              <Text style={styles.description}>
+                Por favor, responde a estas preguntas sobre tus hábitos relacionados con la digestión.
+                Esta información nos ayudará a personalizar tus recomendaciones.
+              </Text>
+              
+              {/* Sección de preguntas */}
+              {habitQuestions.map(question => renderQuestion(question))}
+              
+              {/* Mensaje de error */}
+              {error && <Text style={styles.errorMessage}>{error}</Text>}
+              
+              {/* Botón de enviar */}
               {isSubmitting ? (
-                <ActivityIndicator size="large" color="#0077B6" />
+                <ActivityIndicator size="large" color="#0077B6" style={styles.activityIndicator} />
               ) : (
                 <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    !allQuestionsAnswered && styles.disabledButton
-                  ]}
+                  style={styles.submitButton}
                   onPress={handleSubmit}
-                  disabled={!allQuestionsAnswered}
+                  disabled={isSubmitting}
                 >
                   <Text style={styles.submitButtonText}>
-                    Finalizar Onboarding
+                    Finalizar Cuestionario
                   </Text>
                 </TouchableOpacity>
               )}
+              
+              {/* Espacio adicional al final */}
+              <View style={styles.bottomPadding} />
             </View>
-            
-            {/* Espacio adicional al final */}
-            <View style={styles.bottomPadding} />
-          </View>
-        </ScrollView>
-      )}
+          </ScrollView>
+        )}
       </KeyboardAvoidingView>
     </View>
   );
@@ -391,14 +321,14 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
   },
+  content: {
+    padding: 16,
+  },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  content: {
-    padding: 16,
   },
   title: {
     fontSize: 24,
@@ -412,10 +342,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     color: '#0077B6',
+    lineHeight: 22,
   },
   questionCard: {
     backgroundColor: 'white',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     elevation: 2,
@@ -425,10 +356,21 @@ const styles = StyleSheet.create({
     shadowRadius: 1.5,
   },
   questionText: {
-    fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 16,
+    fontSize: 16,
+    fontWeight: '600',
     color: '#212529',
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+  questionDescription: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 16,
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
+  optionsContainer: {
+    marginTop: 10,
   },
   optionButton: {
     padding: 14,
@@ -437,6 +379,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
     backgroundColor: '#f8f9fa',
+  },
+  selectedOption: {
+    borderColor: '#0077B6',
+    backgroundColor: '#e6f7ff',
   },
   optionRow: {
     flexDirection: 'row',
@@ -466,8 +412,9 @@ const styles = StyleSheet.create({
     color: '#495057',
     flex: 1,
   },
-  buttonContainer: {
-    marginVertical: 24,
+  selectedOptionText: {
+    color: '#0077B6',
+    fontWeight: '500',
   },
   loadingText: {
     marginTop: 16,
@@ -477,17 +424,40 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#dc3545',
     textAlign: 'center',
-    marginVertical: 16,
+    marginBottom: 20,
     fontSize: 16,
+  },
+  errorMessage: {
+    color: '#dc3545',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+    fontSize: 16,
+    backgroundColor: '#FFD2D2',
+    padding: 10,
+    borderRadius: 5,
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: '#0077B6',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  activityIndicator: {
+    marginVertical: 20,
   },
   submitButton: {
     backgroundColor: '#0077B6',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#cccccc',
+    marginTop: 10,
   },
   submitButtonText: {
     color: 'white',

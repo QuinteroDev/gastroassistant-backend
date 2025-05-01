@@ -1,0 +1,93 @@
+
+[
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 1,
+    "fields": {
+      "type": "BMI",
+      "name": "Índice de Masa Corporal",
+      "description": "Recomendaciones basadas en el IMC del usuario.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 2,
+    "fields": {
+      "type": "HERNIA",
+      "name": "Hernia de hiato",
+      "description": "Recomendaciones para personas con hernia de hiato.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 3,
+    "fields": {
+      "type": "MOTILITY",
+      "name": "Motilidad esofágica alterada",
+      "description": "Recomendaciones para problemas de motilidad esofágica.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 4,
+    "fields": {
+      "type": "EMPTYING",
+      "name": "Vaciamiento gástrico lento",
+      "description": "Recomendaciones para gastroparesia o vaciamiento lento.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 5,
+    "fields": {
+      "type": "SALIVA",
+      "name": "Salivación reducida",
+      "description": "Recomendaciones para problemas de salivación escasa.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 6,
+    "fields": {
+      "type": "CONSTIPATION",
+      "name": "Estreñimiento",
+      "description": "Recomendaciones para manejo del estreñimiento.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 7,
+    "fields": {
+      "type": "STRESS",
+      "name": "Estrés o ansiedad",
+      "description": "Recomendaciones para manejo del estrés.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 8,
+    "fields": {
+      "type": "PHENOTYPE",
+      "name": "Fenotipo ERGE",
+      "description": "Recomendaciones basadas en el fenotipo de ERGE.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 9,
+    "fields": {
+      "type": "HABIT",
+      "name": "Hábito específico",
+      "description": "Recomendaciones para mejorar hábitos específicos.",
+      "is_active": true
+    }
+  }
+]

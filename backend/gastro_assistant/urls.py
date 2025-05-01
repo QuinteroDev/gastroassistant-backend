@@ -15,5 +15,15 @@ urlpatterns = [
     # URLs de cuestionarios
     path('api/questionnaires/', include('questionnaires.urls')), # Prefijo 'api/questionnaires/'
 
+    # Endpoints de programas de tratamiento
+    path('programs/', include('programs.urls')),
+
+    path('recommendations/', include('recommendations.urls')),
+
+    path('habits/', include('habits.urls')),
+
+
+
+
 
 ]

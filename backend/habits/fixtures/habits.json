@@ -1,0 +1,135 @@
+[
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 1,
+    "fields": {
+      "habit_type": "MEAL_SIZE",
+      "text": "¿Sientes que comes más cantidad de la que tu cuerpo tolera bien?",
+      "description": "El exceso de comida aumenta la presión sobre el esfínter esofágico inferior y dificulta el vaciamiento gástrico, exacerbando el reflujo.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 2,
+    "fields": {
+      "habit_type": "DINNER_TIME",
+      "text": "¿Cuánto tiempo dejas entre la cena y el momento de acostarte?",
+      "description": "Acostarse con el estómago lleno facilita el reflujo nocturno, ya que la posición horizontal favorece que el ácido suba por el esófago.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 3,
+    "fields": {
+      "habit_type": "LIE_DOWN",
+      "text": "¿Te tumbas o recuestas justo después de comer?",
+      "description": "La posición horizontal facilita el reflujo del contenido gástrico hacia el esófago, especialmente si el estómago está lleno.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 4,
+    "fields": {
+      "habit_type": "NIGHT_SYMPTOMS",
+      "text": "¿Tienes molestias de reflujo durante la noche o al acostarte?",
+      "description": "El reflujo nocturno puede ser más dañino ya que el esófago está expuesto a la acidez por más tiempo, al no contar con la ayuda de la gravedad.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 5,
+    "fields": {
+      "habit_type": "SMOKING",
+      "text": "¿Fumas actualmente?",
+      "description": "El tabaco debilita el esfínter esofágico inferior y aumenta la producción de ácido en el estómago, siendo un importante factor de riesgo para el reflujo.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 6,
+    "fields": {
+      "habit_type": "ALCOHOL",
+      "text": "¿Consumes alcohol más de 3 veces por semana?",
+      "description": "El alcohol relaja el esfínter esofágico inferior y puede irritar directamente la mucosa esofágica, aumentando los síntomas de reflujo.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 7,
+    "fields": {
+      "habit_type": "EXERCISE",
+      "text": "¿Realizas ejercicio físico moderado al menos 3 días por semana?",
+      "description": "El ejercicio regular ayuda a mantener un peso saludable y favorece la buena digestión, aunque ciertos ejercicios de alta intensidad pueden empeorar el reflujo.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 8,
+    "fields": {
+      "habit_type": "AVOID_TRIGGERS",
+      "text": "¿Evitas alimentos o bebidas que sabes que te provocan síntomas?",
+      "description": "Ciertos alimentos y bebidas son desencadenantes comunes del reflujo, como alimentos grasos, picantes, cítricos, café, chocolate y alcohol.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 9,
+    "fields": {
+      "habit_type": "STRESS",
+      "text": "¿Crees que el estrés afecta a tu digestión o tus síntomas?",
+      "description": "El estrés puede aumentar la percepción del dolor y alterar la motilidad digestiva, empeorando los síntomas de reflujo en muchas personas.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 10,
+    "fields": {
+      "habit_type": "HYDRATION_MEALS",
+      "text": "¿Bebes grandes cantidades de agua u otros líquidos mientras comes?",
+      "description": "Beber mucho durante las comidas puede aumentar la presión en el estómago y diluir los ácidos gástricos, dificultando la digestión.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 11,
+    "fields": {
+      "habit_type": "HYDRATION_DAY",
+      "text": "¿Bebes suficiente agua a lo largo del día (no solo en las comidas)?",
+      "description": "La hidratación adecuada facilita la digestión y la salud del tracto digestivo, pero es mejor beber entre comidas que durante ellas.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "questionnaires.habitquestion",
+    "pk": 12,
+    "fields": {
+      "habit_type": "CHEWING",
+      "text": "¿Dedicas tiempo suficiente a masticar bien los alimentos antes de tragarlos?",
+      "description": "Masticar bien inicia la digestión en la boca, reduce el trabajo del estómago y previene la ingesta de aire que puede empeorar el reflujo.",
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  }
+]
+

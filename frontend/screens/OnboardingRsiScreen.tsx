@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  Button,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -14,19 +13,43 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../App';
-import HeaderComponent from '../components/HeaderComponent'; // Importamos el componente de header
+import HeaderComponent from '../components/HeaderComponent';
+import api from '../utils/api';
+import { getData } from '../utils/storage';
 
-// URL Base para la API
-const API_URL = 'http://192.168.1.48:8000';
-const RSI_QUESTIONNAIRE_ID = 2; // Asumiendo que el ID del cuestionario RSI es 2
+// ID del cuestionario RSI
+const RSI_QUESTIONNAIRE_ID = 2;
+
+// Interfaces para el tipado de datos
+interface Option {
+  id: number;
+  text: string;
+  value: number;
+  order: number;
+}
+
+interface Question {
+  id: number;
+  text: string;
+  order: number;
+  options: Option[];
+}
+
+interface Questionnaire {
+  id: number;
+  name: string;
+  title: string;
+  type: string;
+  description: string;
+  questions: Question[];
+}
 
 type OnboardingRsiNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingRsi'>;
 
 export default function OnboardingRsiScreen() {
   const navigation = useNavigation<OnboardingRsiNavigationProp>();
-  const [questionnaire, setQuestionnaire] = useState<any>(null);
+  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
   const [answers, setAnswers] = useState<{[key: number]: number}>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,8 +59,7 @@ export default function OnboardingRsiScreen() {
   useEffect(() => {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingRsiScreen...");
-      const token = await SecureStore.getItemAsync('authToken');
-      console.log("Token en OnboardingRsiScreen:", token ? "Existe" : "No existe");
+      const token = await getData('authToken');
       
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
@@ -49,83 +71,46 @@ export default function OnboardingRsiScreen() {
       }
       
       // Si hay token, cargar el cuestionario
-      fetchQuestionnaire(token);
+      fetchQuestionnaire();
     };
     
     checkAuth();
   }, [navigation]);
 
   // Función para cargar el cuestionario
-  const fetchQuestionnaire = async (token: string | null = null) => {
+  const fetchQuestionnaire = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      if (!token) {
-        token = await SecureStore.getItemAsync('authToken');
-        if (!token) {
-          throw new Error('No se encontró token de autenticación');
-        }
-      }
-
       console.log("Obteniendo cuestionario RSI...");
-      const response = await fetch(`${API_URL}/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await api.get(`/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/`);
       
-      console.log("Respuesta status:", response.status);
+      console.log("Datos del cuestionario RSI:", 
+        response.data ? `ID:${response.data.id}, Preguntas:${response.data.questions?.length || 0}` : "No hay datos");
       
-      if (!response.ok) {
-        const responseText = await response.text();
-        console.log("Error response:", responseText);
-        let errorData;
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (e) {
-          errorData = { detail: responseText };
-        }
-        throw new Error(errorData.detail || `Error ${response.status}`);
+      // Verificar la estructura de datos
+      if (response.data && response.data.questions) {
+        response.data.questions.forEach((q: Question, i: number) => {
+          console.log(`Pregunta ${i+1}: ID:${q.id}, Opciones:${q.options?.length || 0}`);
+          if (q.options && q.options.length > 0) {
+            console.log(`  Opción 1: ID:${q.options[0].id}, Texto:"${q.options[0].text}"`);
+          }
+        });
       }
       
-      const responseText = await response.text();
-      console.log("Respuesta recibida, parseando JSON...");
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log("Datos del cuestionario RSI:", 
-          data ? `ID:${data.id}, Preguntas:${data.questions?.length || 0}` : "No hay datos");
-        
-        // Verificar la estructura de datos
-        if (data && data.questions) {
-          data.questions.forEach((q: any, i: number) => {
-            console.log(`Pregunta ${i+1}: ID:${q.id}, Opciones:${q.options?.length || 0}`);
-            if (q.options && q.options.length > 0) {
-              console.log(`  Opción 1: ID:${q.options[0].id}, Texto:"${q.options[0].text}"`);
-            }
-          });
-        }
-        
-        setQuestionnaire(data);
-      } catch (e) {
-        console.error("Error al parsear JSON:", e);
-        throw new Error('Error al parsear los datos del cuestionario RSI');
-      }
-      
+      setQuestionnaire(response.data);
     } catch (err) {
-      console.error("Error loading questionnaire:", err);
-      const message = err instanceof Error ? err.message : 'Error al cargar el cuestionario RSI';
+      console.error("Error loading RSI questionnaire:", err);
+      let message = "Error al cargar el cuestionario RSI";
       
-      if (message.includes('token') || message.includes('401')) {
+      if (err.response && err.response.status === 401) {
+        message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+        
         Alert.alert(
           "Sesión expirada",
-          "Tu sesión ha expirado. Por favor inicia sesión nuevamente.",
+          message,
           [{ text: "Ir a Login", onPress: () => {
-            // El cierre de sesión ahora lo maneja el HeaderComponent
             navigation.reset({
               index: 0,
               routes: [{ name: 'Login' }],
@@ -151,6 +136,7 @@ export default function OnboardingRsiScreen() {
   
   // Enviar respuestas
   const handleSubmit = async () => {
+    // Validar que todas las preguntas tienen respuesta
     if (
       !questionnaire?.questions || 
       questionnaire.questions.length === 0 || 
@@ -164,11 +150,6 @@ export default function OnboardingRsiScreen() {
     setError(null);
   
     try {
-      const token = await SecureStore.getItemAsync('authToken');
-      if (!token) {
-        throw new Error('No se encontró token de autenticación');
-      }
-  
       // Formatear las respuestas para enviar al API
       const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
         question_id: parseInt(questionId),
@@ -177,71 +158,55 @@ export default function OnboardingRsiScreen() {
   
       console.log("Enviando respuestas RSI:", answersData);
       
-      const response = await fetch(`${API_URL}/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/submit/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          answers: answersData
-        }),
+      const response = await api.post(`/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/submit/`, {
+        answers: answersData
       });
   
-      console.log("Respuesta status:", response.status);
+      console.log("Respuestas RSI enviadas correctamente:", response.data);
       
-      const responseText = await response.text();
-      let data;
+      // CAMBIO IMPORTANTE: Navegar inmediatamente antes de mostrar el Alert
+      console.log("Intentando navegar a OnboardingDiagnosticTests...");
+      navigation.navigate('OnboardingClinicalFactors');
       
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error("Error al parsear respuesta:", e);
-        data = { detail: responseText };
+      // Mostrar resultado después de iniciar la navegación
+      let message = 'Has completado el cuestionario RSI. ';
+      if (response.data.score !== undefined) {
+        message += `\nTu puntuación es: ${response.data.score}`;
       }
-  
-      if (response.ok) {
-        console.log("Respuestas RSI enviadas correctamente:", data);
-        
-        // Mostrar resultado y navegar al cuestionario de Hábitos
-        let message = 'Has completado el cuestionario RSI. ';
-        if (data.score !== undefined) {
-          message += `\nTu puntuación es: ${data.score}`;
-        }
-        
-        Alert.alert(
-          "Cuestionario RSI Completado",
-          message,
-          [
-            { 
-              text: "Continuar", 
-              onPress: () => {
-                // Navegar al cuestionario de Hábitos
-                navigation.navigate('OnboardingHabits');
-              }
+      
+      Alert.alert(
+        "Cuestionario RSI Completado",
+        message,
+        [
+          { 
+            text: "Aceptar", 
+            onPress: () => {
+              // Ya hemos navegado, así que no es necesario hacerlo de nuevo
+              console.log("Alerta cerrada");
             }
-          ]
-        );
-      } else {
-        const errorMessage = data?.detail || 'Error al enviar las respuestas RSI.';
-        throw new Error(errorMessage);
-      }
+          }
+        ]
+      );
     } catch (err) {
       console.error("Error al enviar respuestas RSI:", err);
-      const message = err instanceof Error ? err.message : 'Error de red al enviar las respuestas RSI';
+      let message = "Error al enviar las respuestas RSI";
       
-      if (message.includes('token') || message.includes('401')) {
+      if (err.response && err.response.status === 401) {
+        message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+        
         Alert.alert(
           "Sesión expirada",
-          "Tu sesión ha expirado. Por favor inicia sesión nuevamente.",
+          message,
           [{ text: "Ir a Login", onPress: () => {
-            // El cierre de sesión ahora lo maneja el HeaderComponent
             navigation.reset({
               index: 0,
               routes: [{ name: 'Login' }],
-            });
+          });
           }}]
         );
+      } else if (err.response && err.response.data && err.response.data.detail) {
+        message = err.response.data.detail;
+        Alert.alert("Error", message);
       } else {
         setError(message);
         Alert.alert("Error", message);
@@ -251,12 +216,13 @@ export default function OnboardingRsiScreen() {
     }
   };
 
+  // Verificar si todas las preguntas tienen respuesta
   const allQuestionsAnswered = questionnaire?.questions && 
     Object.keys(answers).length === questionnaire.questions.length;
 
   return (
     <View style={styles.container}>
-      {/* Implementamos el HeaderComponent */}
+      {/* Header */}
       <HeaderComponent />
       
       <KeyboardAvoidingView 
@@ -272,12 +238,22 @@ export default function OnboardingRsiScreen() {
       ) : error ? (
         <View style={styles.centerContent}>
           <Text style={styles.errorText}>{error}</Text>
-          <Button title="Reintentar" onPress={() => fetchQuestionnaire()} />
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => fetchQuestionnaire()}
+          >
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
         </View>
       ) : !questionnaire ? (
         <View style={styles.centerContent}>
           <Text style={styles.errorText}>No se pudo cargar el cuestionario RSI</Text>
-          <Button title="Volver" onPress={() => navigation.goBack()} />
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.retryButtonText}>Volver</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -290,16 +266,19 @@ export default function OnboardingRsiScreen() {
             
             {/* Renderizado seguro de preguntas */}
             {questionnaire.questions && questionnaire.questions.length > 0 ? (
-              questionnaire.questions.map((question: any) => (
+              questionnaire.questions.map((question: Question) => (
                 <View key={question.id} style={styles.questionCard}>
                   <Text style={styles.questionText}>{question.text}</Text>
                   
                   {/* Renderizado seguro de opciones */}
                   {question.options && question.options.length > 0 ? (
-                    question.options.map((option: any) => (
+                    question.options.map((option: Option) => (
                       <TouchableOpacity
                         key={option.id}
-                        style={styles.optionButton}
+                        style={[
+                          styles.optionButton,
+                          answers[question.id] === option.id && styles.selectedOption
+                        ]}
                         onPress={() => handleSelectAnswer(question.id, option.id)}
                         disabled={isSubmitting}
                       >
@@ -311,7 +290,10 @@ export default function OnboardingRsiScreen() {
                               }
                             </View>
                           </View>
-                          <Text style={styles.optionText}>
+                          <Text style={[
+                            styles.optionText,
+                            answers[question.id] === option.id && styles.selectedOptionText
+                          ]}>
                             {option.text}
                           </Text>
                         </View>
@@ -390,7 +372,7 @@ const styles = StyleSheet.create({
   },
   questionCard: {
     backgroundColor: 'white',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     elevation: 2,
@@ -412,6 +394,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
     backgroundColor: '#f8f9fa',
+  },
+  selectedOption: {
+    borderColor: '#0077B6',
+    backgroundColor: '#e6f7ff',
   },
   optionRow: {
     flexDirection: 'row',
@@ -441,6 +427,10 @@ const styles = StyleSheet.create({
     color: '#495057',
     flex: 1,
   },
+  selectedOptionText: {
+    color: '#0077B6',
+    fontWeight: '500',
+  },
   buttonContainer: {
     marginVertical: 24,
   },
@@ -457,7 +447,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: '#0077B6',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -465,6 +455,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#cccccc',
   },
   submitButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: '#0077B6',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '500',

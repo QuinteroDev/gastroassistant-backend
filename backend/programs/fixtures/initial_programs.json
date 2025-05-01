@@ -1,0 +1,50 @@
+[
+  {
+    "model": "programs.treatmentprogram",
+    "pk": 1,
+    "fields": {
+      "name": "Programa Completo ERGE y LPR",
+      "type": "A",
+      "description": "Programa de tratamiento integral para pacientes con síntomas positivos tanto de reflujo gastroesofágico como de reflujo laringofaríngeo.",
+      "is_active": true,
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "programs.treatmentprogram",
+    "pk": 2,
+    "fields": {
+      "name": "Programa ERGE",
+      "type": "B",
+      "description": "Programa enfocado en el manejo del reflujo gastroesofágico para pacientes con GerdQ positivo pero sin síntomas significativos de reflujo laringofaríngeo.",
+      "is_active": true,
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "programs.treatmentprogram",
+    "pk": 3,
+    "fields": {
+      "name": "Programa LPR",
+      "type": "C",
+      "description": "Programa especializado para el manejo del reflujo laringofaríngeo en pacientes con RSI positivo pero sin síntomas significativos de reflujo gastroesofágico.",
+      "is_active": true,
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "programs.treatmentprogram",
+    "pk": 4,
+    "fields": {
+      "name": "Programa Preventivo",
+      "type": "D",
+      "description": "Programa de prevención y mantenimiento para pacientes con síntomas leves o sin síntomas significativos de reflujo, enfocado en desarrollar hábitos saludables.",
+      "is_active": true,
+      "created_at": "2023-06-01T00:00:00Z",
+      "updated_at": "2023-06-01T00:00:00Z"
+    }
+  }
+]

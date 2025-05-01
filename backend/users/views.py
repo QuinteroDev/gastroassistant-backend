@@ -50,24 +50,26 @@ def register_user(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_user(request):
-    """
-    Autentica un usuario y retorna un token.
-    Espera un JSON:
-    {
-      "username": "test",
-      "password": "xxxxx"
-    }
-    """
     username = request.data.get('username')
     password = request.data.get('password')
-
+    
+    print(f"Intento de login: usuario={username}")
+    
     if not username or not password:
-        return Response({'error': 'Datos insuficientes'}, status=400)
-
+        return Response({'detail': 'Datos insuficientes'}, status=400)
+    
     user = authenticate(request, username=username, password=password)
     if user is not None:
-        # Si el usuario existe y las credenciales son correctas:
         token, _ = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key}, status=200)
+        print(f"Login exitoso para {username}")
+        
+        # Si tienes un campo onboarding_completed en tu modelo de usuario
+        onboarding_completed = getattr(user, 'onboarding_completed', False)
+        
+        return Response({
+            'token': token.key,
+            'onboarding_completed': onboarding_completed
+        }, status=200)
     else:
-        return Response({'error': 'Credenciales inválidas'}, status=401)
+        print(f"Credenciales incorrectas para {username}")
+        return Response({'detail': 'Credenciales inválidas'}, status=401)

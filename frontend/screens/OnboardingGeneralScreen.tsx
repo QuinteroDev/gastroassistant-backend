@@ -16,28 +16,37 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as SecureStore from 'expo-secure-store';
 import { RootStackParamList } from '../App';
-import HeaderComponent from '../components/HeaderComponent'; // Importamos el nuevo componente
-
-// CONFIGURACIÓN API URL
-const API_URL = 'http://192.168.1.48:8000';
+import HeaderComponent from '../components/HeaderComponent';
+import { getData, storeData } from '../utils/storage';
+import api from '../utils/api';
 
 type OnboardingGeneralNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingGeneral'>;
 
+// Interfaz para la información del perfil
+interface ProfileData {
+  first_name: string;
+  weight_kg: number;
+  height_cm: number;
+}
+
 export default function OnboardingGeneralScreen() {
   const navigation = useNavigation<OnboardingGeneralNavigationProp>();
+  
+  // Estado del formulario
+  const [name, setName] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
+  
+  // Estado de la UI
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Verificar token al cargar la pantalla
+  // Verificar autenticación al cargar la pantalla
   useEffect(() => {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingGeneralScreen...");
-      const token = await SecureStore.getItemAsync('authToken');
-      console.log("Token en OnboardingGeneralScreen:", token ? "Existe" : "No existe");
+      const token = await getData('authToken');
       
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
@@ -51,63 +60,87 @@ export default function OnboardingGeneralScreen() {
     checkAuth();
   }, [navigation]);
 
-  const handleContinue = async () => {
-    setError(null);
-    setIsLoading(true);
+  // Validación de datos del formulario
+  const validateForm = (): boolean => {
+    // Validar nombre
+    if (!name.trim()) {
+      setError('Por favor, introduce tu nombre o alias.');
+      return false;
+    }
 
+    // Validar peso y altura
     const weightNum = parseFloat(weight);
     const heightNum = parseFloat(height);
     if (isNaN(weightNum) || isNaN(heightNum) || weightNum <= 0 || heightNum <= 0) {
       setError('Por favor, introduce un peso (kg) y altura (cm) válidos.');
+      return false;
+    }
+
+    return true;
+  };
+
+  // Enviar datos al servidor utilizando nuestro cliente API
+  const updateProfile = async (profileData: ProfileData): Promise<any> => {
+    try {
+      const response = await api.patch('/api/profiles/me/', profileData);
+      return response.data;
+    } catch (error) {
+      // El interceptor ya maneja el registro de errores
+      if (error.response) {
+        throw new Error(error.response.data?.error || error.response.data?.detail || 
+          `Error ${error.response.status}: No se pudo guardar el perfil.`);
+      }
+      throw error;
+    }
+  };
+
+  // Manejar el envío del formulario
+  const handleContinue = async () => {
+    setError(null);
+    setIsLoading(true);
+
+    // Validar formulario
+    if (!validateForm()) {
       setIsLoading(false);
       return;
     }
 
-    let token: string | null = null;
     try {
-      token = await SecureStore.getItemAsync('authToken');
+      // Verificar token (aunque el interceptor de API también lo hace)
+      const token = await getData('authToken');
       if (!token) {
         setError('Error crítico: No se encontró token. Por favor, inicia sesión de nuevo.');
         Alert.alert('Error de Autenticación', 'No se encontró token. Serás redirigido al Login.');
-        // Redirigir a Login si no hay token
         navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-        setIsLoading(false);
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/profiles/me/`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          weight_kg: weightNum,
-          height_cm: heightNum,
-        }),
-      });
+      // Preparar datos del perfil
+      const profileData: ProfileData = {
+        first_name: name,
+        weight_kg: parseFloat(weight),
+        height_cm: parseFloat(height)
+      };
 
-      if (!response.ok) {
-        const data = await response.json();
-        const errorMessage = data?.error || data?.detail || `Error ${response.status}: No se pudo guardar el perfil.`;
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      console.log("Perfil actualizado correctamente:", data);
+      // Enviar actualización al servidor
+      const profileResponse = await updateProfile(profileData);
+      console.log("Perfil actualizado correctamente:", profileResponse);
       
-      // Navegar al siguiente paso del onboarding
+      // Guardar nombre en almacenamiento local para uso posterior
+      await storeData('userName', name);
+      
+      // Navegar a la siguiente pantalla
       navigation.navigate('OnboardingGerdQ');
     } catch (err) {
       console.error("Error en handleContinue:", err);
       const message = err instanceof Error ? err.message : 'Ocurrió un error de red o conexión.';
       setError(message);
       
-      // Si el error es de autenticación (401), redirigir al login
+      // Si el error es de autenticación, redirigir al login
       if (message.includes('401') || message.includes('token')) {
         Alert.alert('Sesión expirada', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.', [
           { text: 'Ok', onPress: async () => {
-            await SecureStore.deleteItemAsync('authToken');
+            await storeData('authToken', '');
             navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
           }}
         ]);
@@ -121,7 +154,7 @@ export default function OnboardingGeneralScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Usamos nuestro nuevo componente de header */}
+      {/* Header */}
       <HeaderComponent />
       
       <KeyboardAvoidingView 
@@ -132,20 +165,36 @@ export default function OnboardingGeneralScreen() {
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.formContainer}>
               <Text style={styles.title}>Cuéntanos sobre ti</Text>
-              <Text style={styles.subtitle}>Introduce tu peso y altura actuales</Text>
+              <Text style={styles.subtitle}>Información básica para personalizar tu experiencia</Text>
 
+              {/* Nombre o alias */}
+              <Text style={styles.fieldLabel}>¿Cómo te llamas?</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Peso (ej: 75.5)"
+                placeholder="Tu nombre o alias"
+                placeholderTextColor="#999"
+                value={name}
+                onChangeText={setName}
+                editable={!isLoading}
+              />
+
+              {/* Peso */}
+              <Text style={styles.fieldLabel}>¿Cuál es tu peso actual?</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Peso en kg (ej: 75.5)"
                 placeholderTextColor="#999"
                 value={weight}
                 onChangeText={setWeight}
                 keyboardType="decimal-pad"
                 editable={!isLoading}
               />
+
+              {/* Altura */}
+              <Text style={styles.fieldLabel}>¿Cuál es tu altura?</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Altura (ej: 170)"
+                placeholder="Altura en cm (ej: 170)"
                 placeholderTextColor="#999"
                 value={height}
                 onChangeText={setHeight}
@@ -153,6 +202,7 @@ export default function OnboardingGeneralScreen() {
                 editable={!isLoading}
               />
 
+              {/* Botón de continuar o indicador de carga */}
               {isLoading ? (
                 <ActivityIndicator size="large" color="#0077B6" style={styles.activityIndicator} />
               ) : (
@@ -167,9 +217,10 @@ export default function OnboardingGeneralScreen() {
                 </TouchableOpacity>
               )}
 
+              {/* Mostrar errores si existen */}
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
               
-              {/* Espacio extra al final para asegurar que el botón es visible con teclado */}
+              {/* Espacio extra al final para asegurar que el contenido es visible con teclado */}
               <View style={styles.bottomPadding} />
             </View>
           </ScrollView>
@@ -208,6 +259,12 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
   },
+  fieldLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#005f73',
+    marginBottom: 8,
+  },
   input: {
     height: 50,
     backgroundColor: '#fff',
@@ -226,6 +283,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 10,
   },
   submitButtonText: {
     color: 'white',
@@ -242,6 +300,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   bottomPadding: {
-    height: 100, // Espacio extra para asegurar que el contenido se puede desplazar lo suficiente
+    height: 100,
   }
 });

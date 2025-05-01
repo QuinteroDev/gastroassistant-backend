@@ -1,6 +1,7 @@
 # questionnaires/models.py
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Questionnaire(models.Model):
     # Usamos CharField con Choices para identificar el tipo de cuestionario
@@ -80,3 +81,133 @@ class QuestionnaireCompletion(models.Model):
 
     def __str__(self):
         return f"{self.user.username} completed {self.questionnaire.name} at {self.completed_at} (Score: {self.score})"
+    
+class HabitQuestion(models.Model):
+    """
+    Preguntas del cuestionario de hábitos modificables para ERGE.
+    Cada pregunta tiene un código, texto y se califica de 0 a 3.
+    """
+    HABIT_TYPES = [
+        ('MEAL_SIZE', 'Cantidad de comida ingerida'),
+        ('DINNER_TIME', 'Tiempo entre cena y acostarse'),
+        ('LIE_DOWN', 'Acostarse tras comer'),
+        ('NIGHT_SYMPTOMS', 'Síntomas nocturnos'),
+        ('SMOKING', 'Consumo de tabaco'),
+        ('ALCOHOL', 'Consumo de alcohol'),
+        ('EXERCISE', 'Ejercicio físico regular'),
+        ('AVOID_TRIGGERS', 'Evitar alimentos que sientan mal'),
+        ('STRESS', 'Estrés y salud digestiva'),
+        ('HYDRATION_MEALS', 'Hidratación durante las comidas'),
+        ('HYDRATION_DAY', 'Hidratación general durante el día'),
+        ('CHEWING', 'Masticación de los alimentos')
+    ]
+    
+    habit_type = models.CharField(
+        max_length=20, 
+        choices=HABIT_TYPES,
+        unique=True,
+        verbose_name="Tipo de hábito"
+    )
+    text = models.CharField(max_length=255, verbose_name="Pregunta")
+    description = models.TextField(blank=True, verbose_name="Descripción adicional")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.get_habit_type_display()}"
+    
+    class Meta:
+        ordering = ['id']
+        verbose_name = "Pregunta de hábito"
+        verbose_name_plural = "Preguntas de hábitos"
+
+class HabitOption(models.Model):
+    """
+    Opciones de respuesta para cada pregunta del cuestionario de hábitos.
+    Cada opción tiene un valor de 0 a 3, donde 3 es el mejor cumplimiento.
+    """
+    question = models.ForeignKey(
+        HabitQuestion, 
+        on_delete=models.CASCADE, 
+        related_name='options',
+        verbose_name="Pregunta"
+    )
+    text = models.CharField(max_length=255, verbose_name="Texto de la opción")
+    value = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(3)],
+        verbose_name="Valor (0-3)"
+    )
+    order = models.PositiveIntegerField(default=0, verbose_name="Orden")
+    
+    def __str__(self):
+        return f"{self.question} - {self.text} ({self.value})"
+    
+    class Meta:
+        ordering = ['question', 'order']
+        verbose_name = "Opción de hábito"
+        verbose_name_plural = "Opciones de hábitos"
+
+class UserHabitAnswer(models.Model):
+    """
+    Respuestas del usuario al cuestionario de hábitos.
+    """
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE,
+        related_name='habit_answers',
+        verbose_name="Usuario"
+    )
+    question = models.ForeignKey(
+        HabitQuestion,
+        on_delete=models.CASCADE,
+        verbose_name="Pregunta de hábito"
+    )
+    selected_option = models.ForeignKey(
+        HabitOption,
+        on_delete=models.CASCADE,
+        verbose_name="Opción seleccionada"
+    )
+    answered_at = models.DateTimeField(auto_now_add=True)
+    is_onboarding = models.BooleanField(default=True, verbose_name="Es parte del onboarding")
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.question.get_habit_type_display()} ({self.selected_option.value})"
+    
+    class Meta:
+        unique_together = ('user', 'question', 'is_onboarding')
+        ordering = ['-answered_at']
+        verbose_name = "Respuesta de hábito del usuario"
+        verbose_name_plural = "Respuestas de hábitos del usuario"
+
+class HabitRecommendation(models.Model):
+    """
+    Recomendaciones basadas en los hábitos del usuario.
+    Se activarán según la puntuación en cada hábito.
+    """
+    habit_type = models.CharField(
+        max_length=20, 
+        choices=HabitQuestion.HABIT_TYPES,
+        verbose_name="Tipo de hábito"
+    )
+    title = models.CharField(max_length=255, verbose_name="Título")
+    content = models.TextField(verbose_name="Contenido de la recomendación")
+    min_score = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(3)],
+        verbose_name="Puntuación mínima para activar"
+    )
+    max_score = models.IntegerField(
+        default=3,
+        validators=[MinValueValidator(0), MaxValueValidator(3)],
+        verbose_name="Puntuación máxima para activar"
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Está activa")
+    
+    def __str__(self):
+        return f"{self.get_habit_type_display()} ({self.min_score}-{self.max_score})"
+    
+    class Meta:
+        ordering = ['habit_type', 'min_score']
+        verbose_name = "Recomendación de hábito"
+        verbose_name_plural = "Recomendaciones de hábitos"

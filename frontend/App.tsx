@@ -1,3 +1,4 @@
+// App.tsx
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import {
@@ -7,37 +8,55 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
 
-// Importaciones de pantallas
+// Importaciones de pantallas existentes
 import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import OnboardingWelcomeScreen from './screens/OnboardingWelcomeScreen'; 
 import OnboardingGeneralScreen from './screens/OnboardingGeneralScreen';
 import OnboardingGerdQScreen from './screens/OnboardingGerdQScreen';
-import OnboardingRsiScreen from './screens/OnboardingRsiScreen'; // Nueva importación
-import OnboardingHabitsScreen from './screens/OnboardingHabitsScreen'; // Nueva importación
-import TrackerScreen from './screens/TrackerScreen'; // Nueva importación
+import OnboardingRsiScreen from './screens/OnboardingRsiScreen';
+import OnboardingClinicalFactorsScreen from './screens/OnboardingClinicalFactorsScreen';
+import OnboardingDiagnosticTestsScreen from './screens/OnboardingDiagnosticTestsScreen';
+import OnboardingHabitsScreen from './screens/OnboardingHabitsScreen';
+import PhenotypeResultScreen from './screens/PhenotypeResultScreen';
+import GeneratingProgramScreen from './screens/GeneratingProgramScreen';
+import ProgramDetailsScreen from './screens/ProgramDetailsScreen';
+import TrackerScreen from './screens/TrackerScreen';
 
 // Tipos para las rutas
 export type RootStackParamList = {
   Login: undefined;
-  Home: undefined;
   Register: undefined;
+  Home: undefined;
+  OnboardingWelcome: undefined;
   OnboardingGeneral: undefined;
   OnboardingGerdQ: undefined;
-  OnboardingRsi: undefined;  // Nueva ruta
-  OnboardingHabits: undefined;  // Nueva ruta
-  Tracker: undefined;  // Nueva ruta
+  OnboardingRsi: undefined;
+  OnboardingClinicalFactors: undefined;
+  OnboardingDiagnosticTests: undefined;
+  OnboardingHabits: undefined;
+  PhenotypeResult: undefined;
+  GeneratingProgram: undefined;
+  ProgramDetails: undefined;
+  Tracker: undefined;
 };
 
 // Tipos de props para cada pantalla
 export type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
 export type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 export type RegisterScreenProps = NativeStackScreenProps<RootStackParamList, 'Register'>;
+export type OnboardingWelcomeScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingWelcome'>;
 export type OnboardingGeneralScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingGeneral'>;
 export type OnboardingGerdQScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingGerdQ'>;
-export type OnboardingRsiScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingRsi'>; // Nuevas props
-export type OnboardingHabitsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingHabits'>; // Nuevas props
-export type TrackerScreenProps = NativeStackScreenProps<RootStackParamList, 'Tracker'>; // Nuevas props
+export type OnboardingRsiScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingRsi'>;
+export type OnboardingClinicalFactorsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingClinicalFactors'>;
+export type OnboardingDiagnosticTestsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingDiagnosticTests'>;
+export type OnboardingHabitsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingHabits'>;
+export type PhenotypeResultScreenProps = NativeStackScreenProps<RootStackParamList, 'PhenotypeResult'>;
+export type GeneratingProgramScreenProps = NativeStackScreenProps<RootStackParamList, 'GeneratingProgram'>;
+export type ProgramDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ProgramDetails'>;
+export type TrackerScreenProps = NativeStackScreenProps<RootStackParamList, 'Tracker'>;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -85,6 +104,7 @@ export default function App() {
       <Stack.Navigator 
         initialRouteName="Login"
       >
+        {/* Pantallas de autenticación */}
         <Stack.Screen
           name="Login"
           component={LoginScreen}
@@ -95,18 +115,29 @@ export default function App() {
           component={RegisterScreen}
           options={{ title: 'Registro' }}
         />
+        
+        {/* Pantalla principal */}
         <Stack.Screen
           name="Home"
           component={HomeScreen}
           options={{ title: 'Inicio' }}
+        />
+        
+        {/* Flujo de onboarding - Ordenado según la pantalla de bienvenida */}
+        <Stack.Screen
+          name="OnboardingWelcome"
+          component={OnboardingWelcomeScreen}
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false
+          }}
         />
         <Stack.Screen
           name="OnboardingGeneral"
           component={OnboardingGeneralScreen}
           options={{ 
             title: 'Información General',
-            // Prevenir que el usuario vuelva atrás al login con un gesto
-            headerLeft: () => null,
+            headerBackVisible: false,
             gestureEnabled: false
           }}
         />
@@ -115,8 +146,8 @@ export default function App() {
           component={OnboardingGerdQScreen}
           options={{ 
             title: 'Cuestionario GerdQ',
-            // Prevenir que el usuario vuelva atrás al paso anterior usando el botón
-            headerBackVisible: false
+            headerBackVisible: false,
+            gestureEnabled: false
           }}
         />
         <Stack.Screen
@@ -124,8 +155,26 @@ export default function App() {
           component={OnboardingRsiScreen}
           options={{ 
             title: 'Cuestionario RSI',
-            // Prevenir que el usuario vuelva atrás al paso anterior usando el botón
-            headerBackVisible: false
+            headerBackVisible: false,
+            gestureEnabled: false
+          }}
+        />
+        <Stack.Screen
+          name="OnboardingClinicalFactors"
+          component={OnboardingClinicalFactorsScreen}
+          options={{ 
+            title: 'Factores Clínicos',
+            headerBackVisible: false,
+            gestureEnabled: false
+          }}
+        />
+        <Stack.Screen
+          name="OnboardingDiagnosticTests"
+          component={OnboardingDiagnosticTestsScreen}
+          options={{ 
+            title: 'Pruebas Diagnósticas',
+            headerBackVisible: false,
+            gestureEnabled: false
           }}
         />
         <Stack.Screen
@@ -133,8 +182,36 @@ export default function App() {
           component={OnboardingHabitsScreen}
           options={{ 
             title: 'Cuestionario de Hábitos',
-            // Prevenir que el usuario vuelva atrás al paso anterior usando el botón
-            headerBackVisible: false
+            headerBackVisible: false,
+            gestureEnabled: false
+          }}
+        />
+        
+        {/* Pantallas de resultados y seguimiento */}
+        <Stack.Screen
+          name="PhenotypeResult"
+          component={PhenotypeResultScreen}
+          options={{ 
+            title: 'Tu Perfil',
+            headerBackVisible: false,
+            gestureEnabled: false
+          }}
+        />
+        <Stack.Screen
+          name="GeneratingProgram"
+          component={GeneratingProgramScreen}
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false
+          }}
+        />
+        <Stack.Screen
+          name="ProgramDetails"
+          component={ProgramDetailsScreen}
+          options={{ 
+            title: 'Mi Programa',
+            headerBackVisible: true,
+            gestureEnabled: true
           }}
         />
         <Stack.Screen
