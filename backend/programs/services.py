@@ -40,19 +40,27 @@ class ProgramAssignmentService:
         - EROSIVE -> 'A'
         - NERD -> 'B'
         - EXTRAESOPHAGEAL -> 'C'
-        - FUNCTIONAL, SYMPTOMS_NO_TESTS, EXTRAESOPHAGEAL_NO_TESTS, NO_SYMPTOMS -> 'D'
+        - Otros (FUNCTIONAL, SYMPTOMS_NO_TESTS, etc.) -> 'D'
         """
         phenotype = user_profile.phenotype
+        scenario = user_profile.scenario
         
-        if phenotype == 'EROSIVE':
+        # Escenarios A, J -> EROSIVE -> Programa A
+        if phenotype == 'EROSIVE' or scenario in ['A', 'J']:
             return 'A'
-        elif phenotype == 'NERD':
+        
+        # Escenarios B, K -> NERD -> Programa B
+        elif phenotype == 'NERD' or scenario in ['B', 'K']:
             return 'B'
-        elif phenotype == 'EXTRAESOPHAGEAL':
+        
+        # Escenarios C, L -> EXTRAESOPHAGEAL -> Programa C
+        elif phenotype == 'EXTRAESOPHAGEAL' or scenario in ['C', 'L']:
             return 'C'
+        
+        # Escenarios D, E, F, G, H, I -> Programa D
         else:
-            return 'D'  # Para los demás fenotipos, asignar el programa D
-    
+            return 'D'
+        
     @staticmethod
     def assign_program(user):
         """

@@ -161,16 +161,16 @@ class SubmitQuestionnaireAnswersView(APIView):
                     # Verificar si ha completado todos los cuestionarios necesarios
                     all_questionnaires_done = all([
                         QuestionnaireCompletion.objects.filter(
-                            user=user, 
+                            user=user,
                             questionnaire__type=q_type,
                             is_onboarding=True
-                        ).exists() 
-                        for q_type in ['GERDQ', 'RSI']
-                    ]) 
+                        ).exists()
+                        for q_type in ['GERDQ', 'RSI', 'HABITS']  # Añadir HABITS aquí
+                    ])
                     
                     # También verificar si completó la información básica
                     profile_complete = (
-                        user_profile.weight_kg is not None and 
+                        user_profile.weight_kg is not None and
                         user_profile.height_cm is not None
                     )
                     
@@ -272,6 +272,55 @@ class SubmitHabitQuestionnaireView(APIView):
             
             saved_answers.append(user_answer)
         
+        # NUEVO: Crear un registro de completion para el cuestionario de hábitos
+        try:
+            # Obtener o crear el cuestionario de hábitos
+            habits_questionnaire, _ = Questionnaire.objects.get_or_create(
+                type='HABITS',
+                defaults={
+                    'name': 'Cuestionario de Hábitos',
+                    'title': 'Hábitos Digestivos',
+                    'description': 'Preguntas sobre hábitos relacionados con la salud digestiva.'
+                }
+            )
+            
+            # Crear un registro de finalización para este cuestionario
+            completion = QuestionnaireCompletion.objects.create(
+                user=request.user,
+                questionnaire=habits_questionnaire,
+                score=None,  # No hay puntaje para los hábitos
+                is_onboarding=True
+            )
+            
+            # Verificar si ya completó todos los demás cuestionarios requeridos
+            gerdq_done = QuestionnaireCompletion.objects.filter(
+                user=request.user,
+                questionnaire__type='GERDQ',
+                is_onboarding=True
+            ).exists()
+            
+            rsi_done = QuestionnaireCompletion.objects.filter(
+                user=request.user,
+                questionnaire__type='RSI',
+                is_onboarding=True
+            ).exists()
+            
+            # Verificar si el perfil tiene la información básica
+            user_profile = request.user.profile
+            profile_complete = (
+                user_profile.weight_kg is not None and
+                user_profile.height_cm is not None
+            )
+            
+            # Si ha completado todo lo necesario, marcar el onboarding como completo
+            if gerdq_done and rsi_done and profile_complete:
+                user_profile.onboarding_complete = True
+                user_profile.save()
+                print(f"Onboarding completado para usuario {request.user.username}")
+        except Exception as e:
+            print(f"Error al procesar completion de hábitos: {e}")
+            # Continuar con el proceso aunque haya un error
+        
         # Configurar el seguimiento de hábitos para el usuario
         from recommendations.services import HabitTrackingService
         trackers = HabitTrackingService.setup_habit_tracking(request.user)
@@ -286,5 +335,6 @@ class SubmitHabitQuestionnaireView(APIView):
             'answers_count': len(saved_answers),
             'trackers_created': len(trackers),
             'recommendations_generated': len(recommendations),
-            'prioritized_recommendations': len(prioritized)
+            'prioritized_recommendations': len(prioritized),
+            'onboarding_complete': getattr(request.user.profile, 'onboarding_complete', False)
         }, status=status.HTTP_201_CREATED)

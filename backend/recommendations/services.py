@@ -81,7 +81,7 @@ class RecommendationService:
         """Obtiene recomendaciones basadas en factores clínicos del usuario."""
         profile = user.profile
         recommendations = []
-        
+
         # Mapeo de campos del perfil a tipos de recomendación
         factor_mapping = {
             'has_hernia': ('HERNIA', 'YES'),
@@ -90,7 +90,7 @@ class RecommendationService:
             'has_dry_mouth': ('SALIVA', 'YES'),
             'has_constipation': ('CONSTIPATION', 'YES')
         }
-        
+
         # Revisar cada factor
         for profile_field, (rec_type, condition) in factor_mapping.items():
             if getattr(profile, profile_field) == 'YES':
@@ -100,7 +100,7 @@ class RecommendationService:
                     is_active=True
                 )
                 recommendations.extend(factor_recs)
-        
+
         # Estrés/ansiedad como caso especial
         if profile.stress_affects in ['YES', 'SOMETIMES']:
             stress_recs = ConditionalRecommendation.objects.filter(
@@ -109,7 +109,7 @@ class RecommendationService:
                 is_active=True
             )
             recommendations.extend(stress_recs)
-        
+
         return recommendations
     
     @staticmethod

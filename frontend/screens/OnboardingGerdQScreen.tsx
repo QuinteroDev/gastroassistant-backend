@@ -135,90 +135,89 @@ export default function OnboardingGerdQScreen() {
   };
   
   // Enviar respuestas
-// Enviar respuestas
-const handleSubmit = async () => {
-  // Validar que todas las preguntas tienen respuesta
-  if (
-    !questionnaire?.questions || 
-    questionnaire.questions.length === 0 || 
-    Object.keys(answers).length !== questionnaire.questions.length
-  ) {
-    Alert.alert('Incompleto', 'Por favor, responde todas las preguntas del cuestionario.');
-    return;
-  }
-
-  setIsSubmitting(true);
-  setError(null);
-
-  try {
-    // Formatear las respuestas para enviar al API
-    const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
-      question_id: parseInt(questionId),
-      selected_option_id: optionId
-    }));
-
-    console.log("Enviando respuestas:", answersData);
-    
-    const response = await api.post(`/api/questionnaires/${GERDQ_QUESTIONNAIRE_ID}/submit/`, {
-      answers: answersData
-    });
-
-    console.log("Respuestas enviadas correctamente:", response.data);
-    
-    // Mostrar resultado y navegar al siguiente cuestionario RSI
-    let message = 'Has completado el cuestionario GerdQ. ';
-    if (response.data.score !== undefined) {
-      message += `\nTu puntuación es: ${response.data.score}`;
+  const handleSubmit = async () => {
+    // Validar que todas las preguntas tienen respuesta
+    if (
+      !questionnaire?.questions || 
+      questionnaire.questions.length === 0 || 
+      Object.keys(answers).length !== questionnaire.questions.length
+    ) {
+      Alert.alert('Incompleto', 'Por favor, responde todas las preguntas del cuestionario.');
+      return;
     }
-    
-    // Navegación directa sin esperar al Alert
-    console.log("Intentando navegar a OnboardingRsi...");
-    
-    // OPCIÓN 1: Intentar navegar primero y luego mostrar el Alert
-    navigation.navigate('OnboardingRsi');
-    
-    Alert.alert(
-      "Cuestionario Completado",
-      message,
-      [
-        { 
-          text: "Continuar", 
-          onPress: () => {
-            // OPCIÓN 2: Intentar navegar nuevamente después de que el usuario presione "Continuar"
-            console.log("Navegando a OnboardingRsi desde el botón de alerta...");
-            navigation.navigate('OnboardingRsi');
-          }
-        }
-      ]
-    );
-  } catch (err) {
-    console.error("Error al enviar respuestas:", err);
-    let message = "Error al enviar las respuestas";
-    
-    if (err.response && err.response.status === 401) {
-      message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Formatear las respuestas para enviar al API
+      const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
+        question_id: parseInt(questionId),
+        selected_option_id: optionId
+      }));
+
+      console.log("Enviando respuestas:", answersData);
+      
+      const response = await api.post(`/api/questionnaires/${GERDQ_QUESTIONNAIRE_ID}/submit/`, {
+        answers: answersData
+      });
+
+      console.log("Respuestas enviadas correctamente:", response.data);
+      
+      // Mostrar resultado y navegar al siguiente cuestionario RSI
+      let message = 'Has completado el cuestionario GerdQ. ';
+      if (response.data.score !== undefined) {
+        message += `\nTu puntuación es: ${response.data.score}`;
+      }
+      
+      // Navegación directa sin esperar al Alert
+      console.log("Intentando navegar a OnboardingRsi...");
+      
+      // OPCIÓN 1: Intentar navegar primero y luego mostrar el Alert
+      navigation.navigate('OnboardingRsi');
       
       Alert.alert(
-        "Sesión expirada",
+        "Cuestionario Completado",
         message,
-        [{ text: "Ir a Login", onPress: () => {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Login' }],
-          });
-        }}]
+        [
+          { 
+            text: "Continuar", 
+            onPress: () => {
+              // OPCIÓN 2: Intentar navegar nuevamente después de que el usuario presione "Continuar"
+              console.log("Navegando a OnboardingRsi desde el botón de alerta...");
+              navigation.navigate('OnboardingRsi');
+            }
+          }
+        ]
       );
-    } else if (err.response && err.response.data && err.response.data.detail) {
-      message = err.response.data.detail;
-      Alert.alert("Error", message);
-    } else {
-      setError(message);
-      Alert.alert("Error", message);
+    } catch (err) {
+      console.error("Error al enviar respuestas:", err);
+      let message = "Error al enviar las respuestas";
+      
+      if (err.response && err.response.status === 401) {
+        message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+        
+        Alert.alert(
+          "Sesión expirada",
+          message,
+          [{ text: "Ir a Login", onPress: () => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          }}]
+        );
+      } else if (err.response && err.response.data && err.response.data.detail) {
+        message = err.response.data.detail;
+        Alert.alert("Error", message);
+      } else {
+        setError(message);
+        Alert.alert("Error", message);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   // Verificar si todas las preguntas tienen respuesta
   const allQuestionsAnswered = questionnaire?.questions && 

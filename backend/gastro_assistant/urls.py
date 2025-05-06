@@ -2,28 +2,22 @@
 from django.contrib import admin
 from django.urls import path, include
 
-
 urlpatterns = [
     path('admin/', admin.site.urls),
-
+    
     # URLs de autenticación (registro/login)
-    path('api/users/', include('users.urls')), # Prefijo 'api/users/'
-
+    path('api/users/', include('users.urls')),
+    
     # URLs de perfiles
-    path('api/profiles/', include('profiles.urls')), # Prefijo 'api/profiles/'
-
+    path('api/profiles/', include('profiles.urls')),
+    
     # URLs de cuestionarios
-    path('api/questionnaires/', include('questionnaires.urls')), # Prefijo 'api/questionnaires/'
-
+    path('api/questionnaires/', include('questionnaires.urls')),
+    
     # Endpoints de programas de tratamiento
-    path('programs/', include('programs.urls')),
-
-    path('recommendations/', include('recommendations.urls')),
-
-    path('habits/', include('habits.urls')),
-
-
-
-
-
+    path('api/programs/', include('programs.urls')),  # CAMBIAR AQUÍ: añadir "api/"
+    
+    path('api/recommendations/', include('recommendations.urls')),  # CAMBIAR AQUÍ: añadir "api/"
+    
+    path('api/habits/', include('habits.urls')),  # CAMBIAR AQUÍ: añadir "api/"
 ]

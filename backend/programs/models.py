@@ -13,10 +13,13 @@ class TreatmentProgram(models.Model):
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=1, choices=PROGRAM_TYPES)
     description = models.TextField()
+    detailed_content = models.TextField(blank=True, null=True, help_text="Contenido detallado del programa en formato HTML o markdown")
+    color_primary = models.CharField(max_length=7, default="#0077B6", help_text="Color primario del programa en formato HEX")
+    color_secondary = models.CharField(max_length=7, default="#00B4D8", help_text="Color secundario del programa en formato HEX")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
         return f"{self.get_type_display()} - {self.name}"
     

@@ -118,7 +118,7 @@ export default function OnboardingDiagnosticTestsScreen() {
       
       // Navegar a la pantalla de resultado de fenotipo o a la siguiente en el flujo
       if (phenotype && phenotype !== 'UNDETERMINED') {
-        navigation.navigate('PhenotypeResult');
+        navigation.navigate('OnboardingHabits');
       } else {
         // En caso de que no haya un fenotipo determinado, seguir con el flujo de onboarding
         Alert.alert(

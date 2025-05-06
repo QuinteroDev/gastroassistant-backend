@@ -90,8 +90,15 @@ export default function LoginScreen() {
             await storeData('authToken', data.token);
             console.log("Token guardado correctamente");
             
-            // Navegar según el valor de onboarding_completed
-            const destination = data.onboarding_completed ? 'Home' : 'OnboardingWelcome';
+            // Verificamos los campos exactos que vienen del backend
+            console.log("Valor original de onboarding_complete:", data.onboarding_complete);
+            
+            // IMPORTANTE: Asegurarnos de acceder al campo correcto según la respuesta del backend
+            const onboardingCompleted = data.onboarding_complete === true;
+            console.log("Estado de onboarding_completed interpretado:", onboardingCompleted);
+            
+            // Navegar según el valor de onboarding_complete
+            const destination = onboardingCompleted ? 'Home' : 'OnboardingWelcome';
             console.log("Navegando a:", destination);
             
             navigation.reset({

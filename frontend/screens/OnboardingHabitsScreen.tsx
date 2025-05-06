@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import HeaderComponent from '../components/HeaderComponent';
 import api from '../utils/api';
-import { getData } from '../utils/storage';
+import { getData, storeData } from '../utils/storage';
 import { Ionicons } from '@expo/vector-icons';
 
 type OnboardingHabitsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingHabits'>;
@@ -163,12 +163,48 @@ export default function OnboardingHabitsScreen() {
       const response = await api.post('/api/questionnaires/habits/submit/', {
         answers: answersData
       });
-      
+
       console.log("Respuestas de hábitos enviadas correctamente:", response.data);
+
+      // Actualizar el perfil del usuario para marcar el onboarding como completado
+      try {
+        // Hacer TRES intentos para asegurar que el valor se actualiza correctamente
+        for (let i = 0; i < 3; i++) {
+          const profileResponse = await api.patch('/api/profiles/me/', {
+            onboarding_complete: true
+          });
+          console.log(`Intento ${i+1} - Onboarding marcado como completado:`, profileResponse.data);
+          
+          // Verificar que el valor se ha actualizado correctamente
+          if (profileResponse.data && profileResponse.data.onboarding_complete === true) {
+            console.log("✅ Confirmado: onboarding_complete se ha actualizado correctamente");
+            break;
+          }
+          
+          // Si no se actualizó correctamente, esperar un momento y reintentar
+          if (i < 2) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        
+        // También actualizar directamente la API de usuarios para mayor seguridad
+        try {
+          const userUpdateResponse = await api.post('/api/users/update_onboarding/', {
+            onboarding_complete: true
+          });
+          console.log("Actualización adicional de onboarding en la API de usuarios:", userUpdateResponse.data);
+        } catch (userErr) {
+          console.warn("No se pudo actualizar onboarding en la API de usuarios:", userErr);
+          // Continuar aunque falle este paso
+        }
+      } catch (profileErr) {
+        console.error("Error al actualizar el perfil para marcar onboarding como completado:", profileErr);
+        // Continuar con la navegación aunque falle la actualización del perfil
+      }
       
-      // Navegar directamente a la pantalla de resultados de fenotipo
-      console.log("Intentando navegar a PhenotypeResult...");
-      navigation.navigate('PhenotypeResult');
+      // Navegar a la pantalla de generación de programa
+      console.log("Navegando a GeneratingProgram...");
+      navigation.navigate('GeneratingProgram');
       
       // Mostrar mensaje de éxito después de iniciar la navegación
       Alert.alert(

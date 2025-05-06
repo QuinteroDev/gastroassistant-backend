@@ -1,11 +1,15 @@
+
 [
   {
     "model": "programs.treatmentprogram",
     "pk": 1,
     "fields": {
-      "name": "Programa Completo ERGE y LPR",
+      "name": "Programa de Tratamiento ERGE Erosiva",
       "type": "A",
-      "description": "Programa de tratamiento integral para pacientes con síntomas positivos tanto de reflujo gastroesofágico como de reflujo laringofaríngeo.",
+      "description": "Programa de tratamiento específico para pacientes con reflujo gastroesofágico erosivo confirmado por endoscopia.",
+      "detailed_content": "# Programa Personalizado: ERGE Erosiva\n\n## ¿Qué significa tu perfil?\nEn tu endoscopia se ha identificado una inflamación en el esófago, conocida como **esofagitis erosiva**. Esto confirma que tu reflujo está generando daño en el tejido esofágico, y requiere un abordaje médico adecuado.\n\n## ¿Por qué es importante prestarle atención?\n* La esofagitis puede producir síntomas como ardor, molestias al tragar, acidez o incluso dolor torácico.\n* En algunos casos, si no se trata bien, puede dar lugar a complicaciones como úlceras, estrechamiento del esófago o un tipo especial de cambio en la mucosa (llamado esófago de Barrett).\n* Por eso, este tipo de reflujo **siempre debe ser supervisado por tu médico**.\n\n## ¿Qué puedes hacer tú para mejorar?\nAunque el tratamiento médico es esencial, hay muchas cosas que puedes hacer desde tu día a día para favorecer la recuperación:\n* **Evita acostarte justo después de comer.** Espera al menos 2 horas antes de tumbarte o irte a dormir.\n* **Evita las comidas muy copiosas**, especialmente por la noche.\n* **Eleva el cabecero de la cama** si tienes molestias al dormir (puedes usar un alza o cuñas, no solo almohadas).\n* **Reduce o elimina el tabaco y el alcohol**, ya que pueden irritar la mucosa y empeorar el reflujo.\n* **Pierde peso si tienes sobrepeso**, ya que está demostrado que mejora los síntomas y favorece el control del reflujo.\n\n## ¿Y el tratamiento médico?\nEsta condición requiere **un seguimiento profesional y posible tratamiento con medicación específica**, indicado por tu médico.\nSi no estás en tratamiento actualmente o tienes síntomas persistentes, **te recomendamos consultar lo antes posible con tu especialista**.",
+      "color_primary": "#2DC653",
+      "color_secondary": "#3DD15F",
       "is_active": true,
       "created_at": "2023-06-01T00:00:00Z",
       "updated_at": "2023-06-01T00:00:00Z"
@@ -15,9 +19,12 @@
     "model": "programs.treatmentprogram",
     "pk": 2,
     "fields": {
-      "name": "Programa ERGE",
+      "name": "Programa de Tratamiento ERGE No Erosiva",
       "type": "B",
-      "description": "Programa enfocado en el manejo del reflujo gastroesofágico para pacientes con GerdQ positivo pero sin síntomas significativos de reflujo laringofaríngeo.",
+      "description": "Programa para pacientes con reflujo gastroesofágico no erosivo (NERD), confirmado con pH-metría positiva pero endoscopia normal.",
+      "detailed_content": "# Programa Personalizado: ERGE No Erosiva (NERD)\n\n## ¿Qué significa tu perfil?\nTienes síntomas claros de reflujo, pero tu endoscopia no muestra lesiones visibles en el esófago. Sin embargo, las pruebas funcionales como la pH-metría han detectado una exposición anormal al reflujo ácido.\nEsto se conoce como **ERGE no erosiva** o NERD, y es una forma muy frecuente de reflujo.\n\n## ¿Por qué es importante tenerlo en cuenta?\n* Aunque no haya daño visible, los síntomas pueden ser igual de molestos o incapacitantes que en otros tipos de reflujo.\n* Muchas veces, este tipo de reflujo **no responde del todo a la medicación** y requiere una atención especial a los hábitos diarios.\n* Es importante **no subestimar** este perfil, ya que un buen manejo puede mejorar mucho tu calidad de vida.\n\n## ¿Qué puedes hacer tú para mejorar?\nLa guía clínica sugiere que en estos casos las medidas de estilo de vida pueden marcar la diferencia:\n* **Evita las comidas muy abundantes**, especialmente si vas a estar inactivo o tumbado después.\n* **No te acuestes inmediatamente después de comer.** Espera al menos dos horas.\n* **Reduce el consumo de tabaco y alcohol**, si los tomas.\n* Si tienes sobrepeso, **perder algo de peso puede ayudarte mucho** con los síntomas.\n* **Elevar ligeramente el cabecero de la cama** puede ayudarte si tienes molestias por la noche.\n\n## ¿Y el seguimiento médico?\nAunque tu endoscopia sea normal, es importante que sigas en contacto con tu médico si los síntomas persisten o interfieren con tu día a día.\nEn algunos casos puede ser necesario ajustar el enfoque terapéutico o realizar seguimiento adicional.",
+      "color_primary": "#FFD166",
+      "color_secondary": "#FFDA85",
       "is_active": true,
       "created_at": "2023-06-01T00:00:00Z",
       "updated_at": "2023-06-01T00:00:00Z"
@@ -27,9 +34,12 @@
     "model": "programs.treatmentprogram",
     "pk": 3,
     "fields": {
-      "name": "Programa LPR",
+      "name": "Programa de Tratamiento Reflujo Extraesofágico",
       "type": "C",
-      "description": "Programa especializado para el manejo del reflujo laringofaríngeo en pacientes con RSI positivo pero sin síntomas significativos de reflujo gastroesofágico.",
+      "description": "Programa específico para pacientes con síntomas de reflujo extraesofágico (laríngeo/respiratorio).",
+      "detailed_content": "# Programa Personalizado: Reflujo Extraesofágico\n\n## ¿Qué significa tu perfil?\nTus síntomas se relacionan con la garganta o el aparato respiratorio superior: carraspeo, ronquera, tos crónica, sensación de cuerpo extraño, etc.\nEstos casos se asocian con lo que se conoce como **reflujo extraesofágico** o \"reflujo silencioso\".\n\n## ¿Por qué es importante entenderlo?\n* Este tipo de reflujo no siempre causa ardor o molestias típicas, por eso puede pasar desapercibido.\n* A veces se relaciona con el ascenso de pequeñas cantidades de ácido o contenido gástrico hacia la zona de la laringe o faringe.\n* Según la guía clínica, **la relación entre estos síntomas y el reflujo no siempre está clara**, pero muchos pacientes mejoran al modificar sus hábitos.\n\n## ¿Qué puedes hacer tú para mejorar?\nAunque no hay una fórmula única, hay varios factores del día a día que pueden influir en este tipo de síntomas:\n* **Evita las cenas copiosas o muy tardías.** Es ideal cenar ligero y al menos 2–3 horas antes de acostarte.\n* **No te tumbes inmediatamente después de comer.**\n* **Evita comidas que notes que aumentan la mucosidad o el carraspeo.**\n* Si tienes síntomas nocturnos, puede ayudar **elevar ligeramente el cabecero de la cama**.\n* **Reducir el alcohol y el tabaco**, si están presentes, también puede ser beneficioso.\n\n## ¿Y el seguimiento médico?\nLa guía recomienda que si estos síntomas persisten, **puede ser útil una evaluación adicional por otorrinolaringología o neumología**, especialmente si no hay mejora tras cambios en el estilo de vida.\nHabla con tu médico si los síntomas se mantienen o interfieren en tu vida diaria.",
+      "color_primary": "#3A86FF",
+      "color_secondary": "#61A0FF",
       "is_active": true,
       "created_at": "2023-06-01T00:00:00Z",
       "updated_at": "2023-06-01T00:00:00Z"
@@ -39,9 +49,12 @@
     "model": "programs.treatmentprogram",
     "pk": 4,
     "fields": {
-      "name": "Programa Preventivo",
+      "name": "Programa de Prevención y Bienestar Digestivo",
       "type": "D",
-      "description": "Programa de prevención y mantenimiento para pacientes con síntomas leves o sin síntomas significativos de reflujo, enfocado en desarrollar hábitos saludables.",
+      "description": "Programa preventivo y de mantenimiento para personas con síntomas leves, funcionales o sin síntomas.",
+      "detailed_content": "# Programa Personalizado: Bienestar Digestivo\n\n## ¿Qué significa tu perfil?\nSegún tus respuestas, tienes un perfil que puede corresponder a alguna de estas situaciones:\n* Tienes síntomas pero las pruebas realizadas no muestran un reflujo clásico (hipersensibilidad funcional)\n* Tienes síntomas pero aún no te has realizado pruebas diagnósticas\n* No presentas síntomas significativos de reflujo en este momento\n\n## ¿Por qué es importante entenderlo?\n* Incluso sin un diagnóstico confirmado o lesiones, tus síntomas son reales y merecen atención\n* Los cambios en el estilo de vida pueden mejorar significativamente tu bienestar digestivo\n* La prevención es clave para mantener una buena salud digestiva a largo plazo\n\n## ¿Qué puedes hacer para mejorar o prevenir problemas?\n* Come tranquilo, sin prisas ni distracciones\n* Evita comidas excesivas o muy tardías, especialmente si vas a acostarte después\n* Mantén horarios regulares y una alimentación variada, según tu tolerancia\n* Haz actividad física moderada a diario\n* Hidrátate bien, pero sin excesos durante las comidas\n* Intenta no fumar y limitar el alcohol, si lo consumes\n\n## ¿Y si aparecen o persisten los síntomas?\nSi experimentas ardor, acidez, molestias digestivas, tos persistente o sensación de reflujo que afectan tu calidad de vida, **te recomendamos consultar con un médico**.\nLa evaluación profesional puede ayudarte a entender mejor qué está ocurriendo y cómo abordarlo.",
+      "color_primary": "#9D4EDD",
+      "color_secondary": "#B76EF0",
       "is_active": true,
       "created_at": "2023-06-01T00:00:00Z",
       "updated_at": "2023-06-01T00:00:00Z"

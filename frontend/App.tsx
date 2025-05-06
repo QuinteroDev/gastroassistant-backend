@@ -10,7 +10,6 @@ import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
 
 // Importaciones de pantallas existentes
 import LoginScreen from './screens/LoginScreen';
-import HomeScreen from './screens/HomeScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import OnboardingWelcomeScreen from './screens/OnboardingWelcomeScreen'; 
 import OnboardingGeneralScreen from './screens/OnboardingGeneralScreen';
@@ -19,10 +18,13 @@ import OnboardingRsiScreen from './screens/OnboardingRsiScreen';
 import OnboardingClinicalFactorsScreen from './screens/OnboardingClinicalFactorsScreen';
 import OnboardingDiagnosticTestsScreen from './screens/OnboardingDiagnosticTestsScreen';
 import OnboardingHabitsScreen from './screens/OnboardingHabitsScreen';
-import PhenotypeResultScreen from './screens/PhenotypeResultScreen';
 import GeneratingProgramScreen from './screens/GeneratingProgramScreen';
 import ProgramDetailsScreen from './screens/ProgramDetailsScreen';
 import TrackerScreen from './screens/TrackerScreen';
+import EducationalContentScreen from './screens/EducationalContentScreen';
+import StatsScreen from './screens/StatsScreen';
+import ProfileScreen from './screens/ProfileScreen';
+
 
 // Tipos para las rutas
 export type RootStackParamList = {
@@ -36,10 +38,12 @@ export type RootStackParamList = {
   OnboardingClinicalFactors: undefined;
   OnboardingDiagnosticTests: undefined;
   OnboardingHabits: undefined;
-  PhenotypeResult: undefined;
   GeneratingProgram: undefined;
   ProgramDetails: undefined;
   Tracker: undefined;
+  Education: undefined;
+  Stats: undefined;
+  Profile: undefined;
 };
 
 // Tipos de props para cada pantalla
@@ -53,10 +57,13 @@ export type OnboardingRsiScreenProps = NativeStackScreenProps<RootStackParamList
 export type OnboardingClinicalFactorsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingClinicalFactors'>;
 export type OnboardingDiagnosticTestsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingDiagnosticTests'>;
 export type OnboardingHabitsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingHabits'>;
-export type PhenotypeResultScreenProps = NativeStackScreenProps<RootStackParamList, 'PhenotypeResult'>;
 export type GeneratingProgramScreenProps = NativeStackScreenProps<RootStackParamList, 'GeneratingProgram'>;
 export type ProgramDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ProgramDetails'>;
 export type TrackerScreenProps = NativeStackScreenProps<RootStackParamList, 'Tracker'>;
+export type EducationalContentScreenProps = NativeStackScreenProps<RootStackParamList, 'Education'>;
+export type StatsScreenProps = NativeStackScreenProps<RootStackParamList, 'Stats'>;
+export type ProfileScreenProps = NativeStackScreenProps<RootStackParamList, 'Profile'>;
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -116,11 +123,11 @@ export default function App() {
           options={{ title: 'Registro' }}
         />
         
-        {/* Pantalla principal */}
+        {/* Pantalla principal (ahora usando ProgramDetailsScreen) */}
         <Stack.Screen
           name="Home"
-          component={HomeScreen}
-          options={{ title: 'Inicio' }}
+          component={ProgramDetailsScreen}
+          options={{ headerShown: false }}
         />
         
         {/* Flujo de onboarding - Ordenado según la pantalla de bienvenida */}
@@ -189,15 +196,6 @@ export default function App() {
         
         {/* Pantallas de resultados y seguimiento */}
         <Stack.Screen
-          name="PhenotypeResult"
-          component={PhenotypeResultScreen}
-          options={{ 
-            title: 'Tu Perfil',
-            headerBackVisible: false,
-            gestureEnabled: false
-          }}
-        />
-        <Stack.Screen
           name="GeneratingProgram"
           component={GeneratingProgramScreen}
           options={{ 
@@ -205,6 +203,9 @@ export default function App() {
             gestureEnabled: false
           }}
         />
+        
+        {/* Mantenemos ProgramDetails como una ruta separada por si necesitamos 
+            navegar a ella desde otros lugares que no sean Home */}
         <Stack.Screen
           name="ProgramDetails"
           component={ProgramDetailsScreen}
@@ -214,6 +215,7 @@ export default function App() {
             gestureEnabled: true
           }}
         />
+        
         <Stack.Screen
           name="Tracker"
           component={TrackerScreen}
@@ -221,6 +223,27 @@ export default function App() {
             headerShown: false
           }}
         />
+        <Stack.Screen
+          name="Education"
+          component={EducationalContentScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+        name="Stats"
+        component={StatsScreen}
+        options={{ 
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ 
+          headerShown: false
+        }}
+      />
       </Stack.Navigator>
     </NavigationContainer>
   );
