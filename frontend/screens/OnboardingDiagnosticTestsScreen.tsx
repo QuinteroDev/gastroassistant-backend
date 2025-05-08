@@ -165,7 +165,10 @@ export default function OnboardingDiagnosticTestsScreen() {
 
   return (
     <View style={styles.container}>
-      <HeaderComponent />
+           <HeaderComponent 
+        showBackButton={true} 
+        onBackPress={() => navigation.goBack()} 
+      />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

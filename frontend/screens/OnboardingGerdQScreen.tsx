@@ -77,16 +77,25 @@ export default function OnboardingGerdQScreen() {
     checkAuth();
   }, [navigation]);
 
-  // Función para cargar el cuestionario
+  // Función para cargar el cuestionario desde el backend
   const fetchQuestionnaire = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      console.log("Obteniendo cuestionario...");
+      console.log("Obteniendo cuestionario GerdQ...");
+      
+      // Obtener el token de autenticación
+      const token = await getData('authToken');
+      if (!token) {
+        throw new Error('No se encontró token de autenticación');
+      }
+      
+      // Hacer la solicitud al backend usando la ruta correcta del API
+      // Según questionnaires/urls.py -> path('<int:pk>/', QuestionnaireDetailView.as_view(), name='questionnaire-detail')
       const response = await api.get(`/api/questionnaires/${GERDQ_QUESTIONNAIRE_ID}/`);
       
-      console.log("Datos del cuestionario:", 
+      console.log("Datos del cuestionario GerdQ:", 
         response.data ? `ID:${response.data.id}, Preguntas:${response.data.questions?.length || 0}` : "No hay datos");
       
       // Verificar la estructura de datos
@@ -97,12 +106,107 @@ export default function OnboardingGerdQScreen() {
             console.log(`  Opción 1: ID:${q.options[0].id}, Texto:"${q.options[0].text}"`);
           }
         });
+        
+        // Ordenar las preguntas por el campo "order"
+        response.data.questions.sort((a: Question, b: Question) => a.order - b.order);
+        
+        // Ordenar las opciones de cada pregunta por el campo "order"
+        response.data.questions.forEach((q: Question) => {
+          if (q.options) {
+            q.options.sort((a: Option, b: Option) => a.order - b.order);
+          }
+        });
       }
       
       setQuestionnaire(response.data);
     } catch (err) {
       console.error("Error loading questionnaire:", err);
       let message = "Error al cargar el cuestionario";
+      
+      // Verificar si usamos datos simulados en web
+      if (Platform.OS === 'web' && __DEV__) {
+        console.log("Cargando datos de cuestionario simulados para entorno web");
+        
+        // Datos de cuestionario simulados para entorno web
+        const mockQuestionnaire = {
+          id: 1,
+          name: 'GerdQ',
+          title: 'Cuestionario GerdQ',
+          type: 'diagnostic',
+          description: 'Este cuestionario evalúa tus síntomas de reflujo. Por favor, responde todas las preguntas sobre cómo te has sentido en las últimas 4 semanas.',
+          questions: [
+            {
+              id: 1,
+              text: '¿Con qué frecuencia has sentido ardor detrás del esternón (pirosis)?',
+              order: 1,
+              options: [
+                { id: 1, text: '0 días', value: 0, order: 1 },
+                { id: 2, text: '1 día', value: 1, order: 2 },
+                { id: 3, text: '2-3 días', value: 2, order: 3 },
+                { id: 4, text: '4-7 días', value: 3, order: 4 },
+              ]
+            },
+            {
+              id: 2,
+              text: '¿Con qué frecuencia has sentido contenido del estómago regresando a la garganta o boca (regurgitación)?',
+              order: 2,
+              options: [
+                { id: 5, text: '0 días', value: 0, order: 1 },
+                { id: 6, text: '1 día', value: 1, order: 2 },
+                { id: 7, text: '2-3 días', value: 2, order: 3 },
+                { id: 8, text: '4-7 días', value: 3, order: 4 },
+              ]
+            },
+            {
+              id: 3,
+              text: '¿Con qué frecuencia has sentido dolor en la parte superior del estómago?',
+              order: 3,
+              options: [
+                { id: 9, text: '0 días', value: 3, order: 1 },
+                { id: 10, text: '1 día', value: 2, order: 2 },
+                { id: 11, text: '2-3 días', value: 1, order: 3 },
+                { id: 12, text: '4-7 días', value: 0, order: 4 },
+              ]
+            },
+            {
+              id: 4,
+              text: '¿Con qué frecuencia has sentido náuseas?',
+              order: 4,
+              options: [
+                { id: 13, text: '0 días', value: 3, order: 1 },
+                { id: 14, text: '1 día', value: 2, order: 2 },
+                { id: 15, text: '2-3 días', value: 1, order: 3 },
+                { id: 16, text: '4-7 días', value: 0, order: 4 },
+              ]
+            },
+            {
+              id: 5,
+              text: '¿Con qué frecuencia has tenido dificultad para dormir por la pirosis o regurgitación?',
+              order: 5,
+              options: [
+                { id: 17, text: '0 días', value: 0, order: 1 },
+                { id: 18, text: '1 día', value: 1, order: 2 },
+                { id: 19, text: '2-3 días', value: 2, order: 3 },
+                { id: 20, text: '4-7 días', value: 3, order: 4 },
+              ]
+            },
+            {
+              id: 6,
+              text: '¿Con qué frecuencia has tomado medicamentos adicionales para la acidez o reflujo, además de los que te recetó tu médico?',
+              order: 6,
+              options: [
+                { id: 21, text: '0 días', value: 0, order: 1 },
+                { id: 22, text: '1 día', value: 1, order: 2 },
+                { id: 23, text: '2-3 días', value: 2, order: 3 },
+                { id: 24, text: '4-7 días', value: 3, order: 4 },
+              ]
+            }
+          ]
+        };
+        
+        setQuestionnaire(mockQuestionnaire);
+        return;
+      }
       
       if (err.response && err.response.status === 401) {
         message = "Sesión expirada. Por favor inicia sesión nuevamente.";
@@ -134,7 +238,7 @@ export default function OnboardingGerdQScreen() {
     }));
   };
   
-  // Enviar respuestas
+  // Enviar respuestas al backend
   const handleSubmit = async () => {
     // Validar que todas las preguntas tienen respuesta
     if (
@@ -150,6 +254,12 @@ export default function OnboardingGerdQScreen() {
     setError(null);
 
     try {
+      // Obtener el token de autenticación
+      const token = await getData('authToken');
+      if (!token) {
+        throw new Error('No se encontró token de autenticación');
+      }
+      
       // Formatear las respuestas para enviar al API
       const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
         question_id: parseInt(questionId),
@@ -158,37 +268,39 @@ export default function OnboardingGerdQScreen() {
 
       console.log("Enviando respuestas:", answersData);
       
-      const response = await api.post(`/api/questionnaires/${GERDQ_QUESTIONNAIRE_ID}/submit/`, {
-        answers: answersData
-      });
-
-      console.log("Respuestas enviadas correctamente:", response.data);
-      
-      // Mostrar resultado y navegar al siguiente cuestionario RSI
-      let message = 'Has completado el cuestionario GerdQ. ';
-      if (response.data.score !== undefined) {
-        message += `\nTu puntuación es: ${response.data.score}`;
+      // Enviar las respuestas al backend
+      let responseData;
+      if (Platform.OS === 'web' && __DEV__) {
+        console.log("Simulando respuesta en web para desarrollo");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        responseData = { 
+          success: true, 
+          score: 10 
+        };
+      } else {
+        // Llamada real a API - ruta correcta según profiles/urls.py
+        const response = await api.post(`/api/questionnaires/${GERDQ_QUESTIONNAIRE_ID}/submit/`, {
+          answers: answersData
+        });
+        responseData = response.data;
       }
+
+      console.log("Respuestas enviadas correctamente:", responseData);
       
       // Navegación directa sin esperar al Alert
-      console.log("Intentando navegar a OnboardingRsi...");
-      
-      // OPCIÓN 1: Intentar navegar primero y luego mostrar el Alert
+      console.log("Navegando a OnboardingRsi...");
       navigation.navigate('OnboardingRsi');
+      
+      // Mostrar resultado
+      let message = 'Has completado el cuestionario GerdQ. ';
+      if (responseData.score !== undefined) {
+        message += `\nTu puntuación es: ${responseData.score}`;
+      }
       
       Alert.alert(
         "Cuestionario Completado",
         message,
-        [
-          { 
-            text: "Continuar", 
-            onPress: () => {
-              // OPCIÓN 2: Intentar navegar nuevamente después de que el usuario presione "Continuar"
-              console.log("Navegando a OnboardingRsi desde el botón de alerta...");
-              navigation.navigate('OnboardingRsi');
-            }
-          }
-        ]
+        [{ text: "Continuar", onPress: () => {} }]
       );
     } catch (err) {
       console.error("Error al enviar respuestas:", err);
@@ -225,8 +337,11 @@ export default function OnboardingGerdQScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <HeaderComponent />
+      {/* Header con botón de regreso */}
+      <HeaderComponent 
+        showBackButton={true} 
+        onBackPress={() => navigation.goBack()} 
+      />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

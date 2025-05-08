@@ -151,8 +151,8 @@ export default function OnboardingClinicalFactorsScreen() {
                 styles.optionButton,
                 value === option.id && styles.selectedOption,
                 option.color && value === option.id && { backgroundColor: option.color },
-                // Calculamos el ancho según la cantidad de opciones
-                { width: `${100 / options.length - 1}%` }
+                // Ancho fijo para todas las opciones independientemente del texto
+                { width: (100 / options.length - 2) + '%' }
               ]}
               onPress={() => setValue(option.id)}
               disabled={isSubmitting}
@@ -182,7 +182,7 @@ export default function OnboardingClinicalFactorsScreen() {
   const yesNoUnknownOptions = [
     { id: 'YES', label: 'Sí', icon: 'checkmark-circle-outline', color: '#4caf50' },
     { id: 'NO', label: 'No', icon: 'close-circle-outline', color: '#f44336' },
-    { id: 'UNKNOWN', label: 'No lo sé', icon: 'help-circle-outline', color: '#ff9800' }
+    { id: 'UNKNOWN', label: 'No sé', icon: 'help-circle-outline', color: '#ff9800' } // Acortado para mejor visualización
   ];
   
   // Opciones para preguntas de sí/no
@@ -200,7 +200,10 @@ export default function OnboardingClinicalFactorsScreen() {
   
   return (
     <View style={styles.container}>
-      <HeaderComponent />
+      <HeaderComponent 
+        showBackButton={true} 
+        onBackPress={() => navigation.goBack()} 
+      />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -339,7 +342,8 @@ const styles = StyleSheet.create({
   optionsRowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'stretch', // Asegura que todos los elementos tengan la misma altura
+    marginHorizontal: -3, // Ajuste para compensar los márgenes internos
   },
   optionButton: {
     flexDirection: 'row',
@@ -351,6 +355,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#f8f9fa',
     marginBottom: 10,
+    minHeight: 50, // Asegurar altura mínima uniforme
   },
   selectedOption: {
     borderColor: '#0077B6',
@@ -363,6 +368,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#495057',
     textAlign: 'center',
+    flexShrink: 1, // Permite que el texto se ajuste dentro del contenedor
   },
   selectedOptionText: {
     color: 'white',

@@ -63,3 +63,34 @@ export async function removeData(key: string): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Comprueba si hay un token de autenticación guardado.
+ * Útil para determinar el estado de inicio de sesión.
+ */
+export async function isAuthenticated(): Promise<boolean> {
+  try {
+    const token = await getData('authToken');
+    return token !== null && token !== '';
+  } catch (error) {
+    console.error('Error al verificar autenticación:', error);
+    return false;
+  }
+}
+
+/**
+ * Guarda múltiples valores en un solo objeto.
+ * Útil para almacenar datos de usuario completos.
+ */
+export async function storeMultipleData(data: Record<string, string>): Promise<void> {
+  try {
+    const promises = Object.entries(data).map(([key, value]) => {
+      return storeData(key, value);
+    });
+    
+    await Promise.all(promises);
+  } catch (error) {
+    console.error('Error al guardar múltiples datos:', error);
+    throw error;
+  }
+}

@@ -18,7 +18,7 @@ import HeaderComponent from '../components/HeaderComponent';
 import api from '../utils/api';
 import { getData } from '../utils/storage';
 
-// ID del cuestionario RSI
+// ID del cuestionario RSI en el sistema
 const RSI_QUESTIONNAIRE_ID = 2;
 
 // Interfaces para el tipado de datos
@@ -77,13 +77,22 @@ export default function OnboardingRsiScreen() {
     checkAuth();
   }, [navigation]);
 
-  // Función para cargar el cuestionario
+  // Función para cargar el cuestionario desde el backend
   const fetchQuestionnaire = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
       console.log("Obteniendo cuestionario RSI...");
+      
+      // Obtener el token de autenticación
+      const token = await getData('authToken');
+      if (!token) {
+        throw new Error('No se encontró token de autenticación');
+      }
+      
+      // Hacer la solicitud al backend usando la ruta correcta del API
+      // Según questionnaires/urls.py -> path('<int:pk>/', QuestionnaireDetailView.as_view(), name='questionnaire-detail')
       const response = await api.get(`/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/`);
       
       console.log("Datos del cuestionario RSI:", 
@@ -97,12 +106,158 @@ export default function OnboardingRsiScreen() {
             console.log(`  Opción 1: ID:${q.options[0].id}, Texto:"${q.options[0].text}"`);
           }
         });
+        
+        // Ordenar las preguntas por el campo "order"
+        response.data.questions.sort((a: Question, b: Question) => a.order - b.order);
+        
+        // Ordenar las opciones de cada pregunta por el campo "order"
+        response.data.questions.forEach((q: Question) => {
+          if (q.options) {
+            q.options.sort((a: Option, b: Option) => a.order - b.order);
+          }
+        });
       }
       
       setQuestionnaire(response.data);
     } catch (err) {
       console.error("Error loading RSI questionnaire:", err);
       let message = "Error al cargar el cuestionario RSI";
+      
+      // Verificar si usamos datos simulados en web
+      if (Platform.OS === 'web' && __DEV__) {
+        console.log("Cargando datos de cuestionario RSI simulados para entorno web");
+        
+        // Datos de cuestionario RSI simulados para entorno web
+        const mockQuestionnaire = {
+          id: 2,
+          name: 'RSI',
+          title: 'Cuestionario RSI (Reflux Symptom Index)',
+          type: 'diagnostic',
+          description: 'Indica cuánta molestia te han causado los siguientes síntomas durante el último mes. Para cada síntoma, marca la opción que mejor describa tu experiencia.',
+          questions: [
+            {
+              id: 101,
+              text: 'Ronquera o problemas con la voz',
+              order: 1,
+              options: [
+                { id: 501, text: '0 - No problema', value: 0, order: 1 },
+                { id: 502, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 503, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 504, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 505, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 506, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            },
+            {
+              id: 102,
+              text: 'Necesidad de aclarar la garganta',
+              order: 2,
+              options: [
+                { id: 507, text: '0 - No problema', value: 0, order: 1 },
+                { id: 508, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 509, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 510, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 511, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 512, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            },
+            {
+              id: 103,
+              text: 'Exceso de flema o secreción nasal posterior',
+              order: 3,
+              options: [
+                { id: 513, text: '0 - No problema', value: 0, order: 1 },
+                { id: 514, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 515, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 516, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 517, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 518, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            },
+            {
+              id: 104,
+              text: 'Dificultad para tragar alimentos, líquidos o pastillas',
+              order: 4,
+              options: [
+                { id: 519, text: '0 - No problema', value: 0, order: 1 },
+                { id: 520, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 521, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 522, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 523, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 524, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            },
+            {
+              id: 105,
+              text: 'Tos después de comer o acostarse',
+              order: 5,
+              options: [
+                { id: 525, text: '0 - No problema', value: 0, order: 1 },
+                { id: 526, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 527, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 528, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 529, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 530, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            },
+            {
+              id: 106,
+              text: 'Sensación de ahogo',
+              order: 6,
+              options: [
+                { id: 531, text: '0 - No problema', value: 0, order: 1 },
+                { id: 532, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 533, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 534, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 535, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 536, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            },
+            {
+              id: 107,
+              text: 'Tos molesta o irritante',
+              order: 7,
+              options: [
+                { id: 537, text: '0 - No problema', value: 0, order: 1 },
+                { id: 538, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 539, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 540, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 541, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 542, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            },
+            {
+              id: 108,
+              text: 'Sensación de algo pegado en la garganta',
+              order: 8,
+              options: [
+                { id: 543, text: '0 - No problema', value: 0, order: 1 },
+                { id: 544, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 545, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 546, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 547, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 548, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            },
+            {
+              id: 109,
+              text: 'Ardor, dolor en el pecho, indigestión o acidez estomacal',
+              order: 9,
+              options: [
+                { id: 549, text: '0 - No problema', value: 0, order: 1 },
+                { id: 550, text: '1 - Problema leve', value: 1, order: 2 },
+                { id: 551, text: '2 - Problema leve-moderado', value: 2, order: 3 },
+                { id: 552, text: '3 - Problema moderado', value: 3, order: 4 },
+                { id: 553, text: '4 - Problema moderado-severo', value: 4, order: 5 },
+                { id: 554, text: '5 - Problema severo', value: 5, order: 6 },
+              ]
+            }
+          ]
+        };
+        
+        setQuestionnaire(mockQuestionnaire);
+        return;
+      }
       
       if (err.response && err.response.status === 401) {
         message = "Sesión expirada. Por favor inicia sesión nuevamente.";
@@ -134,7 +289,7 @@ export default function OnboardingRsiScreen() {
     }));
   };
   
-  // Enviar respuestas
+  // Enviar respuestas al backend
   const handleSubmit = async () => {
     // Validar que todas las preguntas tienen respuesta
     if (
@@ -150,7 +305,13 @@ export default function OnboardingRsiScreen() {
     setError(null);
   
     try {
-      // Formatear las respuestas para enviar al API
+      // Obtener el token de autenticación
+      const token = await getData('authToken');
+      if (!token) {
+        throw new Error('No se encontró token de autenticación');
+      }
+      
+      // Formatear las respuestas para enviar al API según el formato esperado por el backend
       const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
         question_id: parseInt(questionId),
         selected_option_id: optionId
@@ -158,34 +319,49 @@ export default function OnboardingRsiScreen() {
   
       console.log("Enviando respuestas RSI:", answersData);
       
-      const response = await api.post(`/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/submit/`, {
-        answers: answersData
-      });
+      // Enviar las respuestas al backend
+      let responseData;
+      if (Platform.OS === 'web' && __DEV__) {
+        console.log("Simulando respuesta en web para RSI");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        responseData = { 
+          success: true, 
+          score: 22
+        };
+      } else {
+        // Llamada real a API (ruta correcta según questionnaires/urls.py)
+        const response = await api.post(`/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/submit/`, {
+          answers: answersData
+        });
+        responseData = response.data;
+      }
   
-      console.log("Respuestas RSI enviadas correctamente:", response.data);
+      console.log("Respuestas RSI enviadas correctamente:", responseData);
       
-      // CAMBIO IMPORTANTE: Navegar inmediatamente antes de mostrar el Alert
-      console.log("Intentando navegar a OnboardingDiagnosticTests...");
+      // IMPORTANTE: Navegar inmediatamente a la siguiente pantalla antes de mostrar el Alert
+      console.log("Navegando a OnboardingClinicalFactors...");
       navigation.navigate('OnboardingClinicalFactors');
       
       // Mostrar resultado después de iniciar la navegación
       let message = 'Has completado el cuestionario RSI. ';
-      if (response.data.score !== undefined) {
-        message += `\nTu puntuación es: ${response.data.score}`;
+      if (responseData.score !== undefined) {
+        message += `\nTu puntuación es: ${responseData.score}`;
+      }
+      
+      // Si el backend nos devuelve información sobre el fenotipo o programa asignado, 
+      // podemos mostrarla en el mensaje
+      if (responseData.phenotype) {
+        message += `\n\nSe ha determinado tu perfil clínico.`;
+      }
+      
+      if (responseData.program_assigned) {
+        message += `\n\nSe te ha asignado un programa personalizado.`;
       }
       
       Alert.alert(
         "Cuestionario RSI Completado",
         message,
-        [
-          { 
-            text: "Aceptar", 
-            onPress: () => {
-              // Ya hemos navegado, así que no es necesario hacerlo de nuevo
-              console.log("Alerta cerrada");
-            }
-          }
-        ]
+        [{ text: "Aceptar", onPress: () => {} }]
       );
     } catch (err) {
       console.error("Error al enviar respuestas RSI:", err);
@@ -222,8 +398,11 @@ export default function OnboardingRsiScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <HeaderComponent />
+      {/* Header con botón de regreso */}
+      <HeaderComponent 
+        showBackButton={true} 
+        onBackPress={() => navigation.goBack()} 
+      />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

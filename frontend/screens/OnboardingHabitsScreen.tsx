@@ -142,103 +142,122 @@ export default function OnboardingHabitsScreen() {
   };
   
   // Enviar respuestas
-  const handleSubmit = async () => {
-    if (!validateAnswers()) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    setError(null);
-    
-    try {
-      // Formatear las respuestas para enviar
-      const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
-        question_id: parseInt(questionId),
-        option_id: optionId
-      }));
-      
-      console.log("Enviando respuestas de hábitos:", answersData);
-      
-      // Enviar datos al servidor
-      const response = await api.post('/api/questionnaires/habits/submit/', {
-        answers: answersData
-      });
+// En OnboardingHabitsScreen.tsx, eliminar el intento de actualizar onboarding a través de /api/users/update_onboarding/
 
-      console.log("Respuestas de hábitos enviadas correctamente:", response.data);
+const handleSubmit = async () => {
+  if (!validateAnswers()) {
+    return;
+  }
+  
+  setIsSubmitting(true);
+  setError(null);
+  
+  try {
+    // Formatear las respuestas para enviar
+    const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
+      question_id: parseInt(questionId),
+      option_id: optionId
+    }));
+    
+    console.log("Enviando respuestas de hábitos:", answersData);
+    
+    // Enviar datos al servidor
+    const response = await api.post('/api/questionnaires/habits/submit/', {
+      answers: answersData
+    });
 
-      // Actualizar el perfil del usuario para marcar el onboarding como completado
+    console.log("Respuestas de hábitos enviadas correctamente:", response.data);
+
+    // Actualizar el perfil del usuario para marcar el onboarding como completado
+    let onboardingUpdated = false;
+    let updateAttempts = 0;
+    const maxAttempts = 5;
+    
+    // Función para verificar si el onboarding está completado
+    const verifyOnboardingStatus = async () => {
       try {
-        // Hacer TRES intentos para asegurar que el valor se actualiza correctamente
-        for (let i = 0; i < 3; i++) {
-          const profileResponse = await api.patch('/api/profiles/me/', {
-            onboarding_complete: true
-          });
-          console.log(`Intento ${i+1} - Onboarding marcado como completado:`, profileResponse.data);
-          
-          // Verificar que el valor se ha actualizado correctamente
-          if (profileResponse.data && profileResponse.data.onboarding_complete === true) {
-            console.log("✅ Confirmado: onboarding_complete se ha actualizado correctamente");
-            break;
-          }
-          
-          // Si no se actualizó correctamente, esperar un momento y reintentar
-          if (i < 2) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
+        const profileResponse = await api.get('/api/profiles/me/');
+        return profileResponse.data && profileResponse.data.onboarding_complete === true;
+      } catch (err) {
+        console.error("Error al verificar estado de onboarding:", err);
+        return false;
+      }
+    };
+    
+    // Intento inicial - verificar si ya está completado
+    onboardingUpdated = await verifyOnboardingStatus();
+    
+    // Si no está completado, intentar actualizarlo varias veces
+    while (!onboardingUpdated && updateAttempts < maxAttempts) {
+      updateAttempts++;
+      try {
+        console.log(`Intento ${updateAttempts} para actualizar onboarding_complete a TRUE...`);
+        
+        // Usar PATCH en lugar de POST para actualizar solo este campo
+        const updateResponse = await api.patch('/api/profiles/me/', {
+          onboarding_complete: true
+        });
+        
+        console.log(`Respuesta del intento ${updateAttempts}:`, updateResponse.data);
+        
+        // Verificar si se actualizó correctamente
+        if (updateResponse.data && updateResponse.data.onboarding_complete === true) {
+          console.log("✅ Onboarding marcado como completado correctamente");
+          onboardingUpdated = true;
+          break;
         }
         
-        // También actualizar directamente la API de usuarios para mayor seguridad
-        try {
-          const userUpdateResponse = await api.post('/api/users/update_onboarding/', {
-            onboarding_complete: true
-          });
-          console.log("Actualización adicional de onboarding en la API de usuarios:", userUpdateResponse.data);
-        } catch (userErr) {
-          console.warn("No se pudo actualizar onboarding en la API de usuarios:", userErr);
-          // Continuar aunque falle este paso
-        }
-      } catch (profileErr) {
-        console.error("Error al actualizar el perfil para marcar onboarding como completado:", profileErr);
-        // Continuar con la navegación aunque falle la actualización del perfil
+        // Esperar un momento antes del siguiente intento
+        await new Promise(resolve => setTimeout(resolve, 300 * updateAttempts)); // Retraso incremental
+      } catch (updateErr) {
+        console.error(`Error en intento ${updateAttempts}:`, updateErr);
+        // Esperar antes de reintentar
+        await new Promise(resolve => setTimeout(resolve, 500 * updateAttempts));
       }
-      
-      // Navegar a la pantalla de generación de programa
-      console.log("Navegando a GeneratingProgram...");
-      navigation.navigate('GeneratingProgram');
-      
-      // Mostrar mensaje de éxito después de iniciar la navegación
-      Alert.alert(
-        "Cuestionario Completado",
-        "Tus respuestas al cuestionario de hábitos han sido guardadas correctamente.",
-        [{ text: "Aceptar" }]
-      );
-    } catch (err) {
-      console.error("Error al enviar respuestas de hábitos:", err);
-      let message = "Error al guardar tus respuestas";
-      
-      if (err.response && err.response.status === 401) {
-        message = "Sesión expirada. Por favor inicia sesión nuevamente.";
-        
-        Alert.alert(
-          "Sesión expirada",
-          message,
-          [{ text: "Ir a Login", onPress: () => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
-          }}]
-        );
-      } else if (err.response && err.response.data && err.response.data.detail) {
-        message = err.response.data.detail;
-        Alert.alert("Error", message);
-      } else {
-        setError(message);
-      }
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+    
+    if (!onboardingUpdated) {
+      console.warn("⚠️ No se pudo actualizar el estado de onboarding después de múltiples intentos");
+      // Continuar con la navegación de todas formas
+    }
+    
+    // Navegar a la pantalla de generación de programa
+    console.log("Navegando a GeneratingProgram...");
+    navigation.navigate('GeneratingProgram');
+    
+    // Mostrar mensaje de éxito después de iniciar la navegación
+    Alert.alert(
+      "Cuestionario Completado",
+      "Tus respuestas al cuestionario de hábitos han sido guardadas correctamente.",
+      [{ text: "Aceptar" }]
+    );
+  } catch (err) {
+    console.error("Error al enviar respuestas de hábitos:", err);
+    let message = "Error al guardar tus respuestas";
+    
+    if (err.response && err.response.status === 401) {
+      message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+      
+      Alert.alert(
+        "Sesión expirada",
+        message,
+        [{ text: "Ir a Login", onPress: () => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}]
+      );
+    } else if (err.response && err.response.data && err.response.data.detail) {
+      message = err.response.data.detail;
+      Alert.alert("Error", message);
+    } else {
+      setError(message);
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   
   // Renderizar una pregunta individual
   const renderQuestion = (question: HabitQuestion) => {
@@ -284,7 +303,10 @@ export default function OnboardingHabitsScreen() {
   
   return (
     <View style={styles.container}>
-      <HeaderComponent />
+       <HeaderComponent 
+        showBackButton={true} 
+        onBackPress={() => navigation.goBack()} 
+      />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

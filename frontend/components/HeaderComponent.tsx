@@ -7,21 +7,22 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
-  Alert,
   Modal,
-  FlatList
+  FlatList,
+  Image,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
+import { removeData } from '../utils/storage'; // Usar nuestra utilidad multiplataforma
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
-import GastroAvatar from './GastroAvatar';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 interface HeaderComponentProps {
   showBackButton?: boolean;
   onBackPress?: () => void;
-  title?: string;
 }
 
 // Datos de ejemplo para notificaciones
@@ -59,7 +60,6 @@ const SAMPLE_NOTIFICATIONS = [
 const HeaderComponent: React.FC<HeaderComponentProps> = ({
   showBackButton = false,
   onBackPress,
-  title
 }) => {
   const navigation = useNavigation();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -77,7 +77,7 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
   const handleLogout = async () => {
     try {
       console.log("Cerrando sesión...");
-      await SecureStore.deleteItemAsync('authToken');
+      await removeData('authToken');
       console.log("Token eliminado, redirigiendo a Login");
       
       // Usar CommonActions para que funcione en cualquier tipo de navegador
@@ -119,60 +119,73 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
 
   return (
     <View style={styles.headerContainer}>
-      {/* Usamos un gradiente para el fondo */}
+      {/* Usamos un gradiente para el fondo con colores más modernos */}
       <LinearGradient
         colors={['#0077B6', '#00B4D8']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.header}
       >
-        {showBackButton ? (
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={onBackPress || (() => navigation.goBack())}
-          >
-            <Ionicons name="chevron-back" size={24} color="#ffffff" />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.logoContainer}>
-            <GastroAvatar size={40} />
-            <View style={styles.logoTextContainer}>
-              <Text style={styles.logoTextMain}>Gastro</Text>
-              <Text style={styles.logoTextSub}>Assistant</Text>
+        {/* Contenedor de header reorganizado */}
+        <View style={styles.headerContent}>
+          {/* Área izquierda con botón de regreso y logo */}
+          <View style={styles.leftSection}>
+            {showBackButton && (
+              <TouchableOpacity 
+                style={styles.backButton} 
+                onPress={onBackPress || (() => navigation.goBack())}
+              >
+                <Ionicons name="chevron-back" size={22} color="#ffffff" />
+              </TouchableOpacity>
+            )}
+            
+            {/* Logo y texto desplazados a la izquierda */}
+            <View style={styles.logoContainer}>
+              <Image 
+                source={require('../assets/logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <Text style={styles.logoText}>
+                <Text style={styles.logoTextMain}>Gastro</Text>
+                <Text style={styles.logoTextAccent}>Assistant</Text>
+              </Text>
             </View>
           </View>
-        )}
-        
-        {title && (
-          <Text style={styles.headerTitle}>{title}</Text>
-        )}
-        
-        <View style={styles.rightContainer}>
-          <TouchableOpacity 
-            style={styles.notificationButton}
-            onPress={() => setShowNotifications(true)}
-          >
-            <Ionicons name="notifications-outline" size={22} color="#ffffff" />
-            {unreadCount > 0 && (
-              <View style={styles.notificationBadge}>
-                {unreadCount > 1 && (
-                  <Text style={styles.notificationBadgeText}>{unreadCount}</Text>
-                )}
-              </View>
-            )}
-          </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={handleLogoutPress}
-          >
-            <Ionicons name="log-out-outline" size={22} color="#ffffff" />
-          </TouchableOpacity>
+          {/* Área derecha - Notificaciones y cerrar sesión */}
+          <View style={styles.rightSection}>
+            {/* Botón de notificaciones */}
+            <TouchableOpacity 
+              style={styles.notificationButton}
+              onPress={() => setShowNotifications(true)}
+            >
+              <Ionicons name="notifications-outline" size={24} color="#ffffff" />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            
+            {/* Botón de cerrar sesión en azul */}
+            <TouchableOpacity 
+              style={styles.logoutButton} 
+              onPress={handleLogoutPress}
+            >
+              <Ionicons name="log-out-outline" size={22} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
       
-      {/* Elemento decorativo - línea ondulada */}
-      <View style={styles.wavyLine} />
+      {/* Elemento decorativo - suave curva en la parte inferior */}
+      <View style={styles.curveContainer}>
+        <LinearGradient
+          colors={['#00B4D8', '#CAF0F8']}
+          style={styles.curve}
+        />
+      </View>
       
       {/* Modal de notificaciones */}
       <Modal
@@ -259,66 +272,65 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   header: {
+    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 10,
+    paddingBottom: 16,
+    height: Platform.OS === 'ios' ? 95 : (StatusBar.currentHeight || 0) + 60,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 14,
-    height: Platform.OS === 'ios' ? 65 : 70,
-    paddingTop: Platform.OS === 'ios' ? 5 : StatusBar.currentHeight ? StatusBar.currentHeight - 10 : 0,
+  },
+  leftSection: {
+    flex: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  rightSection: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 15, // Espacio entre los iconos
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 5, // Desplazamiento adicional a la izquierda
   },
-  logoTextContainer: {
-    marginLeft: 8,
+  logo: {
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
+    backgroundColor: '#ffffff',
+    marginRight: 8,
+  },
+  logoText: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   logoTextMain: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    letterSpacing: 0.5,
-  },
-  logoTextSub: {
-    fontSize: 14,
-    color: '#E6F7FF',
-    letterSpacing: 0.3,
-    marginTop: -3,
-  },
-  headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: 'bold',
     color: '#ffffff',
   },
-  rightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  logoTextAccent: {
+    color: '#CAF0F8',
   },
   notificationButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
     position: 'relative',
   },
   notificationBadge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -5,
+    right: -5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#FF6B6B',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#ffffff',
   },
   notificationBadgeText: {
@@ -327,28 +339,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logoutButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    padding: 2,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 8,
+    marginRight: 5,
   },
-  wavyLine: {
-    height: 4,
-    backgroundColor: '#CAF0F8',
-    borderBottomWidth: 1,
-    borderBottomColor: '#90E0EF',
+  curveContainer: {
+    height: 10,
+    overflow: 'hidden',
+  },
+  curve: {
+    height: 20,
+    width: width,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   // Modal de notificaciones
   modalOverlay: {
@@ -359,17 +364,17 @@ const styles = StyleSheet.create({
   },
   notificationsContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 80 : 70,
+    top: Platform.OS === 'ios' ? 100 : 80,
     right: 10,
     width: '90%',
     maxWidth: 350,
     backgroundColor: 'white',
     borderRadius: 16,
-    elevation: 5,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowRadius: 8,
     maxHeight: '80%',
   },
   notificationsHeader: {
@@ -434,30 +439,30 @@ const styles = StyleSheet.create({
     color: '#0077B6',
     fontWeight: '500',
   },
-  // Modal de confirmación
+  // Modal de confirmación de cierre de sesión
   confirmDialog: {
-    width: '80%',
+    width: '85%',
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 20,
-    alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   confirmTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 12,
+    textAlign: 'center',
   },
   confirmMessage: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   confirmButtons: {
     flexDirection: 'row',
@@ -465,8 +470,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   confirmButton: {
-    padding: 12,
-    borderRadius: 8,
+    padding: 14,
+    borderRadius: 12,
     width: '48%',
     alignItems: 'center',
   },
@@ -478,7 +483,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   logoutConfirmButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#0077B6',
   },
   logoutConfirmText: {
     color: 'white',

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "gastro-assistant",
+    "name": "GastroAssistant",
     "slug": "gastro-assistant",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,13 +15,17 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lymbia.gastroassistant",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.lymbia.gastroassistant",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,6 +33,14 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "gastro-assistant"
+    "scheme": "gastro-assistant",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "57911f6b-89e3-42ea-8bc8-525d68a7d8ee"
+      }
+    }
   }
 }

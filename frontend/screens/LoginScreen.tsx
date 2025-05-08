@@ -12,15 +12,15 @@ import {
   ScrollView,
   Dimensions,
   StatusBar,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import GastroAvatar from '../components/GastroAvatar';
+import { storeData, removeData } from '../utils/storage';
 import api from '../utils/api';
-import { storeData } from '../utils/storage'; // Importar el utilitario de almacenamiento multiplataforma
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,7 +28,7 @@ type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, '
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,10 +39,24 @@ export default function LoginScreen() {
     if (error) {
       setError(null);
     }
-  }, [email, password]);
+  }, [username, password]);
+
+  // Limpiar token al cargar la pantalla
+  useEffect(() => {
+    const clearToken = async () => {
+      try {
+        await removeData('authToken');
+        console.log("Token eliminado al iniciar pantalla de login");
+      } catch (err) {
+        console.error("Error al eliminar token:", err);
+      }
+    };
+    
+    clearToken();
+  }, []);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!username || !password) {
       setError('Por favor, completa todos los campos.');
       return;
     }
@@ -50,77 +64,86 @@ export default function LoginScreen() {
     setIsLoading(true);
     setError(null);
 
-    // URL directa al servidor (usando localhost)
-    const LOGIN_URL = 'http://127.0.0.1:8000/api/users/login/';
-    
     console.log("==== INICIO DE LOGIN ====");
-    console.log("Intentando login con URL:", LOGIN_URL);
-    console.log("Email/Username:", email);
+    console.log("Email/Username:", username);
 
     try {
-      // Usar fetch directamente para depuración
-      const response = await fetch(LOGIN_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: email,
-          password: password,
-        }),
+      // Usar nuestro cliente API configurado
+      const response = await api.post('/api/users/login/', {
+        username,
+        password,
       });
 
+      // Procesar respuesta
       console.log("Respuesta status:", response.status);
-      console.log("Respuesta OK:", response.ok);
       
-      // Leer el texto completo de la respuesta
-      const responseText = await response.text();
-      console.log("Texto de respuesta:", responseText);
-      
-      if (responseText) {
-        try {
-          // Intentar parsear como JSON
-          const data = JSON.parse(responseText);
-          console.log("Datos JSON:", data);
-          
-          if (response.ok && data.token) {
-            console.log("Login exitoso, token recibido");
-            
-            // Guardar el token usando nuestro utilitario multiplataforma
-            await storeData('authToken', data.token);
-            console.log("Token guardado correctamente");
-            
-            // Verificamos los campos exactos que vienen del backend
-            console.log("Valor original de onboarding_complete:", data.onboarding_complete);
-            
-            // IMPORTANTE: Asegurarnos de acceder al campo correcto según la respuesta del backend
-            const onboardingCompleted = data.onboarding_complete === true;
-            console.log("Estado de onboarding_completed interpretado:", onboardingCompleted);
-            
-            // Navegar según el valor de onboarding_complete
-            const destination = onboardingCompleted ? 'Home' : 'OnboardingWelcome';
-            console.log("Navegando a:", destination);
-            
-            navigation.reset({
-              index: 0,
-              routes: [{ name: destination }],
-            });
-          } else {
-            const errorMsg = data.detail || 'Error de inicio de sesión';
-            console.log("Error en la respuesta:", errorMsg);
-            setError(errorMsg);
+      if (response.data && response.data.token) {
+        console.log("Login exitoso, token recibido:", response.data.token.substring(0, 10) + '...');
+        
+        // Guardar el token
+        await storeData('authToken', response.data.token);
+        console.log("Token guardado correctamente");
+        
+        // Obtener el estado de onboarding inicial
+        let onboardingCompleted = response.data.onboarding_complete === true;
+        console.log("Valor inicial de onboarding_complete:", response.data.onboarding_complete);
+        
+        // Si el onboarding_complete es false, hacer una verificación adicional
+        if (!onboardingCompleted) {
+          try {
+            // Obtener datos del perfil para verificar el estado real
+            const profileResponse = await api.get('/api/profiles/me/');
+            if (profileResponse.data && profileResponse.data.onboarding_complete === true) {
+              console.log("Verificación adicional: onboarding_complete es TRUE en el perfil");
+              onboardingCompleted = true;
+            } else {
+              console.log("Verificación adicional: onboarding_complete sigue siendo FALSE en el perfil");
+            }
+          } catch (profileErr) {
+            console.error("No se pudo verificar el estado de onboarding en el perfil:", profileErr);
+            // Seguimos con el valor original si hay error
           }
-        } catch (e) {
-          console.error("Error al parsear JSON:", e);
-          setError('Error en el formato de respuesta');
         }
+        
+        // También verificar si el usuario tiene un programa asignado
+        if (!onboardingCompleted) {
+          try {
+            const programResponse = await api.get('/api/programs/my-program/');
+            if (programResponse.data && programResponse.data.id) {
+              console.log("Usuario tiene programa asignado, considerando onboarding como completado");
+              onboardingCompleted = true;
+            }
+          } catch (programErr) {
+            console.log("No se pudo verificar si existe un programa asignado:", programErr);
+            // Seguimos con el valor original si hay error
+          }
+        }
+        
+        console.log("¿Onboarding completado? (valor final):", onboardingCompleted);
+        
+        // Navegar según estado de onboarding
+        const destination = onboardingCompleted ? 'Home' : 'OnboardingWelcome';
+        console.log("Navegando a:", destination);
+        
+        navigation.reset({
+          index: 0,
+          routes: [{ name: destination }],
+        });
       } else {
-        console.log("Respuesta vacía del servidor");
-        setError('No se recibió respuesta del servidor');
+        console.error("Respuesta sin token:", response.data);
+        setError('Error en la respuesta del servidor. Inténtalo de nuevo.');
       }
     } catch (err) {
-      console.error("Error en la petición fetch:", err);
-      setError('Error de conexión. Por favor, inténtalo de nuevo.');
+      console.error("Error en la petición de login:", err);
+      
+      // Manejar error de autenticación
+      if (err.response && err.response.status === 400) {
+        setError('Credenciales incorrectas. Revisa tu usuario y contraseña.');
+      } else if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError('Error de conexión. Por favor, inténtalo de nuevo.');
+      }
     } finally {
       console.log("==== FIN DE LOGIN ====");
       setIsLoading(false);
@@ -145,7 +168,7 @@ export default function LoginScreen() {
       />
       
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
         <ScrollView 
@@ -153,10 +176,17 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoContainer}>
-            <View style={styles.logoWrapper}>
-              <GastroAvatar size={100} />
+            <Image 
+              source={require('../assets/logo.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <View style={styles.logoTextContainer}>
+              <Text style={styles.logoText}>
+                <Text style={styles.gastroText}>Gastro</Text>
+                <Text style={styles.assistantText}>Assistant</Text>
+              </Text>
             </View>
-            <Text style={styles.logoText}>Gastro<Text style={styles.logoTextAccent}>Assistant</Text></Text>
             <Text style={styles.tagline}>Tu compañero para el bienestar digestivo</Text>
           </View>
           
@@ -164,14 +194,13 @@ export default function LoginScreen() {
             <Text style={styles.welcomeText}>¡Bienvenido!</Text>
 
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={22} color="#0077B6" style={styles.inputIcon} />
+              <Ionicons name="person-outline" size={22} color="#0077B6" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Correo electrónico"
+                placeholder="Nombre de usuario"
                 placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                value={username}
+                onChangeText={setUsername}
                 autoCapitalize="none"
                 editable={!isLoading}
               />
@@ -254,50 +283,61 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    height: '100%',
   },
   keyboardView: {
     flex: 1,
+    width: '100%',
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight! + 20 : 60,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight! + 20 : 40,
     paddingBottom: 30,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: '100%',
+    width: '100%',
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: height * 0.05,
+    marginBottom: 20,
+    width: '100%',
   },
-  logoWrapper: {
-    backgroundColor: 'white',
-    borderRadius: 60,
-    padding: 10,
-    marginBottom: 15,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+  logoImage: {
+    width: 90,
+    height: 90,
+    marginBottom: 5,
+  },
+  logoTextContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoText: {
-    fontSize: 28,
+    marginBottom: 5,
+  },
+  gastroText: {
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#0077B6',
-    marginBottom: 8,
     letterSpacing: 0.5,
   },
-  logoTextAccent: {
+  assistantText: {
+    fontSize: 26,
+    fontWeight: 'bold',
     color: '#023E8A',
+    letterSpacing: 0.5,
   },
   tagline: {
     fontSize: 14,
     color: '#0096C7',
     textAlign: 'center',
     fontStyle: 'italic',
+    marginBottom: 10,
   },
   formCard: {
-    width: width * 0.88,
+    width: Platform.OS === 'web' ? Math.min(400, width * 0.9) : width * 0.88,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 25,
@@ -313,7 +353,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#005f73',
-    marginBottom: 22,
+    marginBottom: 20,
     textAlign: 'center',
   },
   inputContainer: {
@@ -325,18 +365,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: '#E0E7EE',
+    height: 55,
   },
   inputIcon: {
     marginRight: 10,
   },
   input: {
     flex: 1,
-    height: 55,
+    height: 50,
     fontSize: 16,
     color: '#333',
   },
   passwordToggle: {
-    padding: 10,
+    padding: 8,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -386,7 +427,7 @@ const styles = StyleSheet.create({
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 15,
     paddingBottom: 20,
   },
   registerText: {

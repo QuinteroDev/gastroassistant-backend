@@ -5,8 +5,8 @@ import {
   createNativeStackNavigator,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import * as SecureStore from 'expo-secure-store';
-import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, View, StyleSheet, Text, Platform } from 'react-native';
+import { removeData } from './utils/storage'; // Importar la función multiplataforma
 
 // Importaciones de pantallas existentes
 import LoginScreen from './screens/LoginScreen';
@@ -24,7 +24,6 @@ import TrackerScreen from './screens/TrackerScreen';
 import EducationalContentScreen from './screens/EducationalContentScreen';
 import StatsScreen from './screens/StatsScreen';
 import ProfileScreen from './screens/ProfileScreen';
-
 
 // Tipos para las rutas
 export type RootStackParamList = {
@@ -64,7 +63,6 @@ export type EducationalContentScreenProps = NativeStackScreenProps<RootStackPara
 export type StatsScreenProps = NativeStackScreenProps<RootStackParamList, 'Stats'>;
 export type ProfileScreenProps = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Componente inicial para eliminación garantizada del token
@@ -72,8 +70,8 @@ function InitialLoading({ setLoading }) {
   useEffect(() => {
     const prepareApp = async () => {
       try {
-        // IMPORTANTE: Eliminar cualquier token existente para garantizar inicio en Login
-        await SecureStore.deleteItemAsync('authToken');
+        // Usar removeData para compatibilidad con web
+        await removeData('authToken');
         console.log("⚠️ Token eliminado para inicio limpio de la aplicación");
       } catch (error) {
         console.error("Error al limpiar token:", error);
@@ -96,6 +94,39 @@ function InitialLoading({ setLoading }) {
   );
 }
 
+// Estilos específicos para web
+if (Platform.OS === 'web') {
+  // Estilos adicionales para la versión web
+  const style = document.createElement('style');
+  style.textContent = `
+    html, body, #root {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #root {
+      display: flex;
+      flex-direction: column;
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #0077B6;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #005f73;
+    }
+  `;
+  document.head.append(style);
+}
+
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -110,6 +141,16 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator 
         initialRouteName="Login"
+        screenOptions={{
+          // Ajustes para web
+          headerStyle: Platform.OS === 'web' ? {
+            backgroundColor: '#0077B6',
+          } : undefined,
+          headerTintColor: Platform.OS === 'web' ? '#fff' : undefined,
+          headerTitleStyle: Platform.OS === 'web' ? {
+            fontWeight: 'bold',
+          } : undefined,
+        }}
       >
         {/* Pantallas de autenticación */}
         <Stack.Screen
@@ -120,7 +161,7 @@ export default function App() {
         <Stack.Screen
           name="Register"
           component={RegisterScreen}
-          options={{ title: 'Registro' }}
+          options={{ headerShown: false }}
         />
         
         {/* Pantalla principal (ahora usando ProgramDetailsScreen) */}
@@ -130,7 +171,7 @@ export default function App() {
           options={{ headerShown: false }}
         />
         
-        {/* Flujo de onboarding - Ordenado según la pantalla de bienvenida */}
+        {/* Flujo de onboarding - IMPORTANTE: headerShown: false para todas las pantallas de onboarding */}
         <Stack.Screen
           name="OnboardingWelcome"
           component={OnboardingWelcomeScreen}
@@ -143,8 +184,7 @@ export default function App() {
           name="OnboardingGeneral"
           component={OnboardingGeneralScreen}
           options={{ 
-            title: 'Información General',
-            headerBackVisible: false,
+            headerShown: false, // Cambiado a false para ocultar el header predeterminado
             gestureEnabled: false
           }}
         />
@@ -152,8 +192,7 @@ export default function App() {
           name="OnboardingGerdQ"
           component={OnboardingGerdQScreen}
           options={{ 
-            title: 'Cuestionario GerdQ',
-            headerBackVisible: false,
+            headerShown: false, // Cambiado a false para ocultar el header predeterminado
             gestureEnabled: false
           }}
         />
@@ -161,8 +200,7 @@ export default function App() {
           name="OnboardingRsi"
           component={OnboardingRsiScreen}
           options={{ 
-            title: 'Cuestionario RSI',
-            headerBackVisible: false,
+            headerShown: false, // Cambiado a false para ocultar el header predeterminado
             gestureEnabled: false
           }}
         />
@@ -170,8 +208,7 @@ export default function App() {
           name="OnboardingClinicalFactors"
           component={OnboardingClinicalFactorsScreen}
           options={{ 
-            title: 'Factores Clínicos',
-            headerBackVisible: false,
+            headerShown: false, // Cambiado a false para ocultar el header predeterminado
             gestureEnabled: false
           }}
         />
@@ -179,8 +216,7 @@ export default function App() {
           name="OnboardingDiagnosticTests"
           component={OnboardingDiagnosticTestsScreen}
           options={{ 
-            title: 'Pruebas Diagnósticas',
-            headerBackVisible: false,
+            headerShown: false, // Cambiado a false para ocultar el header predeterminado
             gestureEnabled: false
           }}
         />
@@ -188,8 +224,7 @@ export default function App() {
           name="OnboardingHabits"
           component={OnboardingHabitsScreen}
           options={{ 
-            title: 'Cuestionario de Hábitos',
-            headerBackVisible: false,
+            headerShown: false, // Cambiado a false para ocultar el header predeterminado
             gestureEnabled: false
           }}
         />
@@ -204,14 +239,11 @@ export default function App() {
           }}
         />
         
-        {/* Mantenemos ProgramDetails como una ruta separada por si necesitamos 
-            navegar a ella desde otros lugares que no sean Home */}
         <Stack.Screen
           name="ProgramDetails"
           component={ProgramDetailsScreen}
           options={{ 
-            title: 'Mi Programa',
-            headerBackVisible: true,
+            headerShown: false,
             gestureEnabled: true
           }}
         />
@@ -231,19 +263,19 @@ export default function App() {
           }}
         />
         <Stack.Screen
-        name="Stats"
-        component={StatsScreen}
-        options={{ 
-          headerShown: false
-        }}
-      />
-      <Stack.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ 
-          headerShown: false
-        }}
-      />
+          name="Stats"
+          component={StatsScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{ 
+            headerShown: false
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

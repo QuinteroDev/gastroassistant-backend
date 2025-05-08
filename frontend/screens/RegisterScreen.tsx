@@ -1,5 +1,5 @@
 // screens/RegisterScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,15 @@ import {
   Platform,
   ScrollView,
   Dimensions,
-  StatusBar
+  StatusBar,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import GastroAvatar from '../components/GastroAvatar';
+import api from '../utils/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,6 +37,16 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Limpiar cualquier error cuando el usuario cambie los inputs
+  useEffect(() => {
+    if (error) {
+      setError('');
+    }
+    if (msg) {
+      setMsg('');
+    }
+  }, [username, email, password, confirmPassword]);
 
   const handleRegister = async () => {
     console.log('Se pulsó el botón "Crear cuenta"');
@@ -69,32 +80,68 @@ export default function RegisterScreen() {
     setMsg('');
   
     try {
-      // Ajusta la URL según tu configuración:
-      const response = await fetch('http://192.168.1.48:8000/api/users/register/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
+      console.log("Enviando solicitud de registro al servidor...");
+      console.log("Username:", username);
+      console.log("Email:", email);
+      
+      // Usar nuestro cliente API configurado
+      const response = await api.post('/api/users/register/', {
+        username,
+        email,
+        password
       });
   
-      if (!response.ok) {
-        // Error (400, 500, etc.)
-        const errorData = await response.json();
-        setError(errorData.error || 'Error al registrar usuario');
-        setIsLoading(false);
-        return;
+      console.log("Respuesta del servidor:", response.status);
+      
+      // Procesar respuesta
+      if (response.status === 201 || response.status === 200) {
+        // Si todo va bien
+        console.log("Registro exitoso:", response.data);
+        setMsg('¡Usuario registrado con éxito!');
+        
+        // Navegar a Login después de un breve retraso
+        setTimeout(() => {
+          navigation.navigate('Login');
+        }, 1500);
+      } else {
+        console.warn("Respuesta inesperada:", response.status, response.data);
+        setError('Respuesta inesperada del servidor. Inténtalo de nuevo.');
       }
-  
-      // Si todo va bien (status 201 según tu backend):
-      const data = await response.json();
-      setMsg('¡Usuario registrado con éxito!');
-  
-      // Navegas a Login
-      setTimeout(() => {
-        navigation.navigate('Login');
-      }, 1500);
     } catch (err) {
-      console.error(err);
-      setError('Error de conexión con el servidor');
+      console.error("Error en el registro:", err);
+      
+      // Manejar errores de respuesta
+      if (err.response) {
+        // El servidor respondió con un código de error
+        console.error("Error de respuesta:", err.response.status, err.response.data);
+        
+        if (err.response.data && err.response.data.error) {
+          setError(err.response.data.error);
+        } else if (err.response.data && err.response.data.username) {
+          // Error de usuario ya existente
+          setError(`Error con el nombre de usuario: ${err.response.data.username.join(', ')}`);
+        } else if (err.response.data && err.response.data.email) {
+          // Error de email ya existente
+          setError(`Error con el correo electrónico: ${err.response.data.email.join(', ')}`);
+        } else if (err.response.data && err.response.data.password) {
+          // Error de contraseña
+          setError(`Error con la contraseña: ${err.response.data.password.join(', ')}`);
+        } else if (err.response.data && err.response.data.detail) {
+          // Otro error con detalle
+          setError(err.response.data.detail);
+        } else {
+          // Error genérico con código de estado
+          setError(`Error ${err.response.status}: No se pudo completar el registro.`);
+        }
+      } else if (err.request) {
+        // No se recibió respuesta del servidor
+        console.error("Error de solicitud (sin respuesta):", err.request);
+        setError('No se recibió respuesta del servidor. Comprueba tu conexión.');
+      } else {
+        // Error en la configuración de la solicitud
+        console.error("Error:", err.message);
+        setError('Error de conexión. Por favor, inténtalo de nuevo.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +153,7 @@ export default function RegisterScreen() {
 
   return (
     <LinearGradient
-      colors={['#CAF0F8', '#90E0EF', '#00B4D8']}
+      colors={['#E6F7FF', '#CAF0F8', '#90E0EF']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
@@ -118,7 +165,7 @@ export default function RegisterScreen() {
       />
       
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
         <ScrollView 
@@ -126,10 +173,18 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoContainer}>
-            <View style={styles.logoWrapper}>
-              <GastroAvatar size={80} />
+            <Image 
+              source={require('../assets/logo.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <View style={styles.logoTextContainer}>
+              <Text style={styles.logoText}>
+                <Text style={styles.gastroText}>Gastro</Text>
+                <Text style={styles.assistantText}>Assistant</Text>
+              </Text>
             </View>
-            <Text style={styles.logoText}>Gastro<Text style={styles.logoTextAccent}>Assistant</Text></Text>
+            <Text style={styles.tagline}>Tu compañero para el bienestar digestivo</Text>
           </View>
           
           <View style={styles.formCard}>
@@ -272,45 +327,65 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    height: '100%',
   },
   keyboardView: {
     flex: 1,
+    width: '100%',
   },
   scrollContainer: {
     flexGrow: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight! + 20 : 40,
     paddingBottom: 30,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100%',
+    width: '100%',
   },
   logoContainer: {
     alignItems: 'center',
     marginBottom: 20,
+    width: '100%',
   },
-  logoWrapper: {
-    backgroundColor: 'white',
-    borderRadius: 50,
-    padding: 10,
-    marginBottom: 10,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+  logoImage: {
+    width: 90,
+    height: 90,
+    marginBottom: 5,
+  },
+  logoTextContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoText: {
-    fontSize: 24,
+    marginBottom: 5,
+  },
+  gastroText: {
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#0077B6',
     letterSpacing: 0.5,
   },
-  logoTextAccent: {
+  assistantText: {
+    fontSize: 26,
+    fontWeight: 'bold',
     color: '#023E8A',
+    letterSpacing: 0.5,
+  },
+  tagline: {
+    fontSize: 14,
+    color: '#0096C7',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: 10,
   },
   formCard: {
-    width: width * 0.88,
+    width: Platform.OS === 'web' ? Math.min(400, width * 0.9) : width * 0.88,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 25,
+    paddingBottom: 30,
     marginBottom: 20,
     elevation: 5,
     shadowColor: '#000',
@@ -340,6 +415,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: '#E0E7EE',
+    height: 55,
   },
   inputIcon: {
     marginRight: 10,
@@ -351,7 +427,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   passwordToggle: {
-    padding: 10,
+    padding: 8,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -394,7 +470,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   registerButtonGradient: {
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -408,10 +484,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 15,
+    paddingBottom: 5,
   },
   loginText: {
     fontSize: 15,
-    color: '#444',
+    color: '#666',
     marginRight: 5,
   },
   loginLink: {
@@ -420,8 +497,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   termsContainer: {
-    marginTop: 20,
+    marginTop: 15,
     paddingHorizontal: 40,
+    marginBottom: 20,
   },
   termsText: {
     fontSize: 12,

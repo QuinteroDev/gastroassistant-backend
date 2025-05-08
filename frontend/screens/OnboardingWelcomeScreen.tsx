@@ -4,12 +4,12 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   Dimensions,
   StatusBar,
   SafeAreaView,
-  Platform
+  Platform,
+  Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,7 +17,6 @@ import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getData } from '../utils/storage'; // Usar nuestra abstracción de almacenamiento
-import GastroAvatar from '../components/GastroAvatar';
 import CustomButton from '../components/CustomButton';
 
 // Tipo para la navegación
@@ -113,8 +112,13 @@ export default function OnboardingWelcomeScreen() {
         style={styles.headerGradient}
       >
         <View style={styles.headerContent}>
+          {/* Mantenemos el diseño en fila pero centramos los elementos */}
           <View style={styles.headerRow}>
-            <GastroAvatar size={50} />
+            <Image 
+              source={require('../assets/logo.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
             <View style={styles.headerTextContainer}>
               <Text style={styles.welcomeText}>¡Bienvenido a</Text>
               <Text style={styles.appName}>Gastro<Text style={styles.appNameAccent}>Assistant</Text>!</Text>
@@ -203,11 +207,6 @@ export default function OnboardingWelcomeScreen() {
           size="large"
           type="primary"
         />
-        
-        <Text style={styles.privacyText}>
-          Tus datos están seguros y protegidos por nuestra{' '}
-          <Text style={styles.privacyLink}>Política de Privacidad</Text>
-        </Text>
       </View>
     </SafeAreaView>
   );
@@ -226,10 +225,18 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     paddingHorizontal: 20,
+    alignItems: 'center', // Centrar el contenido horizontalmente
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center', // Centrar el contenido en la fila
+  },
+  logoImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#ffffff',
   },
   headerTextContainer: {
     marginLeft: 15,
@@ -382,20 +389,9 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+    paddingVertical: Platform.OS === 'ios' ? 20 : 15,
     borderTopWidth: 1,
     borderTopColor: '#E0E7EE',
     backgroundColor: '#FFFFFF',
-  },
-  privacyText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 10,
-    marginTop: 10,
-  },
-  privacyLink: {
-    color: '#0077B6',
-    textDecorationLine: 'underline',
   },
 });
