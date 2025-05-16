@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   SafeAreaView,
   Platform,
   StatusBar,
@@ -23,9 +22,7 @@ import api from '../utils/api';
 import { getData } from '../utils/storage';
 import TabNavigationBar from '../components/TabNavigationBar';
 
-
 type ProgramDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProgramDetails'>;
-
 
 // Colores para cada tipo de programa (ahora solo para la decoración interna)
 const PROGRAM_COLORS = {
@@ -42,7 +39,6 @@ const SECTION_ICONS = {
   'que_hacer': <Ionicons name="checkmark-circle" size={24} color="#0077B6" />,
   'seguimiento_medico': <FontAwesome5 name="hospital-user" size={22} color="#0077B6" />
 };
-
 // Contenido para cada bloque (igual que antes)
 const PROGRAM_BLOCKS = {
   // Bloque 1 - ERGE Erosiva (🟩)
@@ -622,7 +618,7 @@ export default function ProgramDetailsScreen() {
           </TouchableOpacity>
         ))}
         
-        {/* Factores clínicos adicionales */}
+        {/* Factores clínicos adicionales - Sin la parte de herramientas sugeridas */}
         {getClinicalFactorsContent().length > 0 && (
           <View style={styles.clinicalFactorsSection}>
             <Text style={styles.clinicalFactorsTitle}>
@@ -638,10 +634,7 @@ export default function ProgramDetailsScreen() {
                   <Text style={styles.factorTitle}>{factor.title}</Text>
                 </View>
                 <Text style={styles.factorContent}>{factor.content}</Text>
-                <View style={styles.factorToolsContainer}>
-                  <Text style={styles.factorToolsTitle}>Herramientas sugeridas:</Text>
-                  <Text style={styles.factorTools}>{factor.tools}</Text>
-                </View>
+                {/* Eliminamos la sección de herramientas sugeridas de aquí */}
               </View>
             ))}
           </View>
@@ -698,7 +691,7 @@ export default function ProgramDetailsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Cabecera única y estilizada */}
+          {/* Cabecera con el nombre personalizado */}
           <View style={styles.programHeaderContainer}>
             <LinearGradient
               colors={['#00B4D8', '#0077B6']}
@@ -710,33 +703,16 @@ export default function ProgramDetailsScreen() {
                 <View style={styles.rocketIconContainer}>
                   <Ionicons name="rocket" size={28} color="#ffffff" />
                 </View>
-                <Text style={styles.programTitle}>Tu Programa Personalizado</Text>
+                <View style={styles.programTitleTextContainer}>
+                  <Text style={styles.programTitleSmall}>Tu Programa Personalizado</Text>
+                  <Text style={styles.programTitle}>{userName}</Text>
+                </View>
               </View>
             </LinearGradient>
           </View>
           
           {/* Contenido del programa con todas las secciones integradas */}
           {renderProgramContent()}
-          
-          {/* Iniciar seguimiento - Únicamente esta sección permanece como parte adicional */}
-          <View style={styles.trackerSection}>
-            <View style={styles.trackerIconContainer}>
-              <Ionicons name="calendar-outline" size={28} color="#0077B6" />
-            </View>
-            <Text style={styles.trackerTitle}>Seguimiento de Hábitos</Text>
-            <Text style={styles.trackerDescription}>
-              Inicia el seguimiento de tus hábitos y síntomas para mejorar
-              tu condición y recibir recomendaciones más personalizadas.
-            </Text>
-            
-            <TouchableOpacity
-              style={styles.startTrackerButton}
-              onPress={() => navigation.navigate('Tracker')}
-            >
-              <Text style={styles.buttonText}>Iniciar Seguimiento</Text>
-              <Ionicons name="arrow-forward" size={20} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
         </ScrollView>
       )}
       
@@ -762,7 +738,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 24,
   },
-  // Cabecera única
+  // Cabecera personalizada con nombre del usuario
   programHeaderContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -781,7 +757,19 @@ const styles = StyleSheet.create({
   programTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  programTitleTextContainer: {
+    flex: 1,
+  },
+  programTitleSmall: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 4,
+  },
+  programTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
   rocketIconContainer: {
     width: 50,
@@ -791,11 +779,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  programTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
   },
   loadingText: {
     marginTop: 16,
@@ -820,7 +803,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  // Sección del contenido del programa - ampliada para incluir todas las secciones
+  // Sección del contenido del programa
   programContentSection: {
     backgroundColor: 'white',
     borderRadius: 20,
@@ -941,25 +924,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
-    marginBottom: 12,
   },
-  factorToolsContainer: {
-    backgroundColor: 'rgba(0, 119, 182, 0.05)',
-    borderRadius: 8,
-    padding: 12,
-  },
-  factorToolsTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0077B6',
-    marginBottom: 4,
-  },
-  factorTools: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 22,
-  },
-  // Sección de recomendaciones integrada
+  // Sección de recomendaciones
   recommendationsSection: {
     marginTop: 24,
     paddingTop: 20,
@@ -1054,99 +1020,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     lineHeight: 20,
-  },
-  // Tracker section - estilizada y con icono
-  trackerSection: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    margin: 16,
-    marginTop: 0,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  trackerIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(0, 119, 182, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    alignSelf: 'center',
-  },
-  trackerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0077B6',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  trackerDescription: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  startTrackerButton: {
-    backgroundColor: '#0077B6',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  // Barra de navegación
-  tabBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  tabItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  activeTab: {
-    borderBottomWidth: 3,
-    borderBottomColor: '#0077B6',
-    paddingBottom: 5,
-  },
-  tabLabel: {
-    fontSize: 12,
-    marginTop: 4,
-    color: '#0077B6',
-    fontWeight: 'bold',
-  },
-  tabLabelInactive: {
-    fontSize: 12,
-    marginTop: 4,
-    color: '#666666',
-  },
+  }
 });

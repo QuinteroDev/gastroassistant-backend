@@ -17,8 +17,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import HeaderComponent from '../components/HeaderComponent';
 import api from '../utils/api';
-import { getData } from '../utils/storage';
+import { getData, saveOnboardingProgress } from '../utils/storage';
 import { Ionicons } from '@expo/vector-icons';
+import ProgressBar from '../components/ProgressBar';
+import { ONBOARDING_STEPS } from '../constants/onboarding';
+
 
 type OnboardingDiagnosticTestsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingDiagnosticTests'>;
 
@@ -49,16 +52,35 @@ export default function OnboardingDiagnosticTestsScreen() {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingDiagnosticTestsScreen...");
       const token = await getData('authToken');
-      
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
           index: 0,
           routes: [{ name: 'Login' }],
         });
+        return;
+      }
+      
+      // Guardar la pantalla actual
+      await saveOnboardingProgress('OnboardingDiagnosticTests');
+      
+      // Verificar si el onboarding ya está completo
+      try {
+        const profileResponse = await api.get('/api/profiles/me/');
+        if (profileResponse.data && profileResponse.data.onboarding_complete) {
+          console.log("Onboarding ya completado, redirigiendo a Home...");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error al verificar estado de onboarding:", error);
+        // Continuar con el onboarding aunque haya un error
       }
     };
-    
+  
     checkAuth();
   }, [navigation]);
 
@@ -112,7 +134,9 @@ export default function OnboardingDiagnosticTestsScreen() {
       const response = await api.put('/api/profiles/tests/update/', diagnosticData);
       
       console.log("Datos de pruebas diagnósticas enviados correctamente:", response.data);
-      
+
+      await saveOnboardingProgress('OnboardingHabits');
+
       // Verificar si hay un fenotipo determinado en la respuesta
       const phenotype = response.data.phenotype_result?.phenotype;
       
@@ -169,6 +193,11 @@ export default function OnboardingDiagnosticTestsScreen() {
         showBackButton={true} 
         onBackPress={() => navigation.goBack()} 
       />
+
+    <ProgressBar 
+      currentStep={ONBOARDING_STEPS.DIAGNOSTIC_TESTS} 
+      totalSteps={ONBOARDING_STEPS.TOTAL_STEPS} 
+    />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

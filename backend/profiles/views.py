@@ -175,3 +175,49 @@ class UserPhenotypeView(APIView):
         }
         
         return recommendations.get(phenotype_code, ["Completa tu perfil para recibir recomendaciones personalizadas."])
+    
+class CompleteOnboardingView(APIView):
+    """
+    Vista para forzar la finalización del onboarding si hay algún problema.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        profile = request.user.profile
+        
+        # Marcar onboarding como completo
+        profile.onboarding_complete = True
+        profile.save(update_fields=['onboarding_complete'])
+        
+        # Intentar asignar programa si no tiene uno
+        from programs.services import ProgramAssignmentService
+        
+        # Verificar si ya tiene un programa asignado
+        try:
+            user_program = request.user.assigned_program
+        except:
+            # Si no tiene programa, asignar uno
+            user_program = ProgramAssignmentService.assign_program(request.user)
+        
+        # Verificar si se creó el programa
+        program_info = None
+        if user_program:
+            program_info = {
+                "id": user_program.program.id,
+                "name": user_program.program.name,
+                "type": user_program.program.type
+            }
+        
+        # Generar recomendaciones
+        from recommendations.services import RecommendationService
+        recommendations = RecommendationService.generate_recommendations_for_user(request.user)
+        prioritized = RecommendationService.prioritize_recommendations(request.user)
+        
+        return Response({
+            "message": "Onboarding marcado como completo",
+            "profile_id": profile.id,
+            "onboarding_complete": profile.onboarding_complete,
+            "program_assigned": program_info,
+            "recommendations_generated": len(recommendations),
+            "prioritized_recommendations": len(prioritized)
+        }, status=status.HTTP_200_OK)

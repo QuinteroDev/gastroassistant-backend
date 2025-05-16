@@ -5,12 +5,18 @@ import { getData } from './storage'; // Importar el utilitario de almacenamiento
 
 // Obtener la URL correcta según el entorno
 const getBaseUrl = () => {
-  // En desarrollo, siempre usar localhost para web
-  if (Platform.OS === 'web') {
-    return 'http://127.0.0.1:8000';  // Localhost para web
+  // Verificar si estamos en desarrollo o producción
+  if (__DEV__) {
+    // DESARROLLO
+    if (Platform.OS === 'web') {
+      return 'http://127.0.0.1:8000';  // Localhost para web
+    } else {
+      // En dispositivos móviles/simuladores, usar la IP local
+      return 'http://192.168.1.48:8000';  // Tu IP local
+    }
   } else {
-    // En dispositivos móviles, usar la IP específica
-    return 'http://192.168.1.48:8000';  // Cambiar por tu IP local
+    // PRODUCCIÓN (TestFlight, App Store, etc.)
+    return 'http://164.90.228.164'; // Tu droplet en Digital Ocean
   }
 };
 
@@ -24,7 +30,9 @@ const api = axios.create({
 });
 
 // Log para depuración
-console.log(`API configurada para usar: ${api.defaults.baseURL}`);
+console.log(`🚀 API configurada para usar: ${api.defaults.baseURL}`);
+console.log(`📱 Entorno: ${__DEV__ ? 'DESARROLLO' : 'PRODUCCIÓN'}`);
+console.log(`💻 Plataforma: ${Platform.OS}`);
 
 // Interceptor para añadir el token de autenticación a cada solicitud
 api.interceptors.request.use(
@@ -34,10 +42,10 @@ api.interceptors.request.use(
       const token = await getData('authToken');
       if (token) {
         config.headers.Authorization = `Token ${token}`;
-        console.log('Token añadido a la solicitud');
+        console.log('🔐 Token añadido a la solicitud');
       }
     } catch (error) {
-      console.error('Error al obtener el token:', error);
+      console.error('❌ Error al obtener el token:', error);
     }
     return config;
   },
@@ -48,18 +56,25 @@ api.interceptors.request.use(
 
 // Interceptor para manejar errores de respuesta
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`✅ Respuesta exitosa desde: ${response.config.baseURL}`);
+    return response;
+  },
   (error) => {
     // Manejo de errores comunes
     if (error.response) {
       // El servidor respondió con un código de error
-      console.error('Error de respuesta:', error.response.status, error.response.data);
+      console.error('❌ Error de respuesta:', error.response.status, error.response.data);
+      if (error.response.status === 401) {
+        console.error('🔑 Error de autenticación - Token inválido o expirado');
+      }
     } else if (error.request) {
       // No se recibió respuesta del servidor
-      console.error('Error de solicitud (sin respuesta):', error.request);
+      console.error('🌐 Error de conexión (sin respuesta):', error.request);
+      console.error('💡 Verifica que el servidor esté corriendo y la IP sea correcta');
     } else {
       // Error en la configuración de la solicitud
-      console.error('Error:', error.message);
+      console.error('⚙️ Error:', error.message);
     }
     
     return Promise.reject(error);

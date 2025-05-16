@@ -1,4 +1,3 @@
-// screens/ProfileScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -11,50 +10,68 @@ import {
   StatusBar,
   Platform,
   Switch,
-  Alert
+  Alert,
+  Linking
 } from 'react-native';
 import HeaderComponent from '../components/HeaderComponent';
 import TabNavigationBar from '../components/TabNavigationBar';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../utils/api';
-import * as SecureStore from 'expo-secure-store';
+// Importa las funciones de almacenamiento del módulo storage en lugar de SecureStore
+import { storeData, getData, removeData } from '../utils/storage';
 
 export default function ProfileScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userProfile, setUserProfile] = useState({
-    username: "usuario123",
-    email: "usuario@example.com",
-    first_name: "Usuario",
-    phenotype: "NERD",
-    phenotype_display: "ERGE No Erosiva (NERD)",
-    weight_kg: 72,
-    height_cm: 175,
-    bmi: 23.5,
-    has_endoscopy: true,
-    endoscopy_result: "NORMAL",
-    has_ph_monitoring: true,
-    ph_monitoring_result: "POSITIVE",
-    onboarding_complete: true
+    username: "",
+    email: "",
+    first_name: "",
+    weight_kg: 0,
+    height_cm: 0,
+    bmi: 0,
+    has_endoscopy: false,
+    endoscopy_result: "",
+    has_ph_monitoring: false,
+    ph_monitoring_result: "",
+    onboarding_complete: false
   });
   
   // Configuración de la aplicación
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   
-  // Simular carga de datos
+  // Cargar datos reales del usuario
   useEffect(() => {
     const loadProfile = async () => {
+      setIsLoading(true);
       try {
-        // En una versión real, aquí harías la llamada API
-        // const response = await api.get('/api/profiles/me/');
-        // setUserProfile(response.data);
+        // Obtener datos del perfil de usuario del backend
+        const response = await api.get('/api/profiles/me/');
         
-        // Simular retraso de carga
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 1000);
+        if (response.data) {
+          // Calcular el IMC si tenemos peso y altura
+          let bmi = 0;
+          if (response.data.weight_kg && response.data.height_cm) {
+            const heightInMeters = response.data.height_cm / 100;
+            bmi = response.data.weight_kg / (heightInMeters * heightInMeters);
+          }
+          
+          // Actualizar el estado con los datos del usuario
+          setUserProfile({
+            ...response.data,
+            bmi: bmi || 0
+          });
+        }
+        
+        // Cargar preferencias guardadas usando storage.ts
+        const notifPref = await getData('notificationsEnabled');
+        
+        if (notifPref !== null) {
+          setNotificationsEnabled(notifPref === 'true');
+        }
+        
+        setIsLoading(false);
       } catch (err) {
         console.error("Error al cargar perfil:", err);
         setError("No pudimos cargar tu perfil. Por favor, intenta más tarde.");
@@ -64,6 +81,20 @@ export default function ProfileScreen({ navigation }) {
     
     loadProfile();
   }, []);
+  
+  // Guardar preferencias cuando cambien
+  useEffect(() => {
+    const savePreferences = async () => {
+      try {
+        // Usar storage.ts para guardar las preferencias
+        await storeData('notificationsEnabled', String(notificationsEnabled));
+      } catch (error) {
+        console.error("Error al guardar preferencias:", error);
+      }
+    };
+    
+    savePreferences();
+  }, [notificationsEnabled]);
   
   // Función para cerrar sesión
   const handleLogout = async () => {
@@ -77,8 +108,16 @@ export default function ProfileScreen({ navigation }) {
           style: "destructive",
           onPress: async () => {
             try {
-              // Eliminar token de autenticación
-              await SecureStore.deleteItemAsync('authToken');
+              // Llamar al endpoint de logout (si existe)
+              try {
+                await api.post('/api/auth/logout/');
+              } catch (logoutError) {
+                // Si no existe endpoint de logout o falla, continuamos con el proceso
+                console.log("Endpoint de logout no disponible:", logoutError);
+              }
+              
+              // Eliminar token de autenticación usando storage.ts
+              await removeData('authToken');
               
               // Navegar a la pantalla de login
               navigation.reset({
@@ -95,6 +134,16 @@ export default function ProfileScreen({ navigation }) {
     );
   };
   
+  // Manejar actualización de datos clínicos
+  const handleUpdateClinical = () => {
+    navigation.navigate('ProfileUpdate');
+  };
+  
+  // Manejar cambio de contraseña
+  const handleChangePassword = () => {
+    navigation.navigate('ChangePassword');
+  };
+  
   // Renderizar sección de datos clínicos
   const renderClinicalData = () => {
     return (
@@ -104,12 +153,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.clinicalCard}>
           <View style={styles.clinicalHeader}>
             <Ionicons name="medical" size={24} color="#0077B6" />
-            <Text style={styles.clinicalTitle}>Perfil Digestivo</Text>
-          </View>
-          
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Fenotipo:</Text>
-            <Text style={styles.dataValue}>{userProfile.phenotype_display}</Text>
+            <Text style={styles.clinicalTitle}>Resultados de Pruebas</Text>
           </View>
           
           <View style={styles.dataRow}>
@@ -139,21 +183,26 @@ export default function ProfileScreen({ navigation }) {
           
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Peso:</Text>
-            <Text style={styles.dataValue}>{userProfile.weight_kg} kg</Text>
+            <Text style={styles.dataValue}>{userProfile.weight_kg || 'No especificado'} {userProfile.weight_kg ? 'kg' : ''}</Text>
           </View>
           
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Altura:</Text>
-            <Text style={styles.dataValue}>{userProfile.height_cm} cm</Text>
+            <Text style={styles.dataValue}>{userProfile.height_cm || 'No especificado'} {userProfile.height_cm ? 'cm' : ''}</Text>
           </View>
           
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>IMC:</Text>
-            <Text style={styles.dataValue}>{userProfile.bmi.toFixed(1)}</Text>
+            <Text style={styles.dataValue}>
+              {userProfile.bmi > 0 ? userProfile.bmi.toFixed(1) : 'No calculado'}
+            </Text>
           </View>
         </View>
         
-        <TouchableOpacity style={styles.updateButton}>
+        <TouchableOpacity 
+          style={styles.updateButton}
+          onPress={handleUpdateClinical}
+        >
           <Text style={styles.updateButtonText}>Actualizar Datos Clínicos</Text>
         </TouchableOpacity>
       </View>
@@ -174,7 +223,13 @@ export default function ProfileScreen({ navigation }) {
             </View>
             <Switch
               value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              onValueChange={(value) => {
+                setNotificationsEnabled(value);
+                if (value) {
+                  // Lógica para registrar notificaciones si están habilitadas
+                  registerForNotifications();
+                }
+              }}
               trackColor={{ false: '#767577', true: '#81b0ff' }}
               thumbColor={notificationsEnabled ? '#0077B6' : '#f4f3f4'}
             />
@@ -182,31 +237,74 @@ export default function ProfileScreen({ navigation }) {
           
           <View style={styles.settingDivider} />
           
-          <View style={styles.settingRow}>
-            <View style={styles.settingLabelContainer}>
-              <Ionicons name="moon" size={20} color="#0077B6" />
-              <Text style={styles.settingLabel}>Modo Oscuro</Text>
-            </View>
-            <Switch
-              value={darkModeEnabled}
-              onValueChange={setDarkModeEnabled}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={darkModeEnabled ? '#0077B6' : '#f4f3f4'}
-            />
-          </View>
-          
-          <View style={styles.settingDivider} />
-          
-          <TouchableOpacity style={styles.settingRow}>
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={handleChangePassword}
+          >
             <View style={styles.settingLabelContainer}>
               <Ionicons name="lock-closed" size={20} color="#0077B6" />
               <Text style={styles.settingLabel}>Cambiar Contraseña</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </TouchableOpacity>
+          
+
         </View>
       </View>
     );
+  };
+  
+  // Función para registrar notificaciones
+  const registerForNotifications = async () => {
+    try {
+      // Aquí iría la lógica para registrar dispositivo para notificaciones push
+      console.log("Registrando dispositivo para notificaciones");
+      // Por ejemplo: enviar token del dispositivo al backend
+    } catch (error) {
+      console.error("Error al registrar notificaciones:", error);
+    }
+  };
+  
+  // Función para abrir enlaces externos
+  const openURL = async (url) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        console.log("No se puede abrir la URL: " + url);
+        if (Platform.OS === 'web') {
+          window.open(url, '_blank');
+        }
+      }
+    } catch (error) {
+      console.error('Error al abrir URL:', error);
+    }
+  };
+
+  // Gestionar acciones de soporte
+  const handleSupportAction = (action) => {
+    switch (action) {
+      case 'help':
+        navigation.navigate('HelpCenter');
+        break;
+      case 'contact':
+        // Abrir correo electrónico
+        if (Platform.OS === 'web') {
+          window.location.href = 'mailto:info@lymbia.com';
+        } else {
+          Linking.openURL('mailto:info@lymbia.com');
+        }
+        break;
+      case 'terms':
+        openURL('https://lymbia.com/terms-of-service/');
+        break;
+      case 'privacy':
+        openURL('https://lymbia.com/privacy-policy/');
+        break;
+      default:
+        break;
+    }
   };
   
   // Renderizar sección de soporte
@@ -215,22 +313,34 @@ export default function ProfileScreen({ navigation }) {
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Soporte</Text>
         
-        <TouchableOpacity style={styles.supportButton}>
+        <TouchableOpacity 
+          style={styles.supportButton}
+          onPress={() => handleSupportAction('help')}
+        >
           <Ionicons name="help-circle" size={22} color="#0077B6" />
           <Text style={styles.supportButtonText}>Centro de Ayuda</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.supportButton}>
+        <TouchableOpacity 
+          style={styles.supportButton}
+          onPress={() => handleSupportAction('contact')}
+        >
           <Ionicons name="mail" size={22} color="#0077B6" />
           <Text style={styles.supportButtonText}>Contactar con Soporte</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.supportButton}>
+        <TouchableOpacity 
+          style={styles.supportButton}
+          onPress={() => handleSupportAction('terms')}
+        >
           <Ionicons name="document-text" size={22} color="#0077B6" />
           <Text style={styles.supportButtonText}>Términos y Condiciones</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.supportButton}>
+        <TouchableOpacity 
+          style={styles.supportButton}
+          onPress={() => handleSupportAction('privacy')}
+        >
           <Ionicons name="shield-checkmark" size={22} color="#0077B6" />
           <Text style={styles.supportButtonText}>Política de Privacidad</Text>
         </TouchableOpacity>
@@ -240,6 +350,13 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </View>
     );
+  };
+  
+  // Función para reintentar la carga
+  const handleRetry = () => {
+    setIsLoading(true);
+    setError(null);
+    // La carga se ejecutará automáticamente gracias al useEffect
   };
   
   return (
@@ -258,14 +375,14 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => setIsLoading(true)}
+            onPress={handleRetry}
           >
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <ScrollView style={styles.contentContainer}>
-          {/* Cabecera del perfil */}
+          {/* Cabecera del perfil - Simplificada */}
           <View style={styles.profileHeaderContainer}>
             <LinearGradient
               colors={['#00B4D8', '#0077B6']}
@@ -273,25 +390,11 @@ export default function ProfileScreen({ navigation }) {
               end={{ x: 1, y: 1 }}
               style={styles.profileHeader}
             >
-              <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>
-                  {userProfile.first_name ? userProfile.first_name.charAt(0).toUpperCase() : 'U'}
-                </Text>
-              </View>
-              
               <Text style={styles.profileName}>
-                {userProfile.first_name || userProfile.username}
+                {userProfile.first_name || userProfile.username || 'Usuario'}
               </Text>
               
-              <Text style={styles.profileEmail}>{userProfile.email}</Text>
-              
-              <TouchableOpacity 
-                style={styles.logoutButton}
-                onPress={handleLogout}
-              >
-                <Ionicons name="log-out-outline" size={18} color="#fff" />
-                <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-              </TouchableOpacity>
+              <Text style={styles.profileEmail}>{userProfile.email || 'No hay correo registrado'}</Text>
             </LinearGradient>
           </View>
           
@@ -350,7 +453,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  // Cabecera del perfil
+  // Cabecera del perfil - simplificada
   profileHeaderContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -366,43 +469,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
   },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarText: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
   profileName: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: 4,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   profileEmail: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 16,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  logoutButtonText: {
-    color: '#ffffff',
-    marginLeft: 6,
-    fontWeight: '500',
+    textAlign: 'center',
   },
   // Secciones comunes
   sectionContainer: {

@@ -25,38 +25,6 @@ interface HeaderComponentProps {
   onBackPress?: () => void;
 }
 
-// Datos de ejemplo para notificaciones
-const SAMPLE_NOTIFICATIONS = [
-  {
-    id: '1',
-    title: 'Nuevo hábito recomendado',
-    message: 'Te recomendamos registrar tu consumo de agua diario',
-    time: '10 min',
-    read: false
-  },
-  {
-    id: '2',
-    title: 'Recordatorio de registro',
-    message: 'No olvides registrar tu progreso de hoy',
-    time: '1 hora',
-    read: false
-  },
-  {
-    id: '3',
-    title: 'Logro desbloqueado',
-    message: '¡Felicidades! Has completado 7 días seguidos de registro',
-    time: '2 días',
-    read: true
-  },
-  {
-    id: '4',
-    title: 'Consejo digestivo',
-    message: 'Recuerda mantener una postura correcta después de comer',
-    time: '3 días',
-    read: true
-  }
-];
-
 const HeaderComponent: React.FC<HeaderComponentProps> = ({
   showBackButton = false,
   onBackPress,
@@ -64,9 +32,6 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
   const navigation = useNavigation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  
-  // Contar notificaciones no leídas
-  const unreadCount = SAMPLE_NOTIFICATIONS.filter(n => !n.read).length;
 
   // Función para confirmar cierre de sesión
   const handleLogoutPress = () => {
@@ -78,6 +43,8 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
     try {
       console.log("Cerrando sesión...");
       await removeData('authToken');
+      await removeData('username');
+
       console.log("Token eliminado, redirigiendo a Login");
       
       // Usar CommonActions para que funcione en cualquier tipo de navegador
@@ -93,29 +60,6 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
       setShowLogoutConfirm(false);
     }
   };
-  
-  // Renderizar una notificación individual
-  const renderNotificationItem = ({ item }) => (
-    <TouchableOpacity 
-      style={[
-        styles.notificationItem,
-        !item.read && styles.unreadNotification
-      ]}
-    >
-      <View style={styles.notificationIcon}>
-        <Ionicons 
-          name="notifications" 
-          size={18} 
-          color={!item.read ? "#0077B6" : "#999"} 
-        />
-      </View>
-      <View style={styles.notificationContent}>
-        <Text style={styles.notificationTitle}>{item.title}</Text>
-        <Text style={styles.notificationMessage}>{item.message}</Text>
-        <Text style={styles.notificationTime}>{item.time}</Text>
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.headerContainer}>
@@ -155,17 +99,12 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
           
           {/* Área derecha - Notificaciones y cerrar sesión */}
           <View style={styles.rightSection}>
-            {/* Botón de notificaciones */}
+            {/* Botón de notificaciones sin badge */}
             <TouchableOpacity 
               style={styles.notificationButton}
               onPress={() => setShowNotifications(true)}
             >
               <Ionicons name="notifications-outline" size={24} color="#ffffff" />
-              {unreadCount > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>{unreadCount}</Text>
-                </View>
-              )}
             </TouchableOpacity>
             
             {/* Botón de cerrar sesión en azul */}
@@ -187,7 +126,7 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
         />
       </View>
       
-      {/* Modal de notificaciones */}
+      {/* Modal de notificaciones - ahora con mensaje "en construcción" */}
       <Modal
         visible={showNotifications}
         transparent={true}
@@ -211,21 +150,13 @@ const HeaderComponent: React.FC<HeaderComponentProps> = ({
               </TouchableOpacity>
             </View>
             
-            <FlatList
-              data={SAMPLE_NOTIFICATIONS}
-              renderItem={renderNotificationItem}
-              keyExtractor={item => item.id}
-              contentContainerStyle={styles.notificationsList}
-              ListEmptyComponent={
-                <Text style={styles.emptyNotificationsText}>
-                  No tienes notificaciones
-                </Text>
-              }
-            />
-            
-            <TouchableOpacity style={styles.markAllReadButton}>
-              <Text style={styles.markAllReadText}>Marcar todo como leído</Text>
-            </TouchableOpacity>
+            <View style={styles.constructionContainer}>
+              <Ionicons name="construct-outline" size={48} color="#0077B6" />
+              <Text style={styles.constructionTitle}>Funcionalidad en construcción</Text>
+              <Text style={styles.constructionMessage}>
+                Las notificaciones estarán disponibles próximamente
+              </Text>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -320,24 +251,6 @@ const styles = StyleSheet.create({
   notificationButton: {
     position: 'relative',
   },
-  notificationBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#FF6B6B',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#ffffff',
-  },
-  notificationBadgeText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
   logoutButton: {
     padding: 2,
   },
@@ -390,54 +303,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  notificationsList: {
-    paddingVertical: 8,
+  constructionContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  notificationItem: {
-    flexDirection: 'row',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  unreadNotification: {
-    backgroundColor: 'rgba(0, 119, 182, 0.05)',
-  },
-  notificationIcon: {
-    marginRight: 12,
-    paddingTop: 2,
-  },
-  notificationContent: {
-    flex: 1,
-  },
-  notificationTitle: {
+  constructionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4,
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  notificationMessage: {
+  constructionMessage: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 6,
-  },
-  notificationTime: {
-    fontSize: 12,
-    color: '#999',
-  },
-  emptyNotificationsText: {
-    padding: 20,
     textAlign: 'center',
-    color: '#999',
-  },
-  markAllReadButton: {
-    padding: 16,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  markAllReadText: {
-    color: '#0077B6',
-    fontWeight: '500',
+    lineHeight: 20,
   },
   // Modal de confirmación de cierre de sesión
   confirmDialog: {

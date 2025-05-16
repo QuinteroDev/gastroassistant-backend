@@ -224,12 +224,15 @@ class HabitQuestionsView(generics.ListAPIView):
     serializer_class = HabitQuestionSerializer
     queryset = HabitQuestion.objects.prefetch_related('options').all()
 
+# questionnaires/views.py
+# Modificar la clase SubmitHabitQuestionnaireView para asegurar que se marca correctamente el onboarding como completo
+
 class SubmitHabitQuestionnaireView(APIView):
     """
     Vista para enviar las respuestas al cuestionario de hábitos.
     """
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
         """
         Espera un JSON como:
@@ -242,18 +245,16 @@ class SubmitHabitQuestionnaireView(APIView):
         }
         """
         answers_data = request.data.get('answers', [])
-        
         if not answers_data:
             return Response({
                 'error': 'No se proporcionaron respuestas'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Validar y guardar las respuestas
         saved_answers = []
         for answer in answers_data:
             question_id = answer.get('question_id')
             option_id = answer.get('option_id')
-            
             try:
                 question = HabitQuestion.objects.get(id=question_id)
                 option = HabitOption.objects.get(id=option_id, question=question)
@@ -261,7 +262,7 @@ class SubmitHabitQuestionnaireView(APIView):
                 return Response({
                     'error': f'Pregunta u opción inválida: {question_id}, {option_id}'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             # Guardar la respuesta
             user_answer, created = UserHabitAnswer.objects.update_or_create(
                 user=request.user,
@@ -269,9 +270,8 @@ class SubmitHabitQuestionnaireView(APIView):
                 is_onboarding=True,
                 defaults={'selected_option': option}
             )
-            
             saved_answers.append(user_answer)
-        
+
         # NUEVO: Crear un registro de completion para el cuestionario de hábitos
         try:
             # Obtener o crear el cuestionario de hábitos
@@ -283,7 +283,7 @@ class SubmitHabitQuestionnaireView(APIView):
                     'description': 'Preguntas sobre hábitos relacionados con la salud digestiva.'
                 }
             )
-            
+
             # Crear un registro de finalización para este cuestionario
             completion = QuestionnaireCompletion.objects.create(
                 user=request.user,
@@ -291,44 +291,59 @@ class SubmitHabitQuestionnaireView(APIView):
                 score=None,  # No hay puntaje para los hábitos
                 is_onboarding=True
             )
-            
+
             # Verificar si ya completó todos los demás cuestionarios requeridos
             gerdq_done = QuestionnaireCompletion.objects.filter(
                 user=request.user,
                 questionnaire__type='GERDQ',
                 is_onboarding=True
             ).exists()
-            
+
             rsi_done = QuestionnaireCompletion.objects.filter(
                 user=request.user,
                 questionnaire__type='RSI',
                 is_onboarding=True
             ).exists()
-            
+
             # Verificar si el perfil tiene la información básica
             user_profile = request.user.profile
             profile_complete = (
                 user_profile.weight_kg is not None and
                 user_profile.height_cm is not None
             )
-            
+
             # Si ha completado todo lo necesario, marcar el onboarding como completo
             if gerdq_done and rsi_done and profile_complete:
                 user_profile.onboarding_complete = True
-                user_profile.save()
-                print(f"Onboarding completado para usuario {request.user.username}")
+                user_profile.save(update_fields=['onboarding_complete'])
+                print(f"✅ Onboarding completado para usuario {request.user.username}")
+                
+                # Intentar guardar de nuevo para garantizar que se guarda
+                try:
+                    from django.db import transaction
+                    with transaction.atomic():
+                        profile_refresh = UserProfile.objects.select_for_update().get(id=user_profile.id)
+                        profile_refresh.onboarding_complete = True
+                        profile_refresh.save(update_fields=['onboarding_complete'])
+                        print(f"✅✅ Verificación adicional de guardado exitosa")
+                except Exception as retry_error:
+                    print(f"⚠️ Error en intento adicional: {retry_error}")
+                    
         except Exception as e:
             print(f"Error al procesar completion de hábitos: {e}")
             # Continuar con el proceso aunque haya un error
-        
+
         # Configurar el seguimiento de hábitos para el usuario
         from recommendations.services import HabitTrackingService
         trackers = HabitTrackingService.setup_habit_tracking(request.user)
-        
+
         # Generar recomendaciones basadas en el perfil actual
         from recommendations.services import RecommendationService
         recommendations = RecommendationService.generate_recommendations_for_user(request.user)
         prioritized = RecommendationService.prioritize_recommendations(request.user)
+        
+        # Verificar estado final
+        final_status = getattr(request.user.profile, 'onboarding_complete', False)
         
         return Response({
             'message': 'Respuestas guardadas con éxito.',
@@ -336,5 +351,5 @@ class SubmitHabitQuestionnaireView(APIView):
             'trackers_created': len(trackers),
             'recommendations_generated': len(recommendations),
             'prioritized_recommendations': len(prioritized),
-            'onboarding_complete': getattr(request.user.profile, 'onboarding_complete', False)
+            'onboarding_complete': final_status
         }, status=status.HTTP_201_CREATED)

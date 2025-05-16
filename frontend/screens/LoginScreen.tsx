@@ -19,7 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { storeData, removeData } from '../utils/storage';
+import { storeData, removeData, getOnboardingProgress } from '../utils/storage';
 import api from '../utils/api';
 
 const { width, height } = Dimensions.get('window');
@@ -83,7 +83,8 @@ export default function LoginScreen() {
         // Guardar el token
         await storeData('authToken', response.data.token);
         console.log("Token guardado correctamente");
-        
+        await storeData('username', username);
+        console.log("Usuario guardado correctamente");
         // Obtener el estado de onboarding inicial
         let onboardingCompleted = response.data.onboarding_complete === true;
         console.log("Valor inicial de onboarding_complete:", response.data.onboarding_complete);
@@ -121,8 +122,28 @@ export default function LoginScreen() {
         
         console.log("¿Onboarding completado? (valor final):", onboardingCompleted);
         
-        // Navegar según estado de onboarding
-        const destination = onboardingCompleted ? 'Home' : 'OnboardingWelcome';
+        // Verificar si hay progreso de onboarding guardado
+        const lastOnboardingScreen = await getOnboardingProgress();
+        console.log("Última pantalla de onboarding guardada:", lastOnboardingScreen);
+        
+        // Determinar la pantalla de destino
+        let destination = 'Home';
+        
+        if (!onboardingCompleted) {
+          if (lastOnboardingScreen && 
+             ['OnboardingGeneral', 'OnboardingGerdQ', 'OnboardingRsi', 
+              'OnboardingClinicalFactors', 'OnboardingDiagnosticTests', 
+              'OnboardingHabits'].includes(lastOnboardingScreen)) {
+            // Si hay una pantalla de onboarding guardada, continuar desde allí
+            destination = lastOnboardingScreen;
+            console.log("Reanudando onboarding desde:", destination);
+          } else {
+            // Si no hay progreso o es inválido, iniciar desde el principio
+            destination = 'OnboardingWelcome';
+            console.log("Iniciando onboarding desde el principio");
+          }
+        }
+        
         console.log("Navegando a:", destination);
         
         navigation.reset({

@@ -16,7 +16,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import HeaderComponent from '../components/HeaderComponent';
 import api from '../utils/api';
-import { getData } from '../utils/storage';
+import { getData, saveOnboardingProgress } from '../utils/storage';
+import ProgressBar from '../components/ProgressBar';
+import { ONBOARDING_STEPS } from '../constants/onboarding';
 
 // ID del cuestionario GerdQ en el sistema
 const GERDQ_QUESTIONNAIRE_ID = 1;
@@ -60,7 +62,6 @@ export default function OnboardingGerdQScreen() {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingGerdQScreen...");
       const token = await getData('authToken');
-      
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
@@ -70,10 +71,29 @@ export default function OnboardingGerdQScreen() {
         return;
       }
       
+      // Guardar la pantalla actual
+      await saveOnboardingProgress('OnboardingGerdQ');
+      
+      // Verificar si el onboarding ya está completo
+      try {
+        const profileResponse = await api.get('/api/profiles/me/');
+        if (profileResponse.data && profileResponse.data.onboarding_complete) {
+          console.log("Onboarding ya completado, redirigiendo a Home...");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error al verificar estado de onboarding:", error);
+        // Continuar con el onboarding aunque haya un error
+      }
+  
       // Si hay token, cargar el cuestionario
       fetchQuestionnaire();
     };
-    
+  
     checkAuth();
   }, [navigation]);
 
@@ -242,61 +262,77 @@ export default function OnboardingGerdQScreen() {
   const handleSubmit = async () => {
     // Validar que todas las preguntas tienen respuesta
     if (
-      !questionnaire?.questions || 
-      questionnaire.questions.length === 0 || 
+      !questionnaire?.questions ||
+      questionnaire.questions.length === 0 ||
       Object.keys(answers).length !== questionnaire.questions.length
     ) {
       Alert.alert('Incompleto', 'Por favor, responde todas las preguntas del cuestionario.');
       return;
     }
-
+  
     setIsSubmitting(true);
     setError(null);
-
+  
     try {
       // Obtener el token de autenticación
       const token = await getData('authToken');
       if (!token) {
         throw new Error('No se encontró token de autenticación');
       }
-      
+  
       // Formatear las respuestas para enviar al API
       const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
         question_id: parseInt(questionId),
         selected_option_id: optionId
       }));
-
+  
       console.log("Enviando respuestas:", answersData);
-      
+  
       // Enviar las respuestas al backend
       let responseData;
+      
       if (Platform.OS === 'web' && __DEV__) {
         console.log("Simulando respuesta en web para desarrollo");
         await new Promise(resolve => setTimeout(resolve, 1000));
-        responseData = { 
-          success: true, 
-          score: 10 
-        };
+        // Incluso en modo desarrollo, intentemos enviar los datos
+        try {
+          const response = await api.post(`/api/questionnaires/${GERDQ_QUESTIONNAIRE_ID}/submit/`, {
+            answers: answersData
+          });
+          
+          responseData = response.data;
+          console.log("Respuesta REAL del servidor:", responseData);
+        } catch (realApiErr) {
+          console.warn("No se pudo enviar al servidor real, usando respuesta simulada", realApiErr);
+          responseData = {
+            success: true,
+            score: 10
+          };
+        }
       } else {
-        // Llamada real a API - ruta correcta según profiles/urls.py
+        // Llamada real a API
         const response = await api.post(`/api/questionnaires/${GERDQ_QUESTIONNAIRE_ID}/submit/`, {
           answers: answersData
         });
+        
         responseData = response.data;
       }
-
+  
       console.log("Respuestas enviadas correctamente:", responseData);
+      
+      // Guardar el progreso y navegar
+      await saveOnboardingProgress('OnboardingRsi');
       
       // Navegación directa sin esperar al Alert
       console.log("Navegando a OnboardingRsi...");
       navigation.navigate('OnboardingRsi');
-      
+  
       // Mostrar resultado
       let message = 'Has completado el cuestionario GerdQ. ';
       if (responseData.score !== undefined) {
         message += `\nTu puntuación es: ${responseData.score}`;
       }
-      
+  
       Alert.alert(
         "Cuestionario Completado",
         message,
@@ -308,7 +344,6 @@ export default function OnboardingGerdQScreen() {
       
       if (err.response && err.response.status === 401) {
         message = "Sesión expirada. Por favor inicia sesión nuevamente.";
-        
         Alert.alert(
           "Sesión expirada",
           message,
@@ -341,6 +376,11 @@ export default function OnboardingGerdQScreen() {
       <HeaderComponent 
         showBackButton={true} 
         onBackPress={() => navigation.goBack()} 
+      />
+
+      <ProgressBar 
+        currentStep={ONBOARDING_STEPS.GERDQ} 
+        totalSteps={ONBOARDING_STEPS.TOTAL_STEPS} 
       />
       
       <KeyboardAvoidingView 

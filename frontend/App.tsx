@@ -1,4 +1,4 @@
-// App.tsx
+// App.tsx - Corregido para solucionar el error de navegación
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import {
@@ -6,12 +6,12 @@ import {
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
 import { ActivityIndicator, View, StyleSheet, Text, Platform } from 'react-native';
-import { removeData } from './utils/storage'; // Importar la función multiplataforma
+import { getData } from './utils/storage';
 
 // Importaciones de pantallas existentes
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
-import OnboardingWelcomeScreen from './screens/OnboardingWelcomeScreen'; 
+import OnboardingWelcomeScreen from './screens/OnboardingWelcomeScreen';
 import OnboardingGeneralScreen from './screens/OnboardingGeneralScreen';
 import OnboardingGerdQScreen from './screens/OnboardingGerdQScreen';
 import OnboardingRsiScreen from './screens/OnboardingRsiScreen';
@@ -24,6 +24,9 @@ import TrackerScreen from './screens/TrackerScreen';
 import EducationalContentScreen from './screens/EducationalContentScreen';
 import StatsScreen from './screens/StatsScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import ProfileUpdateScreen from './screens/ProfileUpdateScreen';
+import ChangePasswordScreen from './screens/ChangePasswordScreen';
+import HelpCenterScreen from './screens/HelpCenterScreen';
 
 // Tipos para las rutas
 export type RootStackParamList = {
@@ -43,25 +46,10 @@ export type RootStackParamList = {
   Education: undefined;
   Stats: undefined;
   Profile: undefined;
+  ProfileUpdate: undefined;
+  ChangePassword: undefined;
+  HelpCenter: undefined;
 };
-
-// Tipos de props para cada pantalla
-export type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
-export type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
-export type RegisterScreenProps = NativeStackScreenProps<RootStackParamList, 'Register'>;
-export type OnboardingWelcomeScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingWelcome'>;
-export type OnboardingGeneralScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingGeneral'>;
-export type OnboardingGerdQScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingGerdQ'>;
-export type OnboardingRsiScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingRsi'>;
-export type OnboardingClinicalFactorsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingClinicalFactors'>;
-export type OnboardingDiagnosticTestsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingDiagnosticTests'>;
-export type OnboardingHabitsScreenProps = NativeStackScreenProps<RootStackParamList, 'OnboardingHabits'>;
-export type GeneratingProgramScreenProps = NativeStackScreenProps<RootStackParamList, 'GeneratingProgram'>;
-export type ProgramDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ProgramDetails'>;
-export type TrackerScreenProps = NativeStackScreenProps<RootStackParamList, 'Tracker'>;
-export type EducationalContentScreenProps = NativeStackScreenProps<RootStackParamList, 'Education'>;
-export type StatsScreenProps = NativeStackScreenProps<RootStackParamList, 'Stats'>;
-export type ProfileScreenProps = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -70,11 +58,11 @@ function InitialLoading({ setLoading }) {
   useEffect(() => {
     const prepareApp = async () => {
       try {
-        // Usar removeData para compatibilidad con web
-        await removeData('authToken');
-        console.log("⚠️ Token eliminado para inicio limpio de la aplicación");
+        // Verificar si hay token para determinar la pantalla inicial
+        const token = await getData('authToken');
+        console.log("Token al iniciar:", token ? "Existe" : "No existe");
       } catch (error) {
-        console.error("Error al limpiar token:", error);
+        console.error("Error al preparar la app:", error);
       } finally {
         // Indicar que hemos terminado la carga inicial
         setTimeout(() => {
@@ -82,7 +70,7 @@ function InitialLoading({ setLoading }) {
         }, 500); // Pequeño retraso para asegurar que el token se limpió
       }
     };
-    
+
     prepareApp();
   }, []);
 
@@ -105,21 +93,26 @@ if (Platform.OS === 'web') {
       padding: 0;
       overflow: hidden;
     }
+    
     #root {
       display: flex;
       flex-direction: column;
     }
+    
     ::-webkit-scrollbar {
       width: 8px;
     }
+    
     ::-webkit-scrollbar-track {
       background: #f1f1f1;
       border-radius: 10px;
     }
+    
     ::-webkit-scrollbar-thumb {
       background: #0077B6;
       border-radius: 10px;
     }
+    
     ::-webkit-scrollbar-thumb:hover {
       background: #005f73;
     }
@@ -130,16 +123,16 @@ if (Platform.OS === 'web') {
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
-  // Usar el componente de carga inicial que limpia el token
+  // Usar el componente de carga inicial
   if (isLoading) {
     return <InitialLoading setLoading={setIsLoading} />;
   }
 
-  console.log("Iniciando aplicación con Login como pantalla inicial forzada");
-
+  console.log("Iniciando aplicación con Login como pantalla inicial");
+  
   return (
     <NavigationContainer>
-      <Stack.Navigator 
+      <Stack.Navigator
         initialRouteName="Login"
         screenOptions={{
           // Ajustes para web
@@ -171,11 +164,11 @@ export default function App() {
           options={{ headerShown: false }}
         />
         
-        {/* Flujo de onboarding - IMPORTANTE: headerShown: false para todas las pantallas de onboarding */}
+        {/* Flujo de onboarding - headerShown: false para todas las pantallas de onboarding */}
         <Stack.Screen
           name="OnboardingWelcome"
           component={OnboardingWelcomeScreen}
-          options={{ 
+          options={{
             headerShown: false,
             gestureEnabled: false
           }}
@@ -183,48 +176,48 @@ export default function App() {
         <Stack.Screen
           name="OnboardingGeneral"
           component={OnboardingGeneralScreen}
-          options={{ 
-            headerShown: false, // Cambiado a false para ocultar el header predeterminado
+          options={{
+            headerShown: false,
             gestureEnabled: false
           }}
         />
         <Stack.Screen
           name="OnboardingGerdQ"
           component={OnboardingGerdQScreen}
-          options={{ 
-            headerShown: false, // Cambiado a false para ocultar el header predeterminado
+          options={{
+            headerShown: false,
             gestureEnabled: false
           }}
         />
         <Stack.Screen
           name="OnboardingRsi"
           component={OnboardingRsiScreen}
-          options={{ 
-            headerShown: false, // Cambiado a false para ocultar el header predeterminado
+          options={{
+            headerShown: false,
             gestureEnabled: false
           }}
         />
         <Stack.Screen
           name="OnboardingClinicalFactors"
           component={OnboardingClinicalFactorsScreen}
-          options={{ 
-            headerShown: false, // Cambiado a false para ocultar el header predeterminado
+          options={{
+            headerShown: false,
             gestureEnabled: false
           }}
         />
         <Stack.Screen
           name="OnboardingDiagnosticTests"
           component={OnboardingDiagnosticTestsScreen}
-          options={{ 
-            headerShown: false, // Cambiado a false para ocultar el header predeterminado
+          options={{
+            headerShown: false,
             gestureEnabled: false
           }}
         />
         <Stack.Screen
           name="OnboardingHabits"
           component={OnboardingHabitsScreen}
-          options={{ 
-            headerShown: false, // Cambiado a false para ocultar el header predeterminado
+          options={{
+            headerShown: false,
             gestureEnabled: false
           }}
         />
@@ -233,46 +226,65 @@ export default function App() {
         <Stack.Screen
           name="GeneratingProgram"
           component={GeneratingProgramScreen}
-          options={{ 
+          options={{
             headerShown: false,
             gestureEnabled: false
           }}
         />
-        
         <Stack.Screen
           name="ProgramDetails"
           component={ProgramDetailsScreen}
-          options={{ 
+          options={{
             headerShown: false,
             gestureEnabled: true
           }}
         />
-        
         <Stack.Screen
           name="Tracker"
           component={TrackerScreen}
-          options={{ 
+          options={{
             headerShown: false
           }}
         />
         <Stack.Screen
           name="Education"
           component={EducationalContentScreen}
-          options={{ 
+          options={{
             headerShown: false
           }}
         />
         <Stack.Screen
           name="Stats"
           component={StatsScreen}
-          options={{ 
+          options={{
             headerShown: false
           }}
         />
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
-          options={{ 
+          options={{
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="ProfileUpdate"
+          component={ProfileUpdateScreen}
+          options={{
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="ChangePassword"
+          component={ChangePasswordScreen}
+          options={{
+            headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="HelpCenter"
+          component={HelpCenterScreen}
+          options={{
             headerShown: false
           }}
         />

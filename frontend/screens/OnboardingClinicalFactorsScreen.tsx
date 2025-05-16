@@ -16,8 +16,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import HeaderComponent from '../components/HeaderComponent';
 import api from '../utils/api';
-import { getData } from '../utils/storage';
+import { getData, saveOnboardingProgress } from '../utils/storage';
 import { Ionicons } from '@expo/vector-icons';
+import ProgressBar from '../components/ProgressBar';
+import { ONBOARDING_STEPS } from '../constants/onboarding';
 
 type OnboardingClinicalFactorsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingClinicalFactors'>;
 
@@ -51,16 +53,35 @@ export default function OnboardingClinicalFactorsScreen() {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingClinicalFactorsScreen...");
       const token = await getData('authToken');
-      
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
           index: 0,
           routes: [{ name: 'Login' }],
         });
+        return;
+      }
+      
+      // Guardar la pantalla actual
+      await saveOnboardingProgress('OnboardingClinicalFactors');
+      
+      // Verificar si el onboarding ya está completo
+      try {
+        const profileResponse = await api.get('/api/profiles/me/');
+        if (profileResponse.data && profileResponse.data.onboarding_complete) {
+          console.log("Onboarding ya completado, redirigiendo a Home...");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error al verificar estado de onboarding:", error);
+        // Continuar con el onboarding aunque haya un error
       }
     };
-    
+  
     checkAuth();
   }, [navigation]);
   
@@ -78,10 +99,10 @@ export default function OnboardingClinicalFactorsScreen() {
     if (!validateForm()) {
       return;
     }
-    
+  
     setIsSubmitting(true);
     setError(null);
-    
+  
     try {
       // Preparar los datos para enviar
       const clinicalFactorsData: ClinicalFactorsData = {
@@ -92,44 +113,110 @@ export default function OnboardingClinicalFactorsScreen() {
         has_constipation: constipation,
         stress_affects: stressAffects
       };
-      
+  
       console.log("Enviando datos de factores clínicos:", clinicalFactorsData);
+  
+      // Intentar hasta 3 veces si es necesario
+      let success = false;
+      let maxRetries = 3;
+      let updatedProfile;
       
-      // Enviar datos al servidor
-      const response = await api.patch('/api/profiles/me/', clinicalFactorsData);
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          // Añadir timestamp para evitar posible caché
+          const timestamp = new Date().getTime();
+          const response = await api.patch(`/api/profiles/me/?t=${timestamp}`, clinicalFactorsData);
+          
+          updatedProfile = response.data;
+          console.log(`Intento ${attempt} - Respuesta:`, updatedProfile);
+          
+          // Verificar que todos los datos se guardaron correctamente
+          const allFactorsSaved = 
+            updatedProfile.has_hernia === hasHernia &&
+            updatedProfile.has_altered_motility === alteredMotility &&
+            updatedProfile.has_slow_emptying === slowEmptying &&
+            updatedProfile.has_dry_mouth === dryMouth &&
+            updatedProfile.has_constipation === constipation &&
+            updatedProfile.stress_affects === stressAffects;
+            
+          if (allFactorsSaved) {
+            success = true;
+            break;
+          } else {
+            console.warn(`⚠️ Intento ${attempt}: No todos los factores clínicos se guardaron correctamente`);
+            console.warn("Enviados:", clinicalFactorsData);
+            console.warn("Recibidos:", updatedProfile);
+            
+            // Esperar un poco antes del siguiente intento
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+        } catch (err) {
+          console.error(`Error en intento ${attempt}:`, err);
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } else {
+            throw err; // Relanzar el último error
+          }
+        }
+      }
       
-      console.log("Datos de factores clínicos enviados correctamente:", response.data);
+      if (!success) {
+        // Si después de todos los intentos no se guardaron bien, mostrar un error
+        setError('No se pudieron guardar todos los datos correctamente. Por favor, inténtalo de nuevo.');
+        console.error("No se pudieron guardar los datos después de múltiples intentos");
+        
+        // Pero intentamos continuar de todos modos
+        if (updatedProfile) {
+          console.log("Continuando con datos parciales");
+        } else {
+          throw new Error("No se pudieron guardar los datos");
+        }
+      }
+  
+      // Guardar el progreso antes de navegar
+      await saveOnboardingProgress('OnboardingDiagnosticTests');
       
-      // Navegar directamente a la pantalla de pruebas diagnósticas antes de mostrar el Alert
+      // Navegar directamente a la pantalla de pruebas diagnósticas
       console.log("Intentando navegar a OnboardingDiagnosticTests...");
       navigation.navigate('OnboardingDiagnosticTests');
-      
-      // Mostrar mensaje de éxito después de iniciar la navegación
+  
+      // Mostrar mensaje apropiado
       Alert.alert(
         "Información Registrada",
-        "Tus datos sobre factores clínicos han sido guardados correctamente.",
+        success 
+          ? "Tus datos sobre factores clínicos han sido guardados correctamente."
+          : "Algunos datos podrían no haberse guardado completamente, pero puedes continuar con el proceso.",
         [{ text: "Aceptar" }]
       );
     } catch (err) {
       console.error("Error al enviar datos de factores clínicos:", err);
       let message = "Error al guardar los datos de factores clínicos";
       
-      if (err.response && err.response.status === 401) {
-        message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+      if (err.response) {
+        console.error("Detalles de la respuesta de error:", {
+          status: err.response.status,
+          headers: err.response.headers,
+          data: err.response.data
+        });
         
-        Alert.alert(
-          "Sesión expirada",
-          message,
-          [{ text: "Ir a Login", onPress: () => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
-          }}]
-        );
-      } else if (err.response && err.response.data && err.response.data.detail) {
-        message = err.response.data.detail;
-        Alert.alert("Error", message);
+        if (err.response.status === 401) {
+          message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+          Alert.alert(
+            "Sesión expirada",
+            message,
+            [{ text: "Ir a Login", onPress: () => {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            }}]
+          );
+        } else if (err.response.data && err.response.data.detail) {
+          message = err.response.data.detail;
+          Alert.alert("Error", message);
+        }
       } else {
         setError(message);
       }
@@ -203,6 +290,11 @@ export default function OnboardingClinicalFactorsScreen() {
       <HeaderComponent 
         showBackButton={true} 
         onBackPress={() => navigation.goBack()} 
+      />
+
+      <ProgressBar 
+        currentStep={ONBOARDING_STEPS.CLINICAL_FACTORS} 
+        totalSteps={ONBOARDING_STEPS.TOTAL_STEPS} 
       />
       
       <KeyboardAvoidingView 

@@ -18,8 +18,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import HeaderComponent from '../components/HeaderComponent';
-import { getData, storeData } from '../utils/storage';
+import { getData, storeData, saveOnboardingProgress } from '../utils/storage';
 import api from '../utils/api'; // Importamos la API
+import ProgressBar from '../components/ProgressBar';
+import { ONBOARDING_STEPS } from '../constants/onboarding';
 
 type OnboardingGeneralNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingGeneral'>;
 
@@ -44,12 +46,10 @@ export default function OnboardingGeneralScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Verificar autenticación al cargar la pantalla
   useEffect(() => {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingGeneralScreen...");
       const token = await getData('authToken');
-      
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
@@ -59,21 +59,32 @@ export default function OnboardingGeneralScreen() {
         return;
       }
       
+      // Guardamos la pantalla actual
+      await saveOnboardingProgress('OnboardingGeneral');
+      
       // Obtener datos del perfil si existe
       try {
         const response = await api.get('/api/profiles/me/');
         console.log("Perfil obtenido:", response.data);
+        
+        // Verificar si el onboarding ya está completo
+        if (response.data && response.data.onboarding_complete) {
+          console.log("Onboarding ya completado, redirigiendo a Home...");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+          return;
+        }
         
         // Pre-cargar los datos si existen
         if (response.data) {
           if (response.data.user && response.data.user.first_name) {
             setName(response.data.user.first_name);
           }
-          
           if (response.data.weight_kg) {
             setWeight(response.data.weight_kg.toString());
           }
-          
           if (response.data.height_cm) {
             setHeight(response.data.height_cm.toString());
           }
@@ -83,7 +94,7 @@ export default function OnboardingGeneralScreen() {
         // No redirigimos en caso de error, permitimos continuar con el formulario vacío
       }
     };
-    
+
     checkAuth();
   }, [navigation]);
 
@@ -172,9 +183,12 @@ export default function OnboardingGeneralScreen() {
       // Guardar nombre en almacenamiento local para uso posterior
       await storeData('userName', name);
       
+      // Guardar el progreso del onboarding antes de navegar
+      await saveOnboardingProgress('OnboardingGerdQ');
+      
       // Navegar a la siguiente pantalla
       navigation.navigate('OnboardingGerdQ');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error en handleContinue:", err);
       const message = err instanceof Error ? err.message : 'Ocurrió un error de red o conexión.';
       setError(message);
@@ -201,6 +215,11 @@ export default function OnboardingGeneralScreen() {
       <HeaderComponent 
         showBackButton={true} 
         onBackPress={() => navigation.goBack()} 
+      />
+
+      <ProgressBar 
+        currentStep={ONBOARDING_STEPS.GENERAL} 
+        totalSteps={ONBOARDING_STEPS.TOTAL_STEPS} 
       />
       
       <KeyboardAvoidingView 

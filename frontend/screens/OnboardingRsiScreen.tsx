@@ -16,7 +16,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import HeaderComponent from '../components/HeaderComponent';
 import api from '../utils/api';
-import { getData } from '../utils/storage';
+import { getData, saveOnboardingProgress } from '../utils/storage';
+import ProgressBar from '../components/ProgressBar';
+import { ONBOARDING_STEPS } from '../constants/onboarding';
 
 // ID del cuestionario RSI en el sistema
 const RSI_QUESTIONNAIRE_ID = 2;
@@ -60,7 +62,6 @@ export default function OnboardingRsiScreen() {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingRsiScreen...");
       const token = await getData('authToken');
-      
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
@@ -70,10 +71,29 @@ export default function OnboardingRsiScreen() {
         return;
       }
       
+      // Guardar la pantalla actual
+      await saveOnboardingProgress('OnboardingRsi');
+      
+      // Verificar si el onboarding ya está completo
+      try {
+        const profileResponse = await api.get('/api/profiles/me/');
+        if (profileResponse.data && profileResponse.data.onboarding_complete) {
+          console.log("Onboarding ya completado, redirigiendo a Home...");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error al verificar estado de onboarding:", error);
+        // Continuar con el onboarding aunque haya un error
+      }
+  
       // Si hay token, cargar el cuestionario
       fetchQuestionnaire();
     };
-    
+  
     checkAuth();
   }, [navigation]);
 
@@ -290,107 +310,149 @@ export default function OnboardingRsiScreen() {
   };
   
   // Enviar respuestas al backend
-  const handleSubmit = async () => {
-    // Validar que todas las preguntas tienen respuesta
-    if (
-      !questionnaire?.questions || 
-      questionnaire.questions.length === 0 || 
-      Object.keys(answers).length !== questionnaire.questions.length
-    ) {
-      Alert.alert('Incompleto', 'Por favor, responde todas las preguntas del cuestionario RSI.');
-      return;
+// Función handleSubmit para OnboardingRsiScreen.tsx
+const handleSubmit = async () => {
+  // Validar que todas las preguntas tienen respuesta
+  if (
+    !questionnaire?.questions ||
+    questionnaire.questions.length === 0 ||
+    Object.keys(answers).length !== questionnaire.questions.length
+  ) {
+    Alert.alert('Incompleto', 'Por favor, responde todas las preguntas del cuestionario RSI.');
+    return;
+  }
+
+  setIsSubmitting(true);
+  setError(null);
+
+  try {
+    // Obtener el token de autenticación
+    const token = await getData('authToken');
+    if (!token) {
+      throw new Error('No se encontró token de autenticación');
     }
-  
-    setIsSubmitting(true);
-    setError(null);
-  
-    try {
-      // Obtener el token de autenticación
-      const token = await getData('authToken');
-      if (!token) {
-        throw new Error('No se encontró token de autenticación');
-      }
+
+    // Formatear las respuestas para enviar al API según el formato esperado por el backend
+    const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
+      question_id: parseInt(questionId),
+      selected_option_id: optionId
+    }));
+
+    console.log("Enviando respuestas RSI:", answersData);
+
+    // Enviar las respuestas al backend
+    let responseData;
+    
+    if (Platform.OS === 'web' && __DEV__) {
+      console.log("Simulando respuesta en web para RSI");
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Formatear las respuestas para enviar al API según el formato esperado por el backend
-      const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
-        question_id: parseInt(questionId),
-        selected_option_id: optionId
-      }));
-  
-      console.log("Enviando respuestas RSI:", answersData);
-      
-      // Enviar las respuestas al backend
-      let responseData;
-      if (Platform.OS === 'web' && __DEV__) {
-        console.log("Simulando respuesta en web para RSI");
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        responseData = { 
-          success: true, 
-          score: 22
-        };
-      } else {
-        // Llamada real a API (ruta correcta según questionnaires/urls.py)
+      // Intento real incluso en desarrollo web
+      try {
         const response = await api.post(`/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/submit/`, {
           answers: answersData
         });
-        responseData = response.data;
-      }
-  
-      console.log("Respuestas RSI enviadas correctamente:", responseData);
-      
-      // IMPORTANTE: Navegar inmediatamente a la siguiente pantalla antes de mostrar el Alert
-      console.log("Navegando a OnboardingClinicalFactors...");
-      navigation.navigate('OnboardingClinicalFactors');
-      
-      // Mostrar resultado después de iniciar la navegación
-      let message = 'Has completado el cuestionario RSI. ';
-      if (responseData.score !== undefined) {
-        message += `\nTu puntuación es: ${responseData.score}`;
-      }
-      
-      // Si el backend nos devuelve información sobre el fenotipo o programa asignado, 
-      // podemos mostrarla en el mensaje
-      if (responseData.phenotype) {
-        message += `\n\nSe ha determinado tu perfil clínico.`;
-      }
-      
-      if (responseData.program_assigned) {
-        message += `\n\nSe te ha asignado un programa personalizado.`;
-      }
-      
-      Alert.alert(
-        "Cuestionario RSI Completado",
-        message,
-        [{ text: "Aceptar", onPress: () => {} }]
-      );
-    } catch (err) {
-      console.error("Error al enviar respuestas RSI:", err);
-      let message = "Error al enviar las respuestas RSI";
-      
-      if (err.response && err.response.status === 401) {
-        message = "Sesión expirada. Por favor inicia sesión nuevamente.";
         
-        Alert.alert(
-          "Sesión expirada",
-          message,
-          [{ text: "Ir a Login", onPress: () => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-          });
-          }}]
-        );
-      } else if (err.response && err.response.data && err.response.data.detail) {
-        message = err.response.data.detail;
-        Alert.alert("Error", message);
-      } else {
-        setError(message);
-        Alert.alert("Error", message);
+        responseData = response.data;
+        console.log("Respuesta REAL del servidor RSI:", responseData);
+      } catch (realApiErr) {
+        console.warn("No se pudo enviar RSI al servidor real, usando respuesta simulada", realApiErr);
+        responseData = {
+          success: true,
+          score: 22
+        };
       }
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Llamada real a API (ruta correcta según questionnaires/urls.py)
+      const response = await api.post(`/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/submit/`, {
+        answers: answersData
+      });
+      
+      responseData = response.data;
     }
-  };
+
+    console.log("Respuestas RSI enviadas correctamente:", responseData);
+    
+    // Verificar que se haya guardado correctamente
+    try {
+      const completionsResponse = await api.get('/api/questionnaires/completions/me/');
+      const rsiCompleted = completionsResponse.data.some(
+        completion => completion.questionnaire.type === 'RSI'
+      );
+      
+      if (!rsiCompleted) {
+        console.warn("⚠️ El cuestionario RSI no aparece como completado en el backend");
+        // Intentar de nuevo
+        try {
+          console.log("Reintentando envío de RSI...");
+          await api.post(`/api/questionnaires/${RSI_QUESTIONNAIRE_ID}/submit/`, {
+            answers: answersData
+          });
+        } catch (retryErr) {
+          console.error("Error en reintento de RSI:", retryErr);
+        }
+      } else {
+        console.log("✅ Cuestionario RSI verificado como completado en el backend");
+      }
+    } catch (verifyErr) {
+      console.warn("No se pudo verificar el estado de RSI:", verifyErr);
+    }
+    
+    // Guardar el progreso antes de navegar
+    await saveOnboardingProgress('OnboardingClinicalFactors');
+    
+    // IMPORTANTE: Navegar inmediatamente a la siguiente pantalla antes de mostrar el Alert
+    console.log("Navegando a OnboardingClinicalFactors...");
+    navigation.navigate('OnboardingClinicalFactors');
+
+    // Mostrar resultado después de iniciar la navegación
+    let message = 'Has completado el cuestionario RSI. ';
+    if (responseData.score !== undefined) {
+      message += `\nTu puntuación es: ${responseData.score}`;
+    }
+
+    // Si el backend nos devuelve información sobre el fenotipo o programa asignado,
+    // podemos mostrarla en el mensaje
+    if (responseData.phenotype) {
+      message += `\n\nSe ha determinado tu perfil clínico.`;
+    }
+
+    if (responseData.program_assigned) {
+      message += `\n\nSe te ha asignado un programa personalizado.`;
+    }
+
+    Alert.alert(
+      "Cuestionario RSI Completado",
+      message,
+      [{ text: "Aceptar", onPress: () => {} }]
+    );
+  } catch (err) {
+    console.error("Error al enviar respuestas RSI:", err);
+    let message = "Error al enviar las respuestas RSI";
+    
+    if (err.response && err.response.status === 401) {
+      message = "Sesión expirada. Por favor inicia sesión nuevamente.";
+      Alert.alert(
+        "Sesión expirada",
+        message,
+        [{ text: "Ir a Login", onPress: () => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}]
+      );
+    } else if (err.response && err.response.data && err.response.data.detail) {
+      message = err.response.data.detail;
+      Alert.alert("Error", message);
+    } else {
+      setError(message);
+      Alert.alert("Error", message);
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Verificar si todas las preguntas tienen respuesta
   const allQuestionsAnswered = questionnaire?.questions && 
@@ -402,6 +464,11 @@ export default function OnboardingRsiScreen() {
       <HeaderComponent 
         showBackButton={true} 
         onBackPress={() => navigation.goBack()} 
+      />
+
+      <ProgressBar 
+        currentStep={ONBOARDING_STEPS.RSI} 
+        totalSteps={ONBOARDING_STEPS.TOTAL_STEPS} 
       />
       
       <KeyboardAvoidingView 

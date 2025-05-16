@@ -16,8 +16,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import HeaderComponent from '../components/HeaderComponent';
 import api from '../utils/api';
-import { getData, storeData } from '../utils/storage';
+import { getData, saveOnboardingProgress, clearOnboardingProgress } from '../utils/storage';
 import { Ionicons } from '@expo/vector-icons';
+import ProgressBar from '../components/ProgressBar';
+import { ONBOARDING_STEPS } from '../constants/onboarding';
 
 type OnboardingHabitsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingHabits'>;
 
@@ -59,7 +61,6 @@ export default function OnboardingHabitsScreen() {
     const initializeScreen = async () => {
       console.log("Verificando token en OnboardingHabitsScreen...");
       const token = await getData('authToken');
-      
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
@@ -69,9 +70,28 @@ export default function OnboardingHabitsScreen() {
         return;
       }
       
+      // Guardar la pantalla actual
+      await saveOnboardingProgress('OnboardingHabits');
+      
+      // Verificar si el onboarding ya está completo
+      try {
+        const profileResponse = await api.get('/api/profiles/me/');
+        if (profileResponse.data && profileResponse.data.onboarding_complete) {
+          console.log("Onboarding ya completado, redirigiendo a Home...");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error al verificar estado de onboarding:", error);
+        // Continuar con el onboarding aunque haya un error
+      }
+  
       fetchHabitQuestions();
     };
-    
+  
     initializeScreen();
   }, [navigation]);
   
@@ -144,23 +164,26 @@ export default function OnboardingHabitsScreen() {
   // Enviar respuestas
 // En OnboardingHabitsScreen.tsx, eliminar el intento de actualizar onboarding a través de /api/users/update_onboarding/
 
+// screens/OnboardingHabitsScreen.tsx
+// En el método handleSubmit, modifica para asegurar que se complete el onboarding
+
 const handleSubmit = async () => {
   if (!validateAnswers()) {
     return;
   }
-  
+
   setIsSubmitting(true);
   setError(null);
-  
+
   try {
     // Formatear las respuestas para enviar
     const answersData = Object.entries(answers).map(([questionId, optionId]) => ({
       question_id: parseInt(questionId),
       option_id: optionId
     }));
-    
+
     console.log("Enviando respuestas de hábitos:", answersData);
-    
+
     // Enviar datos al servidor
     const response = await api.post('/api/questionnaires/habits/submit/', {
       answers: answersData
@@ -168,63 +191,40 @@ const handleSubmit = async () => {
 
     console.log("Respuestas de hábitos enviadas correctamente:", response.data);
 
-    // Actualizar el perfil del usuario para marcar el onboarding como completado
-    let onboardingUpdated = false;
-    let updateAttempts = 0;
-    const maxAttempts = 5;
+    // Verificar si el onboarding se marcó como completo
+    let onboardingCompleted = false;
     
-    // Función para verificar si el onboarding está completado
-    const verifyOnboardingStatus = async () => {
-      try {
-        const profileResponse = await api.get('/api/profiles/me/');
-        return profileResponse.data && profileResponse.data.onboarding_complete === true;
-      } catch (err) {
-        console.error("Error al verificar estado de onboarding:", err);
-        return false;
-      }
-    };
-    
-    // Intento inicial - verificar si ya está completado
-    onboardingUpdated = await verifyOnboardingStatus();
-    
-    // Si no está completado, intentar actualizarlo varias veces
-    while (!onboardingUpdated && updateAttempts < maxAttempts) {
-      updateAttempts++;
-      try {
-        console.log(`Intento ${updateAttempts} para actualizar onboarding_complete a TRUE...`);
-        
-        // Usar PATCH en lugar de POST para actualizar solo este campo
+    try {
+      // Verificar estado de onboarding después de enviar respuestas
+      const profileResponse = await api.get('/api/profiles/me/');
+      onboardingCompleted = profileResponse.data.onboarding_complete === true;
+      
+      if (!onboardingCompleted) {
+        console.log("Intentando marcar el onboarding como completo...");
+        // Intentar marcar explícitamente como completo
         const updateResponse = await api.patch('/api/profiles/me/', {
           onboarding_complete: true
         });
         
-        console.log(`Respuesta del intento ${updateAttempts}:`, updateResponse.data);
-        
-        // Verificar si se actualizó correctamente
-        if (updateResponse.data && updateResponse.data.onboarding_complete === true) {
-          console.log("✅ Onboarding marcado como completado correctamente");
-          onboardingUpdated = true;
-          break;
-        }
-        
-        // Esperar un momento antes del siguiente intento
-        await new Promise(resolve => setTimeout(resolve, 300 * updateAttempts)); // Retraso incremental
-      } catch (updateErr) {
-        console.error(`Error en intento ${updateAttempts}:`, updateErr);
-        // Esperar antes de reintentar
-        await new Promise(resolve => setTimeout(resolve, 500 * updateAttempts));
+        onboardingCompleted = updateResponse.data.onboarding_complete === true;
+        console.log("Resultado de actualización de onboarding:", onboardingCompleted);
       }
+    } catch (error) {
+      console.error("Error al verificar estado de onboarding:", error);
     }
-    
-    if (!onboardingUpdated) {
-      console.warn("⚠️ No se pudo actualizar el estado de onboarding después de múltiples intentos");
-      // Continuar con la navegación de todas formas
+
+    // Eliminar el progreso de onboarding ya que ha completado
+    if (onboardingCompleted) {
+      await clearOnboardingProgress();
     }
-    
+
+    await clearOnboardingProgress();
+
+
     // Navegar a la pantalla de generación de programa
     console.log("Navegando a GeneratingProgram...");
     navigation.navigate('GeneratingProgram');
-    
+
     // Mostrar mensaje de éxito después de iniciar la navegación
     Alert.alert(
       "Cuestionario Completado",
@@ -237,7 +237,6 @@ const handleSubmit = async () => {
     
     if (err.response && err.response.status === 401) {
       message = "Sesión expirada. Por favor inicia sesión nuevamente.";
-      
       Alert.alert(
         "Sesión expirada",
         message,
@@ -306,6 +305,11 @@ const handleSubmit = async () => {
        <HeaderComponent 
         showBackButton={true} 
         onBackPress={() => navigation.goBack()} 
+      />
+
+      <ProgressBar 
+        currentStep={ONBOARDING_STEPS.HABITS} 
+        totalSteps={ONBOARDING_STEPS.TOTAL_STEPS} 
       />
       
       <KeyboardAvoidingView 

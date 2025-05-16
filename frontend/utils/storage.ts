@@ -94,3 +94,54 @@ export async function storeMultipleData(data: Record<string, string>): Promise<v
     throw error;
   }
 }
+
+/**
+ * Guarda la pantalla actual del onboarding
+ * @param {string} screenName - Nombre de la pantalla de onboarding
+ */
+export async function saveOnboardingProgress(screenName: string): Promise<void> {
+  try {
+    // Obtener el ID de usuario o username para hacer el almacenamiento específico
+    const username = await getData('username');
+    const key = username ? `onboardingScreen_${username}` : 'onboardingScreen';
+    
+    await storeData(key, screenName);
+    console.log(`✅ Progreso de onboarding guardado: ${screenName} para ${username || 'usuario actual'}`);
+  } catch (error) {
+    console.error('Error al guardar progreso de onboarding:', error);
+  }
+}
+
+/**
+ * Obtiene la última pantalla de onboarding visitada
+ * @returns {Promise<string|null>} - Nombre de la pantalla o null si no hay
+ */
+export async function getOnboardingProgress(): Promise<string | null> {
+  try {
+    // Obtener el ID de usuario o username para hacer la recuperación específica
+    const username = await getData('username');
+    const key = username ? `onboardingScreen_${username}` : 'onboardingScreen';
+    
+    const screen = await getData(key);
+    console.log(`📱 Recuperando progreso de onboarding: ${screen || 'No hay progreso guardado'} para ${username || 'usuario actual'}`);
+    return screen;
+  } catch (error) {
+    console.error('Error al obtener progreso de onboarding:', error);
+    return null;
+  }
+}
+
+/**
+ * Elimina el progreso de onboarding (para cuando se completa)
+ */
+export async function clearOnboardingProgress(): Promise<void> {
+  try {
+    const username = await getData('username');
+    const key = username ? `onboardingScreen_${username}` : 'onboardingScreen';
+    
+    await removeData(key);
+    console.log(`🧹 Progreso de onboarding eliminado para ${username || 'usuario actual'}`);
+  } catch (error) {
+    console.error('Error al eliminar progreso de onboarding:', error);
+  }
+}

@@ -19,11 +19,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'first_name',
             'weight_kg',
             'height_cm',
+            # Factores clínicos (todos)
             'has_hernia',
+            'has_altered_motility',
+            'has_slow_emptying',
+            'has_dry_mouth',
+            'has_constipation',
+            'stress_affects',
+            # Pruebas diagnósticas
             'has_endoscopy',
             'endoscopy_result',
             'has_ph_monitoring',
             'ph_monitoring_result',
+            # Otros campos
             'phenotype',
             'scenario',
             'onboarding_complete',

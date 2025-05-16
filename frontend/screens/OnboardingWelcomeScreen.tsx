@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getData } from '../utils/storage'; // Usar nuestra abstracción de almacenamiento
+import { getData, saveOnboardingProgress } from '../utils/storage';
 import CustomButton from '../components/CustomButton';
 
 // Tipo para la navegación
@@ -78,22 +78,43 @@ export default function OnboardingWelcomeScreen() {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingWelcomeScreen...");
       const token = await getData('authToken');
-      console.log("Token en OnboardingWelcomeScreen:", token ? "Existe" : "No existe");
-      
       if (!token) {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
           index: 0,
           routes: [{ name: 'Login' }],
         });
+        return;
+      }
+      
+      // Guardar la pantalla actual
+      await saveOnboardingProgress('OnboardingWelcome');
+      
+      // Verificar si el onboarding ya está completo
+      try {
+        const profileResponse = await api.get('/api/profiles/me/');
+        if (profileResponse.data && profileResponse.data.onboarding_complete) {
+          console.log("Onboarding ya completado, redirigiendo a Home...");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error al verificar estado de onboarding:", error);
+        // Continuar con el onboarding aunque haya un error
       }
     };
-    
+  
     checkAuth();
   }, [navigation]);
 
   // Navegar al primer paso del onboarding
-  const handleStart = () => {
+  const handleStart = async () => {
+    // Guardar el progreso antes de navegar
+    await saveOnboardingProgress('OnboardingGeneral');
+    // Navegar a la siguiente pantalla
     navigation.navigate('OnboardingGeneral');
   };
 

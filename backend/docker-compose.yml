@@ -1,0 +1,64 @@
+# docker-compose.yml - OPTIMIZADO para 2GB RAM
+version: '3.8'
+
+services:
+  # PostgreSQL
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=gastro
+      - POSTGRES_USER=quinterodev
+      - POSTGRES_PASSWORD=Govert_nord88
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  # Django
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn gastro_assistant.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=django-insecure-=6up7t$l6=471dascz2+yd@%ucvh)b!9xerhyvt(o!a54s_ttr
+      - ALLOWED_HOSTS=164.90.228.164,localhost,127.0.0.1
+      - DB_HOST=db
+      - DB_NAME=gastro
+      - DB_USER=quinterodev
+      - DB_PASSWORD=Govert_nord88
+      - DB_PORT=5432
+      - LANGUAGE_CODE=es-es
+      - TIME_ZONE=Europe/Madrid
+      - CORS_ALLOW_ALL_ORIGINS=True
+    restart: unless-stopped
+
+  # Nginx - Ahora SÍ podemos incluirlo sin problemas
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS (para futuro)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

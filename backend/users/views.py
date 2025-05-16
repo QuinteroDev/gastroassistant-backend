@@ -2,10 +2,10 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.db.utils import IntegrityError
 
 # users/views.py - Updated register_user view
@@ -138,3 +138,66 @@ def login_user(request):
     else:
         print(f"Credenciales incorrectas para {username}")
         return Response({'detail': 'Credenciales inválidas'}, status=401)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """
+    Cambia la contraseña del usuario autenticado.
+    Espera un JSON:
+    {
+        "current_password": "password_actual",
+        "new_password": "nueva_password",
+        "confirm_password": "nueva_password"
+    }
+    """
+    user = request.user
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+    confirm_password = request.data.get('confirm_password')
+    
+    # Validaciones
+    if not current_password or not new_password or not confirm_password:
+        return Response({
+            'error': 'Todos los campos son obligatorios'
+        }, status=400)
+    
+    # Verificar que la contraseña actual sea correcta
+    if not check_password(current_password, user.password):
+        return Response({
+            'error': 'La contraseña actual es incorrecta'
+        }, status=400)
+    
+    # Verificar que las nuevas contraseñas coincidan
+    if new_password != confirm_password:
+        return Response({
+            'error': 'Las nuevas contraseñas no coinciden'
+        }, status=400)
+    
+    # Validar longitud de la nueva contraseña
+    if len(new_password) < 6:
+        return Response({
+            'error': 'La nueva contraseña debe tener al menos 6 caracteres'
+        }, status=400)
+    
+    # Verificar que la nueva contraseña sea diferente a la actual
+    if check_password(new_password, user.password):
+        return Response({
+            'error': 'La nueva contraseña debe ser diferente a la actual'
+        }, status=400)
+    
+    try:
+        # Cambiar la contraseña
+        user.password = make_password(new_password)
+        user.save()
+        
+        return Response({
+            'message': 'Contraseña cambiada exitosamente'
+        }, status=200)
+        
+    except Exception as e:
+        print(f"Error al cambiar contraseña: {str(e)}")
+        return Response({
+            'error': 'Error interno del servidor'
+        }, status=500)
