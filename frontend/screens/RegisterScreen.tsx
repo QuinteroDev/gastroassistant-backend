@@ -189,7 +189,7 @@ export default function RegisterScreen() {
           
           <View style={styles.formCard}>
             <Text style={styles.title}>Crear Cuenta</Text>
-            <Text style={styles.subtitle}>Únete a nuestra comunidad de bienestar digestivo</Text>
+            <Text style={styles.subtitle}>Únete a nuestra comunidad</Text>
 
             <View style={styles.inputContainer}>
               <Ionicons name="person-outline" size={22} color="#0077B6" style={styles.inputIcon} />
@@ -311,13 +311,31 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.termsContainer}>
-            <Text style={styles.termsText}>
-              Al registrarte, aceptas nuestros{' '}
-              <Text style={styles.termsLink}>Términos y Condiciones</Text>
-              {' '}y{' '}
-              <Text style={styles.termsLink}>Política de Privacidad</Text>
+          <Text style={styles.termsText}>
+            Al registrarte, aceptas nuestros{' '}
+            <Text
+              style={styles.termsLink}
+              onPress={() => { 
+                Platform.OS === 'web'
+                  ? window.open('https://lymbia.com/terms-of-service/', '_blank')
+                  : Linking.openURL('https://lymbia.com/terms-of-service/');
+              }}
+            >
+              Términos y Condiciones
             </Text>
-          </View>
+            {' '}y{' '}
+            <Text
+              style={styles.termsLink}
+              onPress={() => { 
+                Platform.OS === 'web'
+                  ? window.open('https://lymbia.com/privacy-policy/', '_blank')
+                  : Linking.openURL('https://lymbia.com/privacy-policy/');
+              }}
+            >
+              Política de Privacidad
+            </Text>
+          </Text>
+        </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>

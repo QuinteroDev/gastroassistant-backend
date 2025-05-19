@@ -1,24 +1,37 @@
 {
-    "cli": {
-      "version": ">= 5.9.1"
+  "cli": {
+    "version": ">= 5.9.1"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium"
+      }
     },
-    "build": {
-      "development": {
-        "developmentClient": true,
-        "distribution": "internal",
-        "ios": {
-          "resourceClass": "m-medium"
-        }
-      },
-      "preview": {
-        "distribution": "internal",
-        "ios": {
-          "resourceClass": "m-medium"
-        }
-      },
-      "production": {}
+    "preview": {
+      "distribution": "store",
+      "ios": {
+        "resourceClass": "m-medium",
+        "image": "macos-sequoia-15.3-xcode-16.2"
+      }
     },
-    "submit": {
-      "production": {}
+    "production": {
+      "distribution": "store",
+      "ios": {
+        "resourceClass": "m-medium",
+        "image": "macos-sequoia-15.3-xcode-16.2"
+      }
+    }
+  },
+  "submit": {
+    "preview": {
+      "ios": {
+        "appleId": "quintero.malaga@gmail.com",
+        "ascAppId": "6746050155",
+        "appleTeamId": "B4S7N28T9X"
+      }
     }
   }
+}

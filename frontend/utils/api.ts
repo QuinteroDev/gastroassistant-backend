@@ -16,7 +16,7 @@ const getBaseUrl = () => {
     }
   } else {
     // PRODUCCIÓN (TestFlight, App Store, etc.)
-    return 'http://164.90.228.164'; // Tu droplet en Digital Ocean
+    return 'https://gastro.lymbia.com';
   }
 };
 
