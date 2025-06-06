@@ -67,7 +67,17 @@ target 'GastroAssistant' do
       target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
         resource_bundle_target.build_configurations.each do |config|
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+    end
+
+    # Fix for fmt compilation error
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings["ONLY_ACTIVE_ARCH"] = "NO"
+        config.build_settings["EXCLUDED_ARCHS[sdk=iphonesimulator*]"] = "arm64"
+        if target.name == "fmt"
+          config.build_settings["COMPILER_INDEX_STORE_ENABLE"] = "NO"
         end
+      end        end
       end
     end
   end

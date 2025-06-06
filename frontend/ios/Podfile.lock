@@ -81,6 +81,8 @@ PODS:
     - ExpoModulesCore
   - ExpoHaptics (12.8.1):
     - ExpoModulesCore
+  - ExpoHead (3.4.10):
+    - ExpoModulesCore
   - ExpoKeepAwake (12.8.2):
     - ExpoModulesCore
   - ExpoLinearGradient (12.7.2):
@@ -1179,6 +1181,7 @@ DEPENDENCIES:
   - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoHaptics (from `../node_modules/expo-haptics/ios`)
+  - ExpoHead (from `../node_modules/expo-router/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoLinearGradient (from `../node_modules/expo-linear-gradient/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
@@ -1272,6 +1275,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-file-system/ios"
   ExpoHaptics:
     :path: "../node_modules/expo-haptics/ios"
+  ExpoHead:
+    :path: "../node_modules/expo-router/ios"
   ExpoKeepAwake:
     :path: "../node_modules/expo-keep-awake/ios"
   ExpoLinearGradient:
@@ -1400,6 +1405,7 @@ SPEC CHECKSUMS:
   expo-dev-menu-interface: 44e69ddff62bbc6c5418c200e657635720b5a480
   ExpoFileSystem: df58e1eb2a4d6f1006a1ca70bddfbbf63e52fa4f
   ExpoHaptics: c91902e436f3fb0e07aa19acc118018089fa90de
+  ExpoHead: 304de9c15437e3c4c0691587a3bb59ae42ad399f
   ExpoKeepAwake: 3b8cf8533b9212500565a1e41fb080fc5af29918
   ExpoLinearGradient: 501f9bbd83f3ec1d0e0425862b9ef4693605fc1c
   ExpoModulesCore: 43ebd65adf2c0e6ffb0de24a41f8f7de12829331
@@ -1460,6 +1466,6 @@ SPEC CHECKSUMS:
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   Yoga: 805bf71192903b20fc14babe48080582fee65a80
 
-PODFILE CHECKSUM: 1b07873636723c300611d2c59ba6add5742d26c9
+PODFILE CHECKSUM: f8d105cf1e725f139f90c83fcd8ed7b72c23f487
 
 COCOAPODS: 1.16.2
