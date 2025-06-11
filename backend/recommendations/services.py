@@ -214,12 +214,14 @@ class HabitTrackingService:
     Servicio para gestionar el seguimiento de hábitos para los usuarios.
     """
     
+# En recommendations/services.py, reemplaza el método setup_habit_tracking con esta versión:
+
     @staticmethod
     def setup_habit_tracking(user, num_habits=5, include_promoted=True):
         """
         Configura el seguimiento de hábitos para un usuario basado en sus
         respuestas al cuestionario de hábitos. Se priorizan los hábitos
-        con peores puntuaciones.
+        con peores puntuaciones, excluyendo fumar y beber.
         
         Args:
             user: Usuario para el que configurar el seguimiento
@@ -229,19 +231,28 @@ class HabitTrackingService:
         # Eliminar trackers existentes
         HabitTracker.objects.filter(user=user).delete()
         
+        # NUEVO: Definir los tipos de hábitos a excluir
+        EXCLUDED_HABIT_TYPES = ['SMOKING', 'ALCOHOL']
+        
         # Obtener respuestas de hábitos del usuario
         habit_answers = UserHabitAnswer.objects.filter(
             user=user,
             is_onboarding=True
         ).select_related('question', 'selected_option')
         
-        # Si no hay respuestas, no podemos configurar seguimiento
-        if not habit_answers:
+        # NUEVO: Filtrar las respuestas excluyendo fumar y beber
+        filtered_answers = [
+            answer for answer in habit_answers 
+            if answer.question.habit_type not in EXCLUDED_HABIT_TYPES
+        ]
+        
+        # Si no hay respuestas después del filtrado, no podemos configurar seguimiento
+        if not filtered_answers:
             return []
         
         # Ordenar por puntuación (peor a mejor)
         sorted_answers = sorted(
-            habit_answers,
+            filtered_answers,
             key=lambda x: x.selected_option.value
         )
         
@@ -260,9 +271,12 @@ class HabitTrackingService:
             trackers.append(tracker)
         
         # Si se debe incluir un hábito promocionado
-        if include_promoted:
+        if include_promoted and len(trackers) < num_habits:
             # Elegir un hábito de nivel medio (si existe)
-            mid_level_answers = [a for a in habit_answers if a.selected_option.value == 2]
+            mid_level_answers = [
+                a for a in filtered_answers 
+                if a.selected_option.value == 2
+            ]
             
             if mid_level_answers:
                 # Tomar el primero de nivel medio que no esté ya en trackers
@@ -280,7 +294,7 @@ class HabitTrackingService:
             # Si no hay hábitos de nivel medio, tomar uno que no esté ya en trackers
             else:
                 remaining_habits = [
-                    a for a in habit_answers 
+                    a for a in filtered_answers 
                     if a.question.id not in [t.habit.id for t in trackers]
                 ]
                 if remaining_habits:
@@ -293,6 +307,40 @@ class HabitTrackingService:
                         is_promoted=True
                     )
                     trackers.append(tracker)
+        
+        # NUEVO: Si después de excluir fumar y beber no llegamos a 5 hábitos,
+        # asegurar que tomamos todos los disponibles
+        if len(trackers) < num_habits:
+            # Tomar más hábitos de los restantes hasta llegar a 5 (si es posible)
+            remaining_answers = [
+                a for a in filtered_answers 
+                if a.question.id not in [t.habit.id for t in trackers]
+            ]
+            
+            # Ordenar los restantes por puntuación
+            remaining_sorted = sorted(
+                remaining_answers,
+                key=lambda x: x.selected_option.value
+            )
+            
+            # Añadir hasta completar 5 hábitos
+            for answer in remaining_sorted:
+                if len(trackers) >= num_habits:
+                    break
+                
+                tracker = HabitTracker.objects.create(
+                    user=user,
+                    habit=answer.question,
+                    current_score=answer.selected_option.value,
+                    target_score=3,
+                    is_promoted=len(trackers) == 0  # El primero será promovido si no hay ninguno
+                )
+                trackers.append(tracker)
+        
+        # Log para debugging
+        print(f"Usuario {user.username}: {len(trackers)} hábitos configurados para tracking")
+        for tracker in trackers:
+            print(f"  - {tracker.habit.habit_type}: Score {tracker.current_score}, Promovido: {tracker.is_promoted}")
         
         return trackers
     

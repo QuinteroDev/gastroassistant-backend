@@ -8,9 +8,11 @@ import {
   StatusBar,
   Platform,
   Animated,
-  Dimensions
+  Dimensions,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import MainHeaderComponent from '../components/MainHeaderComponent';
 import TabNavigationBar from '../components/TabNavigationBar';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -29,14 +31,6 @@ interface Article {
   warning: string;
   conclusion: string;
 }
-
-// Colores para categorías
-const CATEGORY_COLORS = {
-  diagnostic: theme.colors.primary,
-  lifestyle: theme.colors.secondary,
-  nutrition: theme.colors.accent,
-  mental: '#9D4EDD'
-};
 
 // Contenido educativo mejorado
 const EDUCATIONAL_CONTENT: Article[] = [
@@ -95,14 +89,23 @@ const EDUCATIONAL_CONTENT: Article[] = [
 ];
 
 const { width } = Dimensions.get('window');
+const STORAGE_KEY = '@gastro_assistant_read_articles';
 
 export default function EducationalContentScreen() {
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
   const [readArticles, setReadArticles] = useState<Set<number>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const [markingAsRead, setMarkingAsRead] = useState<number | null>(null);
   
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  
+  // Cargar artículos leídos de AsyncStorage
+  useEffect(() => {
+    loadReadArticles();
+  }, []);
   
   useEffect(() => {
     Animated.parallel([
@@ -119,14 +122,70 @@ export default function EducationalContentScreen() {
     ]).start();
   }, []);
   
+  // Cargar artículos leídos del almacenamiento local
+  const loadReadArticles = async () => {
+    try {
+      const storedData = await AsyncStorage.getItem(STORAGE_KEY);
+      if (storedData) {
+        const readIds = JSON.parse(storedData);
+        setReadArticles(new Set(readIds));
+      }
+    } catch (error) {
+      console.error('Error loading read articles:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Guardar artículos leídos en almacenamiento local
+  const saveReadArticles = async (newReadArticles: Set<number>) => {
+    try {
+      const readIds = Array.from(newReadArticles);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(readIds));
+    } catch (error) {
+      console.error('Error saving read articles:', error);
+    }
+  };
+  
+  // Marcar artículo como leído
+  const markAsRead = async (articleId: number) => {
+    setMarkingAsRead(articleId);
+    
+    // Animación del botón
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    // Actualizar estado local
+    const newReadArticles = new Set(readArticles).add(articleId);
+    setReadArticles(newReadArticles);
+    
+    // Guardar en almacenamiento local
+    await saveReadArticles(newReadArticles);
+    
+    // TODO: Aquí deberías sincronizar con tu backend
+    // await syncReadArticlesWithBackend(articleId);
+    
+    setTimeout(() => {
+      setMarkingAsRead(null);
+    }, 500);
+  };
+  
   // Función para alternar expandir/colapsar artículo
   const toggleArticle = (id: number) => {
     if (expandedArticle === id) {
       setExpandedArticle(null);
     } else {
       setExpandedArticle(id);
-      // Marcar como leído
-      setReadArticles(prev => new Set(prev).add(id));
     }
   };
   
@@ -144,6 +203,7 @@ export default function EducationalContentScreen() {
   const renderArticle = (article: Article, index: number) => {
     const isExpanded = expandedArticle === article.id;
     const isRead = readArticles.has(article.id);
+    const isMarkingThis = markingAsRead === article.id;
     
     return (
       <Animated.View
@@ -175,7 +235,7 @@ export default function EducationalContentScreen() {
               {isRead && (
                 <View style={styles.articleMeta}>
                   <Icon name="checkmark-circle" size={14} color={theme.colors.success.main} />
-                  <Text style={styles.readLabel}>Leído</Text>
+                  <Text style={styles.readLabel}>Artículo leído</Text>
                 </View>
               )}
             </View>
@@ -214,12 +274,54 @@ export default function EducationalContentScreen() {
                   {article.conclusion}
                 </Text>
               </View>
+              
+              {/* Botón de marcar como leído */}
+              {!isRead && (
+                <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.markAsReadButton,
+                      isMarkingThis && styles.markAsReadButtonActive
+                    ]}
+                    onPress={() => markAsRead(article.id)}
+                    disabled={isMarkingThis}
+                  >
+                    {isMarkingThis ? (
+                      <>
+                        <Icon name="checkmark-circle" size={20} color="#fff" />
+                        <Text style={styles.markAsReadButtonText}>¡Marcado!</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="book-outline" size={20} color="#fff" />
+                        <Text style={styles.markAsReadButtonText}>Marcar como leído</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
+              )}
+              
+              {/* Indicador si ya está leído */}
+              {isRead && (
+                <View style={styles.alreadyReadContainer}>
+                  <Icon name="checkmark-circle" size={20} color={theme.colors.success.main} />
+                  <Text style={styles.alreadyReadText}>Has leído este artículo</Text>
+                </View>
+              )}
             </Animated.View>
           )}
         </TouchableOpacity>
       </Animated.View>
     );
   };
+  
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.loadingText}>Cargando contenido...</Text>
+      </View>
+    );
+  }
   
   return (
     <View style={styles.container}>
@@ -321,6 +423,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 80,
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+  },
   
   // Header mejorado
   headerBackground: {
@@ -411,30 +521,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.full,
   },
   
-  // Categorías
-  categoriesContainer: {
-    marginTop: -30,
-    marginBottom: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
-  },
-  categoriesScroll: {
-    paddingHorizontal: theme.spacing.xs,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-    marginRight: theme.spacing.sm,
-    ...theme.shadows.sm,
-  },
-  categoryText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: '600',
-    marginLeft: theme.spacing.xs,
-  },
-  
   // Sección de artículos
   articlesContainer: {
     padding: theme.spacing.md,
@@ -493,15 +579,6 @@ const styles = StyleSheet.create({
   articleMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  readTime: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.text.secondary,
-    marginLeft: 4,
-  },
-  separator: {
-    marginHorizontal: theme.spacing.sm,
-    color: theme.colors.text.secondary,
   },
   readLabel: {
     fontSize: theme.fontSize.sm,
@@ -572,6 +649,45 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontWeight: '600',
     fontStyle: 'italic',
+  },
+  
+  // Botón de marcar como leído
+  markAsReadButton: {
+    backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.full,
+    marginTop: theme.spacing.lg,
+    ...theme.shadows.md,
+  },
+  markAsReadButtonActive: {
+    backgroundColor: theme.colors.success.main,
+  },
+  markAsReadButtonText: {
+    color: '#fff',
+    fontSize: theme.fontSize.base,
+    fontWeight: '600',
+    marginLeft: theme.spacing.sm,
+  },
+  
+  // Indicador de ya leído
+  alreadyReadContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+    backgroundColor: theme.colors.success.bg,
+    borderRadius: theme.borderRadius.md,
+  },
+  alreadyReadText: {
+    color: theme.colors.success.dark,
+    fontSize: theme.fontSize.base,
+    fontWeight: '600',
+    marginLeft: theme.spacing.sm,
   },
   
   // Call to action

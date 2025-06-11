@@ -94,8 +94,51 @@ export default function StatsScreen() {
       try {
         // Obtener perfil del usuario para scores
         const profileResponse = await api.get('/api/profiles/me/');
-        const gerdqScore = profileResponse.data?.gerdq_score || null;
-        const rsiScore = profileResponse.data?.rsi_score || null;
+        console.log('Profile response:', profileResponse.data); // Debug para ver qué campos vienen
+        
+        // Buscar los scores con diferentes nombres posibles
+        const gerdqScore = profileResponse.data?.gerdq_score || 
+                          profileResponse.data?.gerdQ_score || 
+                          profileResponse.data?.gerd_q_score ||
+                          profileResponse.data?.GERDQ_score ||
+                          null;
+                          
+        const rsiScore = profileResponse.data?.rsi_score || 
+                        profileResponse.data?.RSI_score ||
+                        profileResponse.data?.r_s_i_score ||
+                        null;
+        
+        console.log('GERD-Q Score:', gerdqScore); // Debug
+        console.log('RSI Score:', rsiScore); // Debug
+        
+        // Si no están en el perfil, intentar obtenerlos de completions
+        let finalGerdqScore = gerdqScore;
+        let finalRsiScore = rsiScore;
+        
+        if (finalGerdqScore === null || finalRsiScore === null) {
+          try {
+            const completionsResponse = await api.get('/api/questionnaires/completions/me/');
+            console.log('Completions response:', completionsResponse.data);
+            
+            if (Array.isArray(completionsResponse.data)) {
+              const gerdqCompletion = completionsResponse.data.find(
+                (c: any) => c.questionnaire?.type === 'GERDQ'
+              );
+              const rsiCompletion = completionsResponse.data.find(
+                (c: any) => c.questionnaire?.type === 'RSI'
+              );
+              
+              if (gerdqCompletion && finalGerdqScore === null) {
+                finalGerdqScore = gerdqCompletion.score;
+              }
+              if (rsiCompletion && finalRsiScore === null) {
+                finalRsiScore = rsiCompletion.score;
+              }
+            }
+          } catch (err) {
+            console.error('Error al obtener completions:', err);
+          }
+        }
         
         // Obtener datos de hábitos
         const habitsResponse = await api.get('/api/habits/');
@@ -116,7 +159,7 @@ export default function StatsScreen() {
         let habitCount = 0;
         
         // Datos semanales
-        const weeklyMap = new Map<string, { completed: number; total: number }>();
+        const weeklyMap = new Map<string, { completed: number; total: number; dayLabel: string }>();
         const today = new Date();
         
         // Inicializar los últimos 7 días
@@ -124,7 +167,17 @@ export default function StatsScreen() {
           const date = new Date(today);
           date.setDate(date.getDate() - i);
           const dateStr = date.toISOString().split('T')[0];
-          weeklyMap.set(dateStr, { completed: 0, total: habits.length });
+          
+          // Crear etiqueta con día y fecha
+          const dayName = WEEK_DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]; // Ajustar para que Lunes sea 0
+          const dayNumber = date.getDate();
+          const dayLabel = `${dayName}\n${dayNumber}`;
+          
+          weeklyMap.set(dateStr, { 
+            completed: 0, 
+            total: habits.length,
+            dayLabel: dayLabel 
+          });
         }
         
         // Procesar cada hábito
@@ -183,7 +236,7 @@ export default function StatsScreen() {
         
         // Convertir weeklyMap a array
         const weeklyData = Array.from(weeklyMap.entries()).map(([date, data], index) => ({
-          day: WEEK_DAYS[index],
+          day: data.dayLabel,
           completed: data.completed,
           total: data.total
         }));
@@ -202,8 +255,8 @@ export default function StatsScreen() {
           completedHabits: totalLogs,
           avgCompletionRate: avgCompletion,
           topHabit: topHabitData,
-          gerdqScore: gerdqScore,
-          rsiScore: rsiScore,
+          gerdqScore: finalGerdqScore,
+          rsiScore: finalRsiScore,
           weeklyData: weeklyData
         });
         
@@ -578,10 +631,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Header con patrón
+  // Header con patrón (más compacto)
   headerBackground: {
     backgroundColor: theme.colors.primary,
-    paddingBottom: 40,
+    paddingBottom: 30, // Reducido de 40 a 30
     position: 'relative',
     overflow: 'hidden',
   },
@@ -600,39 +653,39 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md,
   },
   
-  // Tarjeta de progreso principal
+  // Tarjeta de progreso principal (MUCHO más compacta)
   mainProgressCard: {
     backgroundColor: theme.colors.secondary,
     borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.xl,
+    padding: theme.spacing.md, // Reducido de xl a md
     alignItems: 'center',
     ...theme.shadows.lg,
   },
   progressTitle: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: 'bold',
+    fontSize: theme.fontSize.base, // Reducido de xl a base
+    fontWeight: '600', // Reducido de bold a 600
     color: theme.colors.white,
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.sm, // Reducido de lg a sm
   },
   progressCircleContainer: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.sm, // Reducido de lg a sm
   },
   progressCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 80, // Reducido de 120 a 80
+    height: 80,
+    borderRadius: 40,
     backgroundColor: theme.colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     ...theme.shadows.md,
   },
   progressPercentage: {
-    fontSize: theme.fontSize.xxxl,
+    fontSize: theme.fontSize.xl, // Reducido de xxxl a xl
     fontWeight: 'bold',
     color: theme.colors.primary,
   },
   progressLabel: {
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs, // Reducido de sm a xs
     color: theme.colors.text.secondary,
   },
   summaryRow: {
@@ -645,25 +698,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryValue: {
-    fontSize: theme.fontSize.xxl,
+    fontSize: theme.fontSize.lg, // Reducido de xxl a lg
     fontWeight: 'bold',
     color: theme.colors.white,
-    marginVertical: theme.spacing.xs,
+    marginVertical: 2, // Reducido de xs
   },
   summaryLabel: {
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs, // Reducido de sm a xs
     color: 'rgba(255, 255, 255, 0.8)',
   },
   summaryDivider: {
     width: 1,
-    height: 40,
+    height: 30, // Reducido de 40 a 30
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   
   // Sección de puntuaciones
   scoresSection: {
     padding: theme.spacing.md,
-    marginTop: -20,
+    marginTop: -10, // Cambiado de -20 a -10 para más separación
+    paddingTop: theme.spacing.lg, // Añadido padding superior
   },
   sectionTitle: {
     fontSize: theme.fontSize.xl,
@@ -759,8 +813,10 @@ const styles = StyleSheet.create({
   },
   chartLabel: {
     marginTop: theme.spacing.sm,
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs,
     color: theme.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 14,
   },
   chartLabelToday: {
     color: theme.colors.accent,

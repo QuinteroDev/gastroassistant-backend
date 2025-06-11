@@ -8,8 +8,8 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from questionnaires.models import HabitQuestion, UserHabitAnswer, HabitOption
 from questionnaires.serializers import HabitQuestionSerializer, UserHabitAnswerSerializer
-from .models import HabitTracker, HabitLog
-from .serializers import HabitTrackerSerializer, HabitLogSerializer
+from .models import HabitTracker, HabitLog, DailyNote
+from .serializers import HabitTrackerSerializer, HabitLogSerializer, DailyNoteSerializer
 from recommendations.services import HabitTrackingService
 
 class HabitQuestionsView(generics.ListAPIView):
@@ -181,3 +181,126 @@ class HabitLogsHistoryView(generics.ListAPIView):
             tracker__habit_id=habit_id,
             date__gte=start_date
         ).select_related('tracker').order_by('-date')
+    
+class DailyNoteView(APIView):
+    """
+    Vista para guardar y obtener las notas diarias.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Guardar nota diaria cuando se completan todos los hábitos.
+        Espera un JSON como:
+        {
+            "date": "2023-06-15", (opcional, default=hoy)
+            "notes": "Me sentí muy bien hoy...",
+            "all_completed": true
+        }
+        """
+        date_str = request.data.get('date')
+        notes = request.data.get('notes', '')
+        all_completed = request.data.get('all_completed', True)
+        
+        # Procesar fecha
+        if date_str:
+            try:
+                from datetime import datetime
+                date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({
+                    'error': 'Formato de fecha inválido. Use YYYY-MM-DD'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            date = timezone.now().date()
+        
+        # Crear o actualizar la nota diaria
+        daily_note, created = DailyNote.objects.update_or_create(
+            user=request.user,
+            date=date,
+            defaults={
+                'notes': notes,
+                'all_habits_completed': all_completed
+            }
+        )
+        
+        return Response({
+            'message': 'Nota diaria guardada con éxito',
+            'data': DailyNoteSerializer(daily_note).data
+        }, status=status.HTTP_201_CREATED)
+    
+    def get(self, request):
+        """
+        Obtener la nota diaria para una fecha específica.
+        Query params: ?date=2023-06-15
+        """
+        date_str = request.query_params.get('date')
+        
+        # Procesar fecha
+        if date_str:
+            try:
+                from datetime import datetime
+                date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({
+                    'error': 'Formato de fecha inválido. Use YYYY-MM-DD'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            date = timezone.now().date()
+        
+        try:
+            daily_note = DailyNote.objects.get(user=request.user, date=date)
+            return Response(DailyNoteSerializer(daily_note).data)
+        except DailyNote.DoesNotExist:
+            return Response({
+                'exists': False,
+                'date': str(date)
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+class CheckAllHabitsCompletedView(APIView):
+    """
+    Vista para verificar si ya se completaron todos los hábitos del día
+    y si ya se mostró el modal de celebración.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Verifica el estado de completado del día actual.
+        """
+        date = timezone.now().date()
+        
+        # Obtener todos los trackers activos del usuario
+        active_trackers = HabitTracker.objects.filter(
+            user=request.user,
+            is_active=True
+        )
+        
+        if not active_trackers.exists():
+            return Response({
+                'has_habits': False,
+                'all_completed': False,
+                'modal_shown': False
+            })
+        
+        # Verificar logs del día
+        logs_today = HabitLog.objects.filter(
+            tracker__user=request.user,
+            date=date
+        ).values_list('tracker_id', flat=True)
+        
+        all_completed = set(logs_today) == set(active_trackers.values_list('id', flat=True))
+        
+        # Verificar si ya existe una nota diaria (indica que se mostró el modal)
+        modal_shown = DailyNote.objects.filter(
+            user=request.user,
+            date=date
+        ).exists()
+        
+        return Response({
+            'has_habits': True,
+            'all_completed': all_completed,
+            'modal_shown': modal_shown,
+            'completed_count': len(logs_today),
+            'total_habits': active_trackers.count()
+        })

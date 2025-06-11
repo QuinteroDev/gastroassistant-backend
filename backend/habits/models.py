@@ -96,3 +96,31 @@ class HabitStreak(models.Model):
     class Meta:
         verbose_name = "Racha de hábito"
         verbose_name_plural = "Rachas de hábitos"
+
+
+class DailyNote(models.Model):
+    """
+    Nota diaria general cuando se completan todos los hábitos del día.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='daily_notes',
+        verbose_name="Usuario"
+    )
+    date = models.DateField(verbose_name="Fecha")
+    notes = models.TextField(verbose_name="Notas del día")
+    all_habits_completed = models.BooleanField(
+        default=True,
+        verbose_name="Todos los hábitos completados"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.date}"
+    
+    class Meta:
+        unique_together = ('user', 'date')
+        ordering = ['-date']
+        verbose_name = "Nota diaria"
+        verbose_name_plural = "Notas diarias"

@@ -35,16 +35,6 @@ interface FAQItem {
   question: string;
   answer: string;
   icon: string;
-  category: 'general' | 'account' | 'health' | 'technical';
-}
-
-interface QuickAction {
-  id: number;
-  title: string;
-  subtitle: string;
-  icon: JSX.Element;
-  color: string;
-  onPress: () => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -52,7 +42,6 @@ const { width } = Dimensions.get('window');
 export default function HelpCenterScreen() {
   const navigation = useNavigation<HelpCenterScreenNavigationProp>();
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -97,121 +86,57 @@ export default function HelpCenterScreen() {
     }
   };
   
-  // Datos de las preguntas frecuentes mejoradas
+  // Datos de las preguntas frecuentes
   const faqData: FAQItem[] = [
     {
       id: 1,
       question: "¿Qué es GastroAssistant?",
       answer: "GastroAssistant es tu compañero digital para el manejo del reflujo gastroesofágico. Utilizamos inteligencia artificial y las últimas guías clínicas para ofrecerte un programa personalizado que te ayuda a mejorar tu calidad de vida mediante el seguimiento de hábitos, educación y recomendaciones basadas en evidencia.",
-      icon: "information-circle",
-      category: 'general'
+      icon: "information-circle"
     },
     {
       id: 2,
       question: "¿Cómo funciona el análisis de mi perfil?",
       answer: "Nuestro sistema analiza tus respuestas a los cuestionarios validados (GERD-Q y RSI) junto con tus datos clínicos para clasificar tu perfil según las guías médicas actuales. Esto nos permite crear un programa único adaptado a tus necesidades específicas, con recomendaciones personalizadas y un seguimiento efectivo.",
-      icon: "analytics",
-      category: 'health'
+      icon: "analytics"
     },
     {
       id: 3,
       question: "¿Puedo actualizar mis datos clínicos?",
       answer: "¡Por supuesto! Mantener tu información actualizada es fundamental. Ve a 'Mi Perfil' y selecciona 'Actualizar Datos Clínicos'. Cada vez que tengas nuevos resultados de pruebas o cambios en tu condición, actualízalos para que podamos ajustar tu programa y darte las mejores recomendaciones.",
-      icon: "create",
-      category: 'account'
+      icon: "create"
     },
     {
       id: 4,
       question: "¿Es segura mi información médica?",
       answer: "Tu privacidad es nuestra prioridad. Utilizamos encriptación de grado médico para proteger todos tus datos. Cumplimos con las regulaciones de protección de datos de salud más estrictas. Solo tú tienes acceso a tu información y nunca la compartimos sin tu consentimiento explícito.",
-      icon: "shield-checkmark",
-      category: 'technical'
+      icon: "shield-checkmark"
     },
     {
       id: 5,
       question: "¿La app reemplaza las consultas médicas?",
       answer: "No, GastroAssistant es una herramienta complementaria diseñada para apoyar, no reemplazar, la atención médica profesional. Siempre consulta con tu médico para diagnósticos, cambios en tratamientos o síntomas preocupantes. Nosotros te ayudamos a prepararte mejor para esas consultas y a seguir las recomendaciones médicas.",
-      icon: "medical",
-      category: 'health'
+      icon: "medical"
     },
     {
       id: 6,
       question: "¿Cómo funciona el tracker de hábitos?",
       answer: "El tracker te permite registrar diariamente tus 5 hábitos clave para el manejo del reflujo. Simplemente marca cómo te fue con cada hábito usando nuestro sistema de emojis intuitivo. El sistema calcula tu progreso, identifica patrones y te motiva con rachas y estadísticas visuales.",
-      icon: "calendar",
-      category: 'general'
+      icon: "calendar"
     },
     {
       id: 7,
       question: "¿Qué significan los scores GERD-Q y RSI?",
       answer: "GERD-Q evalúa la probabilidad y severidad del reflujo gastroesofágico, mientras que RSI mide síntomas de reflujo laringofaríngeo. Ambos son cuestionarios validados médicamente. Usamos estos scores para personalizar tu programa y monitorear tu progreso a lo largo del tiempo.",
-      icon: "stats-chart",
-      category: 'health'
+      icon: "stats-chart"
     },
     {
       id: 8,
       question: "¿Puedo exportar mis datos?",
       answer: "Próximamente podrás exportar todos tus datos en formato PDF para compartir con tu médico. Esto incluirá tu historial de hábitos, evolución de scores y notas. Es una herramienta valiosa para tus consultas médicas.",
-      icon: "download",
-      category: 'technical'
+      icon: "download"
     }
   ];
-  
-  // Acciones rápidas
-  const quickActions: QuickAction[] = [
-    {
-      id: 1,
-      title: "Contactar Soporte",
-      subtitle: "Respuesta en 24 horas",
-      icon: <MaterialIcons name="support-agent" size={28} color="#ffffff" />,
-      color: theme.colors.primary,
-      onPress: () => {
-        if (Platform.OS === 'web') {
-          // @ts-ignore
-          window.location.href = 'mailto:info@lymbia.com';
-        } else {
-          Linking.openURL('mailto:info@lymbia.com');
-        }
-      }
-    },
-    {
-      id: 2,
-      title: "Guía de Inicio",
-      subtitle: "Aprende a usar la app",
-      icon: <MaterialIcons name="play-circle-outline" size={28} color="#ffffff" />,
-      color: theme.colors.secondary,
-      onPress: () => openURL('https://lymbia.com/gastroassistant-guide')
-    },
-    {
-      id: 3,
-      title: "Reportar un Problema",
-      subtitle: "Ayúdanos a mejorar",
-      icon: <MaterialIcons name="bug-report" size={28} color="#ffffff" />,
-      color: theme.colors.accent,
-      onPress: () => {
-        if (Platform.OS === 'web') {
-          // @ts-ignore
-          window.location.href = 'mailto:support@lymbia.com?subject=Reporte de Problema - GastroAssistant';
-        } else {
-          Linking.openURL('mailto:support@lymbia.com?subject=Reporte de Problema - GastroAssistant');
-        }
-      }
-    }
-  ];
-  
-  // Categorías de FAQ
-  const categories = [
-    { id: 'all', label: 'Todas', icon: 'apps' },
-    { id: 'general', label: 'General', icon: 'information-circle' },
-    { id: 'health', label: 'Salud', icon: 'medical' },
-    { id: 'account', label: 'Cuenta', icon: 'person' },
-    { id: 'technical', label: 'Técnico', icon: 'settings' }
-  ];
-  
-  // Filtrar FAQs por categoría
-  const filteredFAQs = selectedCategory === 'all' 
-    ? faqData 
-    : faqData.filter(faq => faq.category === selectedCategory);
   
   // Toggle FAQ expandido
   const toggleFAQ = (id: number) => {
@@ -289,89 +214,23 @@ export default function HelpCenterScreen() {
           </Animated.View>
         </View>
         
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.sectionTitle}>Acceso Rápido</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickActionsScroll}
-          >
-            {quickActions.map((action, index) => (
-              <Animated.View
-                key={action.id}
-                style={[
-                  {
-                    opacity: fadeAnim,
-                    transform: [{
-                      translateX: slideAnim,
-                    }]
-                  }
-                ]}
-              >
-                <TouchableOpacity
-                  style={[styles.quickActionCard, { backgroundColor: action.color }]}
-                  onPress={action.onPress}
-                  activeOpacity={0.9}
-                >
-                  <View style={styles.quickActionIcon}>
-                    {action.icon}
-                  </View>
-                  <Text style={styles.quickActionTitle}>{action.title}</Text>
-                  <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            ))}
-          </ScrollView>
-        </View>
-        
         {/* FAQ Section */}
         <View style={styles.faqSection}>
           <Text style={styles.sectionTitle}>Preguntas Frecuentes</Text>
           
-          {/* Categorías */}
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoriesContainer}
-          >
-            {categories.map(category => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === category.id && styles.categoryChipActive
-                ]}
-                onPress={() => setSelectedCategory(category.id)}
-              >
-                <Icon 
-                  name={category.icon as any} 
-                  size={16} 
-                  color={selectedCategory === category.id ? '#ffffff' : theme.colors.primary} 
-                />
-                <Text style={[
-                  styles.categoryLabel,
-                  selectedCategory === category.id && styles.categoryLabelActive
-                ]}>
-                  {category.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          
           {/* FAQ Items */}
           <View style={styles.faqList}>
-            {filteredFAQs.map((faq, index) => renderFAQItem(faq, index))}
+            {faqData.map((faq, index) => renderFAQItem(faq, index))}
           </View>
         </View>
         
         {/* Contact Section */}
         <View style={styles.contactSection}>
           <View style={styles.contactCard}>
-            <Icon name="chatbubbles" size={32} color={theme.colors.primary} />
-            <Text style={styles.contactTitle}>¿No encuentras lo que buscas?</Text>
+            <Icon name="mail-outline" size={32} color={theme.colors.primary} />
+            <Text style={styles.contactTitle}>¿Necesitas más ayuda?</Text>
             <Text style={styles.contactText}>
-              Nuestro equipo está disponible para ayudarte con cualquier pregunta adicional
+              Nuestro equipo de soporte está disponible para ayudarte con cualquier pregunta o problema
             </Text>
             <TouchableOpacity 
               style={styles.contactButton}
@@ -385,7 +244,7 @@ export default function HelpCenterScreen() {
               }}
             >
               <Icon name="mail" size={20} color="#ffffff" />
-              <Text style={styles.contactButtonText}>Enviar Email</Text>
+              <Text style={styles.contactButtonText}>info@lymbia.com</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -457,83 +316,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   
-  // Quick Actions
-  quickActionsContainer: {
+  // FAQ Section
+  faqSection: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
     marginTop: -20,
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
   },
   sectionTitle: {
     fontSize: theme.fontSize.xl,
     fontWeight: 'bold',
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
-  },
-  quickActionsScroll: {
-    paddingHorizontal: theme.spacing.md,
-  },
-  quickActionCard: {
-    width: width * 0.4,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    marginRight: theme.spacing.md,
-    alignItems: 'center',
-    ...theme.shadows.md,
-  },
-  quickActionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  quickActionTitle: {
-    fontSize: theme.fontSize.base,
-    fontWeight: '600',
-    color: theme.colors.surface,
-    marginBottom: theme.spacing.xs,
-    textAlign: 'center',
-  },
-  quickActionSubtitle: {
-    fontSize: theme.fontSize.sm,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-  },
-  
-  // FAQ Section
-  faqSection: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.lg,
-  },
-  categoriesContainer: {
     marginBottom: theme.spacing.lg,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-    marginRight: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-  },
-  categoryChipActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  categoryLabel: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.text.primary,
-    marginLeft: theme.spacing.xs,
-    fontWeight: '500',
-  },
-  categoryLabelActive: {
-    color: theme.colors.surface,
   },
   faqList: {
     gap: theme.spacing.md,

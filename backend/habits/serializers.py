@@ -1,6 +1,6 @@
 # habits/serializers.py
 from rest_framework import serializers
-from .models import HabitTracker, HabitLog, HabitStreak
+from .models import HabitTracker, HabitLog, HabitStreak, DailyNote
 from questionnaires.models import HabitQuestion
 from questionnaires.serializers import HabitQuestionSerializer
 
@@ -33,3 +33,9 @@ class HabitLogSerializer(serializers.ModelSerializer):
         model = HabitLog
         fields = ['id', 'tracker_id', 'habit_id', 'habit_type', 'date', 
                  'completion_level', 'notes', 'logged_at']
+        
+class DailyNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyNote
+        fields = ['id', 'date', 'notes', 'all_habits_completed', 'created_at']
+        read_only_fields = ['id', 'created_at']

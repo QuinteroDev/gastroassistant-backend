@@ -12,7 +12,8 @@ import {
   ScrollView,
   Modal,
   Animated,
-  Dimensions
+  Dimensions,
+  Vibration
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -141,47 +142,80 @@ export default function TrackerScreen() {
   const [completionLevels, setCompletionLevels] = useState<{[key: number]: number | null}>({});
   const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
   const [allCompleted, setAllCompleted] = useState<boolean>(false);
+  const [modalAlreadyShown, setModalAlreadyShown] = useState<boolean>(false);
   
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const confettiAnim = useRef(new Animated.Value(0)).current;
+  const progressFillAnim = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   // Cargar datos al inicio
   useEffect(() => {
     loadHabits();
+    checkCompletionStatus();
   }, []);
 
-  // Verificar si todos los hábitos están completados
+  // Animar la barra de progreso cuando cambie
   useEffect(() => {
-    if (habits.length > 0) {
-      const completedCount = Object.values(completionLevels).filter(level => level !== null && level >= 0).length;
-      if (completedCount === habits.length && !allCompleted) {
-        setAllCompleted(true);
-        setShowCompletionModal(true);
-        // Animación de celebración
-        Animated.parallel([
-          Animated.timing(confettiAnim, {
+    // Animar el llenado
+    Animated.timing(progressFillAnim, {
+      toValue: dailyProgress,
+      duration: 1000,
+      useNativeDriver: false,
+    }).start();
+
+    // Si llega al 100%, hacer bounce y detener shimmer
+    if (dailyProgress === 100) {
+      // Bounce effect
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.05,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 3,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+      // Detener shimmer
+      shimmerAnim.stopAnimation();
+      shimmerAnim.setValue(0);
+    } else if (dailyProgress > 0) {
+      // Efecto shimmer solo cuando está entre 0 y 100
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerAnim, {
             toValue: 1,
-            duration: 1000,
+            duration: 1500,
             useNativeDriver: true,
           }),
-          Animated.sequence([
-            Animated.timing(scaleAnim, {
-              toValue: 1.2,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-            Animated.timing(scaleAnim, {
-              toValue: 1,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]).start();
-      }
+          Animated.timing(shimmerAnim, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
     }
-  }, [completionLevels, habits]);
+  }, [dailyProgress]);
+
+  // Función para verificar si ya se mostró el modal hoy
+  const checkCompletionStatus = async () => {
+    try {
+      const response = await api.get('/api/habits/check-completion/');
+      if (response.data.modal_shown) {
+        setModalAlreadyShown(true);
+      }
+    } catch (err) {
+      console.error('Error al verificar estado de completado:', err);
+    }
+  };
 
   // Función para cargar hábitos
   const loadHabits = async () => {
@@ -252,77 +286,104 @@ export default function TrackerScreen() {
   };
 
   // Función para guardar un registro de hábito y avanzar al siguiente
-  const saveHabitAndProceed = async (level: number) => {
-    if (habits.length === 0) return;
-    
-    const selectedHabit = habits[selectedHabitIndex];
-    
-    // Actualizar el estado local inmediatamente
-    const updatedLevels = { ...completionLevels };
-    updatedLevels[selectedHabit.id] = level;
-    setCompletionLevels(updatedLevels);
-    
-    // Guardar en la base de datos
-    try {
-      const data = {
-        tracker_id: selectedHabit.id,
-        habit_id: selectedHabit.habit.id,
-        date: today,
-        completion_level: level,
-        notes: ''
-      };
+    const saveHabitAndProceed = async (level: number) => {
+      if (habits.length === 0) return;
       
-      await api.post('/api/habits/log/', data);
+      const selectedHabit = habits[selectedHabitIndex];
       
-      // Recalcular el progreso
-      const completedCount = Object.values(updatedLevels).filter(l => l !== null && l >= 0).length;
-      const newProgress = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
-      setDailyProgress(newProgress);
+      // Actualizar el estado local inmediatamente
+      const updatedLevels = { ...completionLevels };
+      updatedLevels[selectedHabit.id] = level;
+      setCompletionLevels(updatedLevels);
       
-      // Avanzar al siguiente hábito si no es el último
-      if (selectedHabitIndex < habits.length - 1) {
-        const nextIndex = selectedHabitIndex + 1;
-        setSelectedHabitIndex(nextIndex);
+      // Guardar en la base de datos
+      try {
+        const data = {
+          tracker_id: selectedHabit.id,
+          habit_id: selectedHabit.habit.id,
+          date: today,
+          completion_level: level,
+          notes: ''
+        };
         
-        // Establecer el nivel de completado del siguiente hábito
-        const nextHabitId = habits[nextIndex].id;
-        setCompletionLevel(updatedLevels[nextHabitId] || null);
+        await api.post('/api/habits/log/', data);
+        
+        // Recalcular el progreso
+        const completedCount = Object.values(updatedLevels).filter(l => l !== null && l >= 0).length;
+        const newProgress = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
+        setDailyProgress(newProgress);
+        
+        // NUEVO: Verificar si completamos TODOS los hábitos
+        if (completedCount === habits.length && !allCompleted) {
+          // Mostrar el modal solo UNA vez
+          setAllCompleted(true);
+          setShowCompletionModal(true);
+        }
+        
+        // Avanzar al siguiente hábito si no es el último
+        if (selectedHabitIndex < habits.length - 1) {
+          const nextIndex = selectedHabitIndex + 1;
+          setSelectedHabitIndex(nextIndex);
+          
+          // Establecer el nivel de completado del siguiente hábito
+          const nextHabitId = habits[nextIndex].id;
+          setCompletionLevel(updatedLevels[nextHabitId] || null);
+        }
+        
+      } catch (err) {
+        console.error('Error al guardar el registro:', err);
+        Alert.alert('Error', 'No pudimos guardar tu registro. Intenta de nuevo más tarde.');
       }
-      
-    } catch (err) {
-      console.error('Error al guardar el registro:', err);
-      Alert.alert('Error', 'No pudimos guardar tu registro. Intenta de nuevo más tarde.');
-    }
-  };
+    };
+  
 
   // Función para guardar las notas finales
-  const saveFinalNotes = async () => {
-    if (!notes.trim()) {
-      setShowCompletionModal(false);
-      return;
-    }
-    
-    setIsSaving(true);
+    const saveFinalNotes = async () => {
+      if (!notes.trim()) {
+        setShowCompletionModal(false);
+        return;
+      }
+      
+      setIsSaving(true);
+      try {
+        await api.post('/api/habits/daily-notes/', {
+          date: today,
+          notes: notes,
+          all_completed: true
+        });
+        
+        setShowCompletionModal(false);
+        setSuccessMessage('¡Excelente trabajo! Has completado todos tus hábitos del día.');
+        
+        // IMPORTANTE: No volver a mostrar el modal
+        // El estado allCompleted ya está en true, así que no se volverá a mostrar
+        
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 3000);
+        
+      } catch (err) {
+        console.error('Error al guardar las notas:', err);
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+  // Función para omitir las notas
+  const skipNotes = async () => {
     try {
-      // Guardar las notas en el último hábito o crear una entrada especial
-      const lastHabit = habits[habits.length - 1];
+      // Guardar registro vacío para marcar que el modal ya se mostró
       await api.post('/api/habits/daily-notes/', {
         date: today,
-        notes: notes,
+        notes: '',
         all_completed: true
       });
       
       setShowCompletionModal(false);
-      setSuccessMessage('¡Excelente trabajo! Has completado todos tus hábitos del día.');
-      
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-      
+      setModalAlreadyShown(true);
     } catch (err) {
-      console.error('Error al guardar las notas:', err);
-    } finally {
-      setIsSaving(false);
+      console.error('Error al marcar modal como visto:', err);
+      setShowCompletionModal(false);
     }
   };
 
@@ -386,7 +447,7 @@ export default function TrackerScreen() {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.skipButton]}
-                onPress={() => setShowCompletionModal(false)}
+                onPress={skipNotes}
               >
                 <Text style={styles.skipButtonText}>Omitir</Text>
               </TouchableOpacity>
@@ -394,7 +455,7 @@ export default function TrackerScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveNotesButton]}
                 onPress={saveFinalNotes}
-                disabled={isSaving}
+                disabled={isSaving || !notes.trim()}
               >
                 {isSaving ? (
                   <ActivityIndicator color="#ffffff" size="small" />
@@ -495,9 +556,60 @@ export default function TrackerScreen() {
                 <Text style={styles.progressLabel}>Progreso del día</Text>
                 <Text style={styles.progressPercentage}>{Math.round(dailyProgress)}%</Text>
               </View>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${dailyProgress}%` }]} />
-              </View>
+              
+              {/* Barra de progreso con gradiente animado */}
+              <Animated.View style={[styles.progressBar, {
+                transform: [{ scale: dailyProgress === 100 ? scaleAnim : 1 }]
+              }]}>
+                <Animated.View 
+                  style={[
+                    styles.progressFillGradient,
+                    {
+                      width: progressFillAnim.interpolate({
+                        inputRange: [0, 100],
+                        outputRange: ['0%', '100%'],
+                      }),
+                      backgroundColor: progressFillAnim.interpolate({
+                        inputRange: [0, 25, 50, 75, 100],
+                        outputRange: [
+                          theme.colors.error.main,     // 0-25%: Rojo
+                          theme.colors.warning.main,   // 25-50%: Naranja
+                          theme.colors.warning.light,  // 50-75%: Amarillo
+                          theme.colors.success.light,  // 75-99%: Verde claro
+                          theme.colors.success.main    // 100%: Verde brillante
+                        ],
+                      }),
+                    }
+                  ]}
+                >
+                  {dailyProgress > 0 && dailyProgress < 100 && (
+                    <Animated.View 
+                      style={[
+                        styles.shimmer,
+                        {
+                          opacity: shimmerAnim.interpolate({
+                            inputRange: [0, 0.5, 1],
+                            outputRange: [0, 0.6, 0],
+                          }),
+                          transform: [
+                            {
+                              translateX: shimmerAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [-100, 200],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                  )}
+                  {dailyProgress === 100 && (
+                    <View style={styles.completeIndicator}>
+                      <Icon name="checkmark" size={8} color="#ffffff" />
+                    </View>
+                  )}
+                </Animated.View>
+              </Animated.View>
             </View>
           </View>
 
@@ -730,15 +842,34 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   },
   progressBar: {
-    height: 8,
+    height: 12,
     backgroundColor: '#E0E0E0',
-    borderRadius: theme.borderRadius.full,
+    borderRadius: 6,
     overflow: 'hidden',
   },
-  progressFill: {
+  progressFillGradient: {
     height: '100%',
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.full,
+    borderRadius: 6,
+    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  shimmer: {
+    position: 'absolute',
+    width: 100,
+    height: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    transform: [{ skewX: '-20deg' }],
+  },
+  completeIndicator: {
+    position: 'absolute',
+    right: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   
   // Indicadores de progreso

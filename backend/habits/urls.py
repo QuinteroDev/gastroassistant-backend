@@ -1,14 +1,17 @@
-# habits/urls.py
 from django.urls import path
 from .views import (
     UserHabitTrackersView,
     HabitLogView,
-    HabitLogsHistoryView
+    HabitLogsHistoryView,
+    DailyNoteView,  # Nueva
+    CheckAllHabitsCompletedView  # Nueva
 )
 
 urlpatterns = [
     path('', UserHabitTrackersView.as_view(), name='user-habit-trackers'),
-    path('my-trackers/', UserHabitTrackersView.as_view(), name='user-habit-trackers-alt'),  # Añade esta línea
+    path('my-trackers/', UserHabitTrackersView.as_view(), name='user-habit-trackers-alt'),
     path('log/', HabitLogView.as_view(), name='log-habit'),
     path('<int:habit_id>/history/', HabitLogsHistoryView.as_view(), name='habit-logs-history'),
+    path('daily-notes/', DailyNoteView.as_view(), name='daily-notes'),  # Nueva
+    path('check-completion/', CheckAllHabitsCompletedView.as_view(), name='check-completion'),  # Nueva
 ]

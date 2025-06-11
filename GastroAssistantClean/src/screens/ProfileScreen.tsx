@@ -71,8 +71,8 @@ const { width } = Dimensions.get('window');
 // Función para obtener el estado del IMC
 const getBMIStatus = (bmi: number) => {
   if (bmi < 18.5) return { label: 'Bajo peso', color: theme.colors.info.main };
-  if (bmi < 25) return { label: 'Peso normal', color: theme.colors.success.main };
-  if (bmi < 30) return { label: 'Sobrepeso', color: theme.colors.warning.main };
+  if (bmi <= 24.9) return { label: 'Peso normal', color: theme.colors.success.main };
+  if (bmi <= 29.9) return { label: 'Sobrepeso', color: theme.colors.warning.main };
   return { label: 'Obesidad', color: theme.colors.error.main };
 };
 
@@ -227,50 +227,7 @@ export default function ProfileScreen() {
     );
   };
   
-  // Renderizar tarjetas de salud
-  const renderHealthCards = () => {
-    const bmiStatus = userProfile.bmi > 0 ? getBMIStatus(userProfile.bmi) : null;
-    
-    return (
-      <View style={styles.healthCardsContainer}>
-        <Text style={styles.sectionTitle}>Tu Salud</Text>
-        
-        <View style={styles.healthCardsRow}>
-          {/* IMC Card */}
-          <TouchableOpacity style={styles.healthCard} activeOpacity={0.8}>
-            <View style={[styles.healthIconContainer, { backgroundColor: `${bmiStatus?.color || theme.colors.primary}15` }]}>
-              <FontAwesome5 name="weight" size={24} color={bmiStatus?.color || theme.colors.primary} />
-            </View>
-            <Text style={styles.healthCardTitle}>IMC</Text>
-            <Text style={[styles.healthCardValue, { color: bmiStatus?.color || theme.colors.primary }]}>
-              {userProfile.bmi > 0 ? userProfile.bmi.toFixed(1) : '--'}
-            </Text>
-            {bmiStatus && (
-              <Text style={styles.healthCardLabel}>{bmiStatus.label}</Text>
-            )}
-          </TouchableOpacity>
-          
-          {/* Scores Card */}
-          <TouchableOpacity style={styles.healthCard} activeOpacity={0.8}>
-            <View style={[styles.healthIconContainer, { backgroundColor: `${theme.colors.secondary}15` }]}>
-              <MaterialCommunityIcons name="chart-line" size={24} color={theme.colors.secondary} />
-            </View>
-            <Text style={styles.healthCardTitle}>Scores</Text>
-            <View style={styles.scoresContainer}>
-              <Text style={styles.scoreItem}>
-                GERD-Q: {userProfile.gerdq_score || '--'}
-              </Text>
-              <Text style={styles.scoreItem}>
-                RSI: {userProfile.rsi_score || '--'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-  
-  // Renderizar datos clínicos mejorado
+  // Renderizar datos clínicos mejorado con IMC incluido
   const renderClinicalData = () => {
     const tests = [
       {
@@ -288,6 +245,8 @@ export default function ProfileScreen() {
         color: userProfile.ph_monitoring_result === "POSITIVE" ? theme.colors.warning.main : theme.colors.success.main
       }
     ];
+    
+    const bmiStatus = userProfile.bmi > 0 ? getBMIStatus(userProfile.bmi) : null;
     
     return (
       <View style={styles.sectionContainer}>
@@ -337,6 +296,22 @@ export default function ProfileScreen() {
               <Text style={styles.measurementValue}>
                 {userProfile.weight_kg || '--'} {userProfile.weight_kg ? 'kg' : ''}
               </Text>
+            </View>
+            <View style={styles.measurementDivider} />
+            <View style={styles.measurementItem}>
+              <MaterialCommunityIcons name="human" size={20} color={theme.colors.text.secondary} />
+              <Text style={styles.measurementLabel}>IMC</Text>
+              <Text style={[
+                styles.measurementValue,
+                bmiStatus && { color: bmiStatus.color }
+              ]}>
+                {userProfile.bmi > 0 ? userProfile.bmi.toFixed(1) : '--'}
+              </Text>
+              {bmiStatus && (
+                <Text style={[styles.bmiStatus, { color: bmiStatus.color }]}>
+                  {bmiStatus.label}
+                </Text>
+              )}
             </View>
           </View>
         </View>
@@ -483,7 +458,7 @@ export default function ProfileScreen() {
         
         <View style={styles.versionContainer}>
           <Text style={styles.versionText}>GastroAssistant v1.0.0</Text>
-          <Text style={styles.copyrightText}>© 2024 Lymbia</Text>
+          <Text style={styles.copyrightText}>© 2025 Lymbia</Text>
         </View>
       </View>
     );
@@ -536,14 +511,14 @@ export default function ProfileScreen() {
             </Animated.View>
           </View>
           
-          {/* Tarjetas de salud */}
+          {/* Contenido principal */}
           <Animated.View 
             style={{
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
+              transform: [{ translateY: slideAnim }],
+              marginTop: -20
             }}
           >
-            {renderHealthCards()}
             {renderClinicalData()}
             {renderSettings()}
             {renderSupport()}
@@ -647,56 +622,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
   },
   
-  // Tarjetas de salud
-  healthCardsContainer: {
-    paddingHorizontal: theme.spacing.md,
-    marginTop: -40,
-    marginBottom: theme.spacing.md,
-  },
-  healthCardsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: theme.spacing.md,
-  },
-  healthCard: {
-    flex: 1,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    alignItems: 'center',
-    ...theme.shadows.md,
-  },
-  healthIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  healthCardTitle: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.xs,
-  },
-  healthCardValue: {
-    fontSize: theme.fontSize.xxl,
-    fontWeight: 'bold',
-  },
-  healthCardLabel: {
-    fontSize: theme.fontSize.xs,
-    color: theme.colors.text.secondary,
-    marginTop: theme.spacing.xs,
-  },
-  scoresContainer: {
-    alignItems: 'center',
-  },
-  scoreItem: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.text.primary,
-    marginVertical: 2,
-  },
-  
   // Secciones
   sectionContainer: {
     backgroundColor: theme.colors.surface,
@@ -783,8 +708,12 @@ const styles = StyleSheet.create({
   },
   measurementDivider: {
     width: 1,
-    height: 40,
+    height: 50,
     backgroundColor: theme.colors.border.light,
+  },
+  bmiStatus: {
+    fontSize: theme.fontSize.xs,
+    marginTop: 2,
   },
   
   // Configuración
