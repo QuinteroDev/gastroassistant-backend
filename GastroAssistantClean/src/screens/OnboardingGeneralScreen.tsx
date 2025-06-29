@@ -28,10 +28,15 @@ import { theme } from '../constants/theme';
 type RootStackParamList = {
   Login: undefined;
   Register: undefined;
-  Home: undefined;
+  ProgramDetails: undefined;  // Añadir esta línea
   OnboardingWelcome: undefined;
   OnboardingGeneral: undefined;
   OnboardingGerdQ: undefined;
+  OnboardingRsi: undefined;
+  OnboardingClinicalFactors: undefined;
+  OnboardingDiagnosticTests: undefined;
+  OnboardingHabits: undefined;
+  GeneratingProgram: undefined;
 };
 
 type OnboardingGeneralNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingGeneral'>;
@@ -65,7 +70,7 @@ export default function OnboardingGeneralScreen() {
         console.log("No hay token, redirigiendo a Login...");
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Login' }],
+          routes: [{ name: 'ProgramDetails' }],
         });
         return;
       }

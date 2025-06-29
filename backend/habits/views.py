@@ -11,6 +11,7 @@ from questionnaires.serializers import HabitQuestionSerializer, UserHabitAnswerS
 from .models import HabitTracker, HabitLog, DailyNote
 from .serializers import HabitTrackerSerializer, HabitLogSerializer, DailyNoteSerializer
 from recommendations.services import HabitTrackingService
+from recommendations.services import RecommendationService
 
 class HabitQuestionsView(generics.ListAPIView):
     """
@@ -69,13 +70,33 @@ class SubmitHabitQuestionnaireView(APIView):
             saved_answers.append(user_answer)
         
         # Configurar el seguimiento de hábitos para el usuario
-        trackers = HabitTrackingService.setup_habit_tracking(request.user)
+        trackers, promoted_habit = HabitTrackingService.setup_habit_tracking(request.user)
         
-        return Response({
+        # Generar recomendaciones
+        recommendations = RecommendationService.generate_recommendations_for_user(request.user)
+        prioritized = RecommendationService.prioritize_recommendations(request.user)
+        
+        # Preparar respuesta con información del hábito promocionado
+        response_data = {
             'message': 'Respuestas guardadas con éxito.',
             'answers_count': len(saved_answers),
-            'trackers_created': len(trackers)
-        }, status=status.HTTP_201_CREATED)
+            'trackers_created': len(trackers),
+            'recommendations_generated': len(recommendations),
+            'prioritized_recommendations': len(prioritized),
+            'onboarding_complete': True
+        }
+        
+        # Añadir información del hábito promocionado si existe
+        if promoted_habit:
+            response_data['promoted_habit'] = {
+                'id': promoted_habit.id,
+                'habit_type': promoted_habit.habit.habit_type,
+                'habit_name': promoted_habit.habit.text,
+                'current_score': promoted_habit.current_score,
+                'is_promoted': promoted_habit.is_promoted
+            }
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 class UserHabitTrackersView(generics.ListAPIView):
     """

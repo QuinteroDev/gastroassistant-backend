@@ -22,9 +22,15 @@ import { theme } from '../constants/theme';
 type RootStackParamList = {
   Login: undefined;
   Register: undefined;
-  Home: undefined;
+  ProgramDetails: undefined;  // Añadir esta línea
   OnboardingWelcome: undefined;
   OnboardingGeneral: undefined;
+  OnboardingGerdQ: undefined;
+  OnboardingRsi: undefined;
+  OnboardingClinicalFactors: undefined;
+  OnboardingDiagnosticTests: undefined;
+  OnboardingHabits: undefined;
+  GeneratingProgram: undefined;
 };
 
 type OnboardingWelcomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingWelcome'>;
@@ -101,7 +107,7 @@ export default function OnboardingWelcomeScreen() {
           console.log("Onboarding ya completado, redirigiendo a Home...");
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Home' }],
+            routes: [{ name: 'ProgramDetails' }],
           });
           return;
         }

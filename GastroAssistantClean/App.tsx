@@ -8,6 +8,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import ProgramDetailsScreen from './src/screens/ProgramDetailsScreen';
 import OnboardingWelcomeScreen from './src/screens/OnboardingWelcomeScreen';
 import OnboardingGeneralScreen from './src/screens/OnboardingGeneralScreen';
+import OnboardingGeneralUpdateScreen from './src/screens/OnboardingGeneralUpdateScreen';
 import OnboardingGerdQScreen from './src/screens/OnboardingGerdQScreen';
 import OnboardingRsiScreen from './src/screens/OnboardingRsiScreen';
 import OnboardingClinicalFactorsScreen from './src/screens/OnboardingClinicalFactorsScreen';
@@ -33,6 +34,7 @@ export type RootStackParamList = {
   Register: undefined;
   OnboardingWelcome: undefined;
   OnboardingGeneral: undefined;
+  OnboardingGeneralUpdate: undefined;
   OnboardingGerdQ: undefined;
   OnboardingRsi: undefined;
   OnboardingClinicalFactors: undefined;
@@ -79,6 +81,10 @@ export default function App() {
         <Stack.Screen
           name="OnboardingGeneral"
           component={OnboardingGeneralScreen}
+        />
+        <Stack.Screen
+          name="OnboardingGeneralUpdate"
+          component={OnboardingGeneralUpdateScreen}
         />
         <Stack.Screen
           name="OnboardingGerdQ"

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
      'programs',
      'recommendations',
      'habits',
+     'cycles',
 ]
 
 MIDDLEWARE = [

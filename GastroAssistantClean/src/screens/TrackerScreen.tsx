@@ -6,14 +6,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  SafeAreaView,
-  StatusBar,
   Alert,
   ScrollView,
   Modal,
   Animated,
   Dimensions,
-  Vibration
+  Keyboard,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -286,88 +287,87 @@ export default function TrackerScreen() {
   };
 
   // Función para guardar un registro de hábito y avanzar al siguiente
-    const saveHabitAndProceed = async (level: number) => {
-      if (habits.length === 0) return;
+  const saveHabitAndProceed = async (level: number) => {
+    if (habits.length === 0) return;
+    
+    const selectedHabit = habits[selectedHabitIndex];
+    
+    // Actualizar el estado local inmediatamente
+    const updatedLevels = { ...completionLevels };
+    updatedLevels[selectedHabit.id] = level;
+    setCompletionLevels(updatedLevels);
+    
+    // Guardar en la base de datos
+    try {
+      const data = {
+        tracker_id: selectedHabit.id,
+        habit_id: selectedHabit.habit.id,
+        date: today,
+        completion_level: level,
+        notes: ''
+      };
       
-      const selectedHabit = habits[selectedHabitIndex];
+      await api.post('/api/habits/log/', data);
       
-      // Actualizar el estado local inmediatamente
-      const updatedLevels = { ...completionLevels };
-      updatedLevels[selectedHabit.id] = level;
-      setCompletionLevels(updatedLevels);
+      // Recalcular el progreso
+      const completedCount = Object.values(updatedLevels).filter(l => l !== null && l >= 0).length;
+      const newProgress = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
+      setDailyProgress(newProgress);
       
-      // Guardar en la base de datos
-      try {
-        const data = {
-          tracker_id: selectedHabit.id,
-          habit_id: selectedHabit.habit.id,
-          date: today,
-          completion_level: level,
-          notes: ''
-        };
-        
-        await api.post('/api/habits/log/', data);
-        
-        // Recalcular el progreso
-        const completedCount = Object.values(updatedLevels).filter(l => l !== null && l >= 0).length;
-        const newProgress = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
-        setDailyProgress(newProgress);
-        
-        // NUEVO: Verificar si completamos TODOS los hábitos
-        if (completedCount === habits.length && !allCompleted) {
-          // Mostrar el modal solo UNA vez
-          setAllCompleted(true);
-          setShowCompletionModal(true);
-        }
-        
-        // Avanzar al siguiente hábito si no es el último
-        if (selectedHabitIndex < habits.length - 1) {
-          const nextIndex = selectedHabitIndex + 1;
-          setSelectedHabitIndex(nextIndex);
-          
-          // Establecer el nivel de completado del siguiente hábito
-          const nextHabitId = habits[nextIndex].id;
-          setCompletionLevel(updatedLevels[nextHabitId] || null);
-        }
-        
-      } catch (err) {
-        console.error('Error al guardar el registro:', err);
-        Alert.alert('Error', 'No pudimos guardar tu registro. Intenta de nuevo más tarde.');
+      // NUEVO: Verificar si completamos TODOS los hábitos
+      if (completedCount === habits.length && !allCompleted) {
+        // Mostrar el modal solo UNA vez
+        setAllCompleted(true);
+        setShowCompletionModal(true);
       }
-    };
-  
+      
+      // Avanzar al siguiente hábito si no es el último
+      if (selectedHabitIndex < habits.length - 1) {
+        const nextIndex = selectedHabitIndex + 1;
+        setSelectedHabitIndex(nextIndex);
+        
+        // Establecer el nivel de completado del siguiente hábito
+        const nextHabitId = habits[nextIndex].id;
+        setCompletionLevel(updatedLevels[nextHabitId] || null);
+      }
+      
+    } catch (err) {
+      console.error('Error al guardar el registro:', err);
+      Alert.alert('Error', 'No pudimos guardar tu registro. Intenta de nuevo más tarde.');
+    }
+  };
 
   // Función para guardar las notas finales
-    const saveFinalNotes = async () => {
-      if (!notes.trim()) {
-        setShowCompletionModal(false);
-        return;
-      }
+  const saveFinalNotes = async () => {
+    if (!notes.trim()) {
+      setShowCompletionModal(false);
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      await api.post('/api/habits/daily-notes/', {
+        date: today,
+        notes: notes,
+        all_completed: true
+      });
       
-      setIsSaving(true);
-      try {
-        await api.post('/api/habits/daily-notes/', {
-          date: today,
-          notes: notes,
-          all_completed: true
-        });
-        
-        setShowCompletionModal(false);
-        setSuccessMessage('¡Excelente trabajo! Has completado todos tus hábitos del día.');
-        
-        // IMPORTANTE: No volver a mostrar el modal
-        // El estado allCompleted ya está en true, así que no se volverá a mostrar
-        
-        setTimeout(() => {
-          setSuccessMessage(null);
-        }, 3000);
-        
-      } catch (err) {
-        console.error('Error al guardar las notas:', err);
-      } finally {
-        setIsSaving(false);
-      }
-    };
+      setShowCompletionModal(false);
+      setSuccessMessage('¡Excelente trabajo! Has completado todos tus hábitos del día.');
+      
+      // IMPORTANTE: No volver a mostrar el modal
+      // El estado allCompleted ya está en true, así que no se volverá a mostrar
+      
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      
+    } catch (err) {
+      console.error('Error al guardar las notas:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Función para omitir las notas
   const skipNotes = async () => {
@@ -402,70 +402,107 @@ export default function TrackerScreen() {
     { value: 3, label: 'Excelente', emoji: '🎉' },
   ];
 
-  // Modal de celebración
+  // Modal de celebración - VERSIÓN CORREGIDA
   const renderCompletionModal = () => {
+    // Función para cerrar teclado
+    const dismissKeyboard = () => {
+      Keyboard.dismiss();
+    };
+
     return (
       <Modal
         visible={showCompletionModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowCompletionModal(false)}
+        onRequestClose={() => {
+          dismissKeyboard();
+          setShowCompletionModal(false);
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <Animated.View 
-            style={[
-              styles.completionModalContainer,
-              {
-                transform: [{ scale: scaleAnim }],
-                opacity: fadeAnim
-              }
-            ]}
-          >
-            <View style={styles.celebrationHeader}>
-              <Icon name="trophy" size={60} color={theme.colors.accent} />
-              <Text style={styles.celebrationTitle}>¡Felicitaciones! 🎉</Text>
-              <Text style={styles.celebrationSubtitle}>
-                Has completado todos tus hábitos del día
-              </Text>
+        <KeyboardAvoidingView 
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <TouchableWithoutFeedback onPress={dismissKeyboard}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <Animated.View 
+                  style={[
+                    styles.completionModalContainer,
+                    {
+                      transform: [{ scale: scaleAnim }],
+                      opacity: fadeAnim
+                    }
+                  ]}
+                >
+                  <ScrollView
+                    contentContainerStyle={styles.modalScrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <View style={styles.celebrationHeader}>
+                      <Icon name="trophy" size={60} color={theme.colors.accent} />
+                      <Text style={styles.celebrationTitle}>¡Felicitaciones! 🎉</Text>
+                      <Text style={styles.celebrationSubtitle}>
+                        Has completado todos tus hábitos del día
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.notesSection}>
+                      <Text style={styles.notesLabel}>
+                        ¿Cómo te sientes hoy? Deja una nota (opcional):
+                      </Text>
+                      <TextInput
+                        style={styles.notesInput}
+                        value={notes}
+                        onChangeText={setNotes}
+                        placeholder="Comparte tu experiencia del día..."
+                        multiline
+                        numberOfLines={4}
+                        placeholderTextColor={theme.colors.text.secondary}
+                        returnKeyType="done"
+                        blurOnSubmit={true}
+                        onSubmitEditing={dismissKeyboard}
+                      />
+                    </View>
+                    
+                    <View style={styles.modalButtons}>
+                      <TouchableOpacity
+                        style={[styles.modalButton, styles.skipButton]}
+                        onPress={() => {
+                          dismissKeyboard();
+                          setTimeout(() => skipNotes(), 100);
+                        }}
+                      >
+                        <Text style={styles.skipButtonText}>Omitir</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={[
+                          styles.modalButton, 
+                          styles.saveNotesButton,
+                          (!notes.trim() || isSaving) && styles.modalButtonDisabled
+                        ]}
+                        onPress={() => {
+                          dismissKeyboard();
+                          setTimeout(() => saveFinalNotes(), 100);
+                        }}
+                        disabled={isSaving || !notes.trim()}
+                      >
+                        {isSaving ? (
+                          <ActivityIndicator color="#ffffff" size="small" />
+                        ) : (
+                          <Text style={styles.saveNotesButtonText}>Guardar nota</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </ScrollView>
+                </Animated.View>
+              </TouchableWithoutFeedback>
             </View>
-            
-            <View style={styles.notesSection}>
-              <Text style={styles.notesLabel}>
-                ¿Cómo te sientes hoy? Deja una nota (opcional):
-              </Text>
-              <TextInput
-                style={styles.notesInput}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Comparte tu experiencia del día..."
-                multiline
-                numberOfLines={4}
-                placeholderTextColor={theme.colors.text.secondary}
-              />
-            </View>
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.skipButton]}
-                onPress={skipNotes}
-              >
-                <Text style={styles.skipButtonText}>Omitir</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveNotesButton]}
-                onPress={saveFinalNotes}
-                disabled={isSaving || !notes.trim()}
-              >
-                {isSaving ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
-                ) : (
-                  <Text style={styles.saveNotesButtonText}>Guardar nota</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     );
   };
@@ -1046,8 +1083,12 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.xl,
     width: '100%',
     maxWidth: 400,
+    maxHeight: '80%',
     padding: theme.spacing.xl,
     ...theme.shadows.lg,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
   },
   celebrationHeader: {
     alignItems: 'center',
@@ -1093,6 +1134,9 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
     alignItems: 'center',
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
   skipButton: {
     backgroundColor: '#f0f0f0',

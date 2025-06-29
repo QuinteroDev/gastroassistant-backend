@@ -16,7 +16,7 @@ const getBaseUrl = () => {
     }
   } else {
     // PRODUCCIÓN (TestFlight, App Store, etc.)
-    return 'https://gastro.lymbia.com';
+    return 'http://165.227.88.231';
   }
 };
 

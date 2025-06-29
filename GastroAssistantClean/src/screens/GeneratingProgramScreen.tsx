@@ -293,8 +293,11 @@ export default function GeneratingProgramScreen() {
         return;
       }
       
+      // Marcar tiempo de inicio para calcular duración mínima
+      const processingStartTime = Date.now();
+      
       try {
-        // Paso 1: El onboarding ya debería estar completo, pero verificamos
+        // Paso 1: Verificar que el onboarding esté completo
         console.log("Verificando estado del onboarding...");
         const profileResponse = await api.get('/api/profiles/me/');
         const profile = profileResponse.data;
@@ -305,7 +308,21 @@ export default function GeneratingProgramScreen() {
           console.log("✅ Onboarding confirmado como completo");
         }
         
-        // Paso 2: Intentar obtener un programa existente
+        // Paso 2: Verificar si existe un ciclo, si no crearlo
+        console.log("Verificando estado del ciclo...");
+        const cycleStatusResponse = await api.get('/api/cycles/check-status/');
+        let currentCycle = cycleStatusResponse.data.current_cycle;
+        
+        if (!currentCycle) {
+          console.log("No hay ciclo activo, creando el primer ciclo...");
+          const newCycleResponse = await api.post('/api/cycles/start-new/');
+          currentCycle = newCycleResponse.data.cycle;
+          console.log("✅ Primer ciclo creado:", currentCycle);
+        } else {
+          console.log("✅ Ciclo activo encontrado:", currentCycle);
+        }
+        
+        // Paso 3: Obtener o generar programa
         try {
           const response = await api.get('/api/programs/my-program/');
           
@@ -314,9 +331,7 @@ export default function GeneratingProgramScreen() {
             setUserProgram(response.data);
           }
         } catch (programErr: any) {
-          // Si no hay programa o hay algún error, intentar generarlo
           if (programErr.response && programErr.response.status === 404) {
-            // Paso 3: Generar un nuevo programa basado en todos los datos del onboarding
             try {
               console.log("Generando nuevo programa basado en datos completos del onboarding...");
               const generateResponse = await api.post('/api/programs/generate/');
@@ -325,14 +340,16 @@ export default function GeneratingProgramScreen() {
             } catch (generateErr) {
               console.error("Error al generar programa:", generateErr);
               setError("No se pudo generar tu programa personalizado");
+              return;
             }
           } else {
             console.error("Error al obtener programa:", programErr);
             setError("Error al cargar tu programa");
+            return;
           }
         }
         
-        // Paso 4: Generar recomendaciones basadas en el programa
+        // Paso 4: Generar recomendaciones
         try {
           await api.post('/api/recommendations/regenerate/');
           console.log("Recomendaciones generadas correctamente");
@@ -341,21 +358,63 @@ export default function GeneratingProgramScreen() {
           // Continuamos aunque falle esto
         }
         
-        // Limpiar progreso de onboarding
+        // Paso 5: Completar configuración del ciclo con toda la información
+        try {
+          console.log("Completando configuración del ciclo...");
+          
+          // Obtener puntuaciones de cuestionarios
+          const completionsResponse = await api.get('/api/questionnaires/completions/me/');
+          const completions = completionsResponse.data;
+          
+          const gerdqCompletion = completions.find((c: any) => c.questionnaire.type === 'GERDQ');
+          const rsiCompletion = completions.find((c: any) => c.questionnaire.type === 'RSI');
+          
+          // Completar configuración del ciclo
+          await api.post('/api/cycles/complete-setup/', {
+            gerdq_score: gerdqCompletion?.score || 0,
+            rsi_score: rsiCompletion?.score || 0,
+            program_id: userProgram?.program?.id
+          });
+          
+          console.log("✅ Configuración del ciclo completada exitosamente");
+        } catch (cycleError) {
+          console.warn("⚠️ Error al completar configuración del ciclo:", cycleError);
+          // No bloquear el flujo - continuar de todos modos
+        }
+        
+        // Limpiar progreso de onboarding y navegar
         try {
           await clearOnboardingProgress();
           console.log("Progreso de onboarding eliminado");
+          
+          // Esperar tiempo mínimo para mostrar animaciones
+          const processingEndTime = Date.now();
+          const processingDuration = processingEndTime - processingStartTime;
+          const minimumDisplayTime = 15000; // 15 segundos mínimo
+          
+          if (processingDuration < minimumDisplayTime) {
+            const remainingTime = minimumDisplayTime - processingDuration;
+            console.log(`⏱️ Esperando ${remainingTime}ms adicionales para completar animación...`);
+            await new Promise(resolve => setTimeout(resolve, remainingTime));
+          }
+          
+          setTimeout(() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'ProgramDetails' }]
+            });
+          }, 100);
         } catch (clearErr) {
           console.warn("Error al limpiar progreso de onboarding:", clearErr);
         }
+        
       } catch (err) {
         console.error("Error general al generar programa:", err);
         setError("Error en el proceso de generación");
         
-        // Intentar de nuevo si no hemos superado el límite de intentos
         if (retryCount < 2) {
           setRetryCount(prevCount => prevCount + 1);
-          setTimeout(generateUserProgram, 3000); // Esperar 3 segundos antes de reintentar
+          setTimeout(generateUserProgram, 3000);
         }
       } finally {
         // Esperar al menos 15 segundos en total para una mejor experiencia visual

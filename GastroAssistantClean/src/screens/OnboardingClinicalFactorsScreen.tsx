@@ -78,21 +78,6 @@ export default function OnboardingClinicalFactorsScreen() {
       // Guardar la pantalla actual
       await saveOnboardingProgress('OnboardingClinicalFactors');
       
-      // Verificar si el onboarding ya está completo
-      try {
-        const profileResponse = await api.get('/api/profiles/me/');
-        if (profileResponse.data && profileResponse.data.onboarding_complete) {
-          console.log("Onboarding ya completado, redirigiendo a Home...");
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
-          });
-          return;
-        }
-      } catch (error) {
-        console.error("Error al verificar estado de onboarding:", error);
-        // Continuar con el onboarding aunque haya un error
-      }
     };
   
     checkAuth();

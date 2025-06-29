@@ -11,17 +11,20 @@ import {
   StatusBar,
   Dimensions,
   Animated,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MainHeaderComponent from '../components/MainHeaderComponent';
 import TabNavigationBar from '../components/TabNavigationBar';
+import CycleRenewalModal from '../components/CycleRenewalModal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import api from '../utils/api';
-import { getData } from '../utils/storage';
+import { getData, storeData } from '../utils/storage';
 import { theme } from '../constants/theme';
+import { useCycleManagement } from '../hooks/useCycleManagement';
 
 // Tipos de navegación
 type RootStackParamList = {
@@ -342,10 +345,173 @@ export default function ProgramDetailsScreen() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [expandedFactor, setExpandedFactor] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("Usuario");
+  const [showCycleInfoModal, setShowCycleInfoModal] = useState(false);
+  const [showRenewalModal, setShowRenewalModal] = useState(false);
+  
+  // Añadir el hook de ciclos
+  const { 
+    currentCycle, 
+    daysRemaining, 
+    daysElapsed,
+    needsRenewal,
+    loading: cycleLoading,
+    error: cycleError,
+    startNewCycle
+  } = useCycleManagement();
   
   // Animaciones
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
+  
+  // Verificar si debe mostrar el modal de renovación
+// Modifica el useEffect existente para añadir logs
+useEffect(() => {
+  const checkRenewalStatus = async () => {
+    console.log('=== VERIFICANDO RENOVACIÓN ===');
+    console.log('needsRenewal:', needsRenewal);
+    console.log('cycleLoading:', cycleLoading);
+    console.log('currentCycle:', currentCycle);
+    
+    if (needsRenewal && !cycleLoading && currentCycle) {
+      console.log('Condiciones básicas cumplidas');
+      console.log('onboarding_completed_at:', currentCycle.onboarding_completed_at);
+      
+      // Solo mostrar si el ciclo ya completó el onboarding
+      if (currentCycle.onboarding_completed_at) {
+        console.log('Onboarding completado, verificando recordatorio...');
+        
+        // Verificar si ya se pospuso el recordatorio hoy
+        const reminderKey = `cycle_reminder_${currentCycle.id}_postponed`;
+        const postponedDate = await getData(reminderKey);
+        const today = new Date().toDateString();
+        
+        console.log('Reminder key:', reminderKey);
+        console.log('Postponed date:', postponedDate);
+        console.log('Today:', today);
+        
+        if (postponedDate !== today) {
+          console.log('MOSTRANDO MODAL DE RENOVACIÓN');
+          setShowRenewalModal(true);
+        } else {
+          console.log('Modal pospuesto para hoy');
+        }
+      } else {
+        console.log('Onboarding NO completado');
+      }
+    } else {
+      console.log('Condiciones NO cumplidas');
+    }
+  };
+  
+  checkRenewalStatus();
+}, [needsRenewal, cycleLoading, currentCycle]);
+  
+  // Función para manejar el inicio de renovación
+  const handleStartRenewal = () => {
+    setShowRenewalModal(false);
+    startNewCycle();
+  };
+  
+  // Función para manejar recordar más tarde
+  const handleRemindLater = async () => {
+    setShowRenewalModal(false);
+    
+    // Guardar que se pospuso para hoy
+    if (currentCycle) {
+      const reminderKey = `cycle_reminder_${currentCycle.id}_postponed`;
+      const today = new Date().toDateString();
+      await storeData(reminderKey, today);
+    }
+    
+    // Programar para mostrar nuevamente en 24 horas
+    // En una app real, aquí programarías una notificación local
+    console.log('Recordatorio pospuesto para mañana');
+  };
+  
+  // Componente modal de información de ciclos
+  const CycleInfoModal = () => (
+    <Modal
+      visible={showCycleInfoModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowCycleInfoModal(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowCycleInfoModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalContent}
+          activeOpacity={1}
+          onPress={(e) => e.stopPropagation()}
+        >
+          <View style={styles.modalHeader}>
+            <View style={styles.modalIconContainer}>
+              <Icon name="information-circle" size={40} color={theme.colors.primary} />
+            </View>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowCycleInfoModal(false)}
+            >
+              <Icon name="close" size={24} color={theme.colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.modalTitle}>¿Qué son los ciclos?</Text>
+          
+          <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalSection}>
+              <View style={styles.modalSectionHeader}>
+                <Icon name="calendar-outline" size={20} color={theme.colors.primary} />
+                <Text style={styles.modalSectionTitle}>Ciclos de 30 días</Text>
+              </View>
+              <Text style={styles.modalText}>
+                Tu programa se organiza en ciclos de 30 días. Cada ciclo es una oportunidad para mejorar tus hábitos digestivos y evaluar tu progreso.
+              </Text>
+            </View>
+
+            <View style={styles.modalSection}>
+              <View style={styles.modalSectionHeader}>
+                <Icon name="refresh-outline" size={20} color={theme.colors.primary} />
+                <Text style={styles.modalSectionTitle}>Evaluación mensual</Text>
+              </View>
+              <Text style={styles.modalText}>
+                Al finalizar cada ciclo, realizarás una nueva evaluación para ajustar tu programa según tu evolución y necesidades actuales.
+              </Text>
+            </View>
+
+            <View style={styles.modalSection}>
+              <View style={styles.modalSectionHeader}>
+                <Icon name="trending-up-outline" size={20} color={theme.colors.primary} />
+                <Text style={styles.modalSectionTitle}>Seguimiento de progreso</Text>
+              </View>
+              <Text style={styles.modalText}>
+                Podrás ver cómo has mejorado comparando tus puntuaciones GERDq y RSI entre ciclos, además del progreso en tus hábitos.
+              </Text>
+            </View>
+
+            <View style={styles.modalSection}>
+              <View style={styles.modalSectionHeader}>
+                <Icon name="notifications-outline" size={20} color={theme.colors.primary} />
+                <Text style={styles.modalSectionTitle}>Recordatorios</Text>
+              </View>
+              <Text style={styles.modalText}>
+                Cuando queden 3 días o menos para terminar tu ciclo, verás una notificación para prepararte para la siguiente evaluación.
+              </Text>
+            </View>
+          </ScrollView>
+
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={() => setShowCycleInfoModal(false)}
+          >
+            <Text style={styles.modalButtonText}>Entendido</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
   
   // Cargar datos del programa
   useEffect(() => {
@@ -794,10 +960,53 @@ export default function ProgramDetailsScreen() {
             </View>
           </View>
           
+          {/* Información del ciclo */}
+          {currentCycle && !cycleLoading && (
+            <View style={styles.cycleInfoContainer}>
+              <View style={styles.cycleInfo}>
+                <View style={styles.cycleIconContainer}>
+                  <Icon name="calendar" size={24} color={theme.colors.primary} />
+                </View>
+                <View style={styles.cycleTextContainer}>
+                  <Text style={styles.cycleLabel}>
+                    Ciclo {currentCycle.cycle_number}
+                  </Text>
+                  <Text style={styles.cycleProgress}>
+                    Día {daysElapsed} de 30
+                  </Text>
+                </View>
+                {daysRemaining <= 3 && daysRemaining > 0 && (
+                  <View style={styles.cycleWarningBadge}>
+                    <Text style={styles.cycleWarningText}>
+                      {daysRemaining} días
+                    </Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={styles.cycleInfoButton}
+                  onPress={() => setShowCycleInfoModal(true)}
+                >
+                  <Icon name="information-circle-outline" size={24} color={theme.colors.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          
           {/* Contenido del programa con todas las secciones integradas */}
           {renderProgramContent()}
         </ScrollView>
       )}
+      
+      {/* Modal de información de ciclos */}
+      <CycleInfoModal />
+      
+      {/* Modal de renovación de ciclo */}
+      <CycleRenewalModal
+        visible={showRenewalModal}
+        daysRemaining={daysRemaining}
+        onStartRenewal={handleStartRenewal}
+        onRemindLater={daysRemaining > 0 ? handleRemindLater : undefined}
+      />
       
       {/* Barra de navegación inferior */}
       <TabNavigationBar />
@@ -899,6 +1108,141 @@ const styles = StyleSheet.create({
     ...theme.shadows.sm,
   },
   retryButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.fontSize.base,
+    fontWeight: '600',
+  },
+  // Estilos para la información del ciclo
+  cycleInfoContainer: {
+    paddingHorizontal: theme.spacing.md,
+    marginTop: -20, // Para acercarlo a la cabecera
+    marginBottom: theme.spacing.md,
+    zIndex: 10,
+  },
+  cycleInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    ...theme.shadows.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  },
+  cycleIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${theme.colors.primary}15`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  cycleTextContainer: {
+    flex: 1,
+  },
+  cycleLabel: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.text.secondary,
+    marginBottom: 2,
+  },
+  cycleProgress: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
+  cycleWarningBadge: {
+    backgroundColor: theme.colors.error.light,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.full,
+  },
+  cycleWarningText: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+    color: theme.colors.error.main,
+  },
+  // Botón de información en el ciclo
+  cycleInfoButton: {
+    marginLeft: theme.spacing.sm,
+    padding: theme.spacing.xs,
+  },
+  // Estilos del modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xl,
+    width: '90%',
+    maxHeight: '80%',
+    ...theme.shadows.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  modalIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: `${theme.colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    padding: theme.spacing.sm,
+  },
+  modalTitle: {
+    fontSize: theme.fontSize.xxl,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.lg,
+    textAlign: 'center',
+  },
+  modalScrollView: {
+    maxHeight: 300,
+    marginBottom: theme.spacing.lg,
+  },
+  modalSection: {
+    marginBottom: theme.spacing.lg,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  modalSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  modalSectionTitle: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginLeft: theme.spacing.sm,
+  },
+  modalText: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+    lineHeight: 22,
+  },
+  modalButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    ...theme.shadows.sm,
+  },
+  modalButtonText: {
     color: theme.colors.white,
     fontSize: theme.fontSize.base,
     fontWeight: '600',
@@ -1148,13 +1492,13 @@ const styles = StyleSheet.create({
   toolItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  toolText: {
-    flex: 1,
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.text.primary,
-    marginLeft: theme.spacing.sm,
-    lineHeight: 20,
-  }
+   marginBottom: theme.spacing.sm,
+ },
+ toolText: {
+   flex: 1,
+   fontSize: theme.fontSize.sm,
+   color: theme.colors.text.primary,
+   marginLeft: theme.spacing.sm,
+   lineHeight: 20,
+ }
 });

@@ -15,9 +15,12 @@ urlpatterns = [
     path('api/questionnaires/', include('questionnaires.urls')),
     
     # Endpoints de programas de tratamiento
-    path('api/programs/', include('programs.urls')),  # CAMBIAR AQUÍ: añadir "api/"
+    path('api/programs/', include('programs.urls')),  
     
-    path('api/recommendations/', include('recommendations.urls')),  # CAMBIAR AQUÍ: añadir "api/"
+    path('api/recommendations/', include('recommendations.urls')),  
     
-    path('api/habits/', include('habits.urls')),  # CAMBIAR AQUÍ: añadir "api/"
+    path('api/habits/', include('habits.urls')),  #
+
+    path('api/cycles/', include('cycles.urls')),
+
 ]

@@ -131,11 +131,6 @@ class SubmitQuestionnaireAnswersView(APIView):
                             "code": phenotype_result['phenotype'],
                             "scenario": phenotype_result['scenario']
                         },
-                        "program_assigned": {
-                            "id": user_program.program.id,
-                            "name": user_program.program.name,
-                            "type": user_program.program.type
-                        }
                     }
                 else:
                     response_data = {

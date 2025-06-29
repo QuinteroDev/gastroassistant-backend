@@ -118,7 +118,7 @@ const TabNavigationBar = () => {
           styles.tabLabel,
           currentTab === 'Stats' ? styles.tabLabelActive : styles.tabLabelInactive
         ]}>
-          Estadísticas
+          Stats
         </Text>
       </TouchableOpacity>
       
@@ -148,20 +148,23 @@ const TabNavigationBar = () => {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between', // Cambiar de 'space-around' a 'space-between'
     alignItems: 'center',
     backgroundColor: theme.colors.tabBar.background,
     paddingVertical: theme.spacing.sm,
     paddingBottom: Platform.OS === 'ios' ? 25 : theme.spacing.md,
+    paddingHorizontal: 10, // Añadir padding horizontal
     borderTopWidth: 1,
     borderTopColor: theme.colors.tabBar.border,
     ...theme.shadows.md,
   },
   tabItem: {
+    flex: 1, // Añadir flex: 1 para distribución uniforme
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 6,
-    paddingHorizontal: theme.spacing.md,
+    // Remover paddingHorizontal o reducirlo
+    paddingHorizontal: 5, // Reducido de theme.spacing.md
   },
   educationTab: {
     marginTop: -25,
