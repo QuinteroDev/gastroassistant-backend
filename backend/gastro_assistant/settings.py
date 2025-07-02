@@ -53,6 +53,8 @@ INSTALLED_APPS = [
      'recommendations',
      'habits',
      'cycles',
+     'gamification',
+     'learn',
 ]
 
 MIDDLEWARE = [

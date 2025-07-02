@@ -23,4 +23,8 @@ urlpatterns = [
 
     path('api/cycles/', include('cycles.urls')),
 
+    path('api/gamification/', include('gamification.urls')),  # ← AÑADIR ESTA LÍNEA
+
+    path('api/learn/', include('learn.urls')), 
+
 ]

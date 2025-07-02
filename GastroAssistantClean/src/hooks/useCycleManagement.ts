@@ -38,6 +38,11 @@ export const useCycleManagement = () => {
       
       const response = await api.get('/api/cycles/check-status/');
       
+      // 🔍 LOG TEMPORAL PARA DEBUGGING
+      console.log('🚨 API RESPONSE COMPLETA:', JSON.stringify(response.data, null, 2));
+      console.log('🎯 days_elapsed from API:', response.data.days_elapsed);
+      console.log('🎯 days_remaining from API:', response.data.days_remaining);
+      
       setCycleStatus({
         needsRenewal: response.data.needs_renewal,
         currentCycle: response.data.current_cycle,

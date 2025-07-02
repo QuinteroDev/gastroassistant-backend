@@ -13,6 +13,9 @@ from .serializers import HabitTrackerSerializer, HabitLogSerializer, DailyNoteSe
 from recommendations.services import HabitTrackingService
 from recommendations.services import RecommendationService
 
+from gamification.services import GamificationService
+
+
 class HabitQuestionsView(generics.ListAPIView):
     """
     Vista para obtener todas las preguntas del cuestionario de hábitos.
@@ -115,25 +118,20 @@ class UserHabitTrackersView(generics.ListAPIView):
 class HabitLogView(APIView):
     """
     Vista para registrar el cumplimiento de un hábito.
+    MODIFICADA: Ahora incluye cálculo de gamificación
     """
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
         """
-        Espera un JSON como:
-        {
-            "habit_id": 1,
-            "date": "2023-06-15", (opcional, default=hoy)
-            "completion_level": 2,
-            "notes": "..." (opcional)
-        }
+        Registra un hábito y actualiza gamificación automáticamente
         """
         habit_id = request.data.get('habit_id')
         date_str = request.data.get('date')
         completion_level = request.data.get('completion_level')
         notes = request.data.get('notes', '')
         
-        # Validaciones básicas
+        # Validaciones básicas (mismo código que antes)
         if habit_id is None or completion_level is None:
             return Response({
                 'error': 'Se requieren habit_id y completion_level'
@@ -160,7 +158,7 @@ class HabitLogView(APIView):
         else:
             date = timezone.now().date()
         
-        # Registrar el hábito
+        # Registrar el hábito (código existente)
         log = HabitTrackingService.log_habit(
             user=request.user,
             habit_id=habit_id,
@@ -169,15 +167,57 @@ class HabitLogView(APIView):
             notes=notes
         )
         
-        if log:
-            return Response({
-                'message': 'Hábito registrado con éxito',
-                'data': HabitLogSerializer(log).data
-            }, status=status.HTTP_201_CREATED)
-        else:
+        if not log:
             return Response({
                 'error': 'No se pudo registrar el hábito'
             }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # NUEVO: Procesar gamificación después de registrar el hábito
+        try:
+            gamification_result = GamificationService.process_daily_gamification(
+                user=request.user,
+                target_date=date
+            )
+            
+            # Preparar respuesta con datos de gamificación
+            response_data = {
+                'message': 'Hábito registrado con éxito',
+                'habit_data': HabitLogSerializer(log).data,
+                'gamification': {
+                    'points_earned_today': gamification_result['daily_points'].total_points,
+                    'total_cycle_points': gamification_result['user_level'].current_cycle_points,
+                    'current_level': gamification_result['user_level'].current_level,
+                    'current_streak': gamification_result['user_level'].current_streak,
+                    'new_medals': len(gamification_result['new_medals']),
+                    'level_up': gamification_result['level_up']
+                }
+            }
+            
+            # Añadir detalles de medallas nuevas si las hay
+            if gamification_result['new_medals']:
+                response_data['gamification']['medals_earned'] = [
+                    {
+                        'name': medal.medal.name,
+                        'icon': medal.medal.icon,
+                        'description': medal.medal.description
+                    }
+                    for medal in gamification_result['new_medals']
+                ]
+            
+            return Response(response_data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            # Si falla la gamificación, aún devolver éxito del hábito
+            # pero loggear el error
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error en gamificación para usuario {request.user.id}: {str(e)}")
+            
+            return Response({
+                'message': 'Hábito registrado con éxito',
+                'habit_data': HabitLogSerializer(log).data,
+                'gamification_error': 'Error calculando puntos, pero el hábito se guardó correctamente'
+            }, status=status.HTTP_201_CREATED)
 
 class HabitLogsHistoryView(generics.ListAPIView):
     """

@@ -8,11 +8,12 @@ import {
   ActivityIndicator,
   StatusBar,
   Platform,
-  Switch,
   Alert,
   Linking,
   Animated,
-  Dimensions
+  Dimensions,
+  Modal,
+  Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,7 +24,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import api from '../utils/api';
-import { storeData, getData, removeData } from '../utils/storage';
+import { removeData } from '../utils/storage';
 import { theme } from '../constants/theme';
 
 // Tipos
@@ -43,7 +44,6 @@ type RootStackParamList = {
   Education: undefined;
   Stats: undefined;
   Profile: undefined;
-  ProfileUpdate?: undefined;
   ChangePassword?: undefined;
   HelpCenter?: undefined;
 };
@@ -64,7 +64,17 @@ interface UserProfile {
   onboarding_complete: boolean;
   gerdq_score?: number;
   rsi_score?: number;
+  avatar?: string;
 }
+
+// Lista de avatares disponibles (tendrás que añadir las imágenes reales)
+const AVAILABLE_AVATARS = [
+  { id: 'avatar1', source: require('../assets/images/avatars/avatar1.png'), name: 'Avatar 1' },
+  { id: 'avatar2', source: require('../assets/images/avatars/avatar2.png'), name: 'Avatar 2' },
+  { id: 'avatar3', source: require('../assets/images/avatars/avatar3.png'), name: 'Avatar 3' },
+  { id: 'avatar4', source: require('../assets/images/avatars/avatar4.png'), name: 'Avatar 4' },
+  { id: 'avatar5', source: require('../assets/images/avatars/avatar5.png'), name: 'Avatar 5' },
+];
 
 const { width } = Dimensions.get('window');
 
@@ -80,6 +90,9 @@ export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [userProfile, setUserProfile] = useState<UserProfile>({
     username: "",
     email: "",
@@ -94,13 +107,14 @@ export default function ProfileScreen() {
     onboarding_complete: false
   });
   
-  // Configuración de la aplicación
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const modalScale = useRef(new Animated.Value(0.9)).current;
+  const modalOpacity = useRef(new Animated.Value(0)).current;
+  const avatarModalScale = useRef(new Animated.Value(0.9)).current;
+  const avatarModalOpacity = useRef(new Animated.Value(0)).current;
   
   // Cargar datos reales del usuario
   useEffect(() => {
@@ -120,11 +134,13 @@ export default function ProfileScreen() {
             ...response.data,
             bmi: bmi || 0
           });
-        }
-        
-        const notifPref = await getData('notificationsEnabled');
-        if (notifPref !== null) {
-          setNotificationsEnabled(notifPref === 'true');
+          
+          // Cargar avatar guardado
+          if (response.data.avatar) {
+            setSelectedAvatar(response.data.avatar);
+          } else {
+            setSelectedAvatar('avatar1'); // Avatar por defecto
+          }
         }
         
         // Animaciones de entrada
@@ -158,18 +174,102 @@ export default function ProfileScreen() {
     loadProfile();
   }, []);
   
-  // Guardar preferencias cuando cambien
+  // Animaciones del modal de información
   useEffect(() => {
-    const savePreferences = async () => {
-      try {
-        await storeData('notificationsEnabled', String(notificationsEnabled));
-      } catch (error) {
-        console.error("Error al guardar preferencias:", error);
-      }
-    };
-    
-    savePreferences();
-  }, [notificationsEnabled]);
+    if (showUpdateModal) {
+      Animated.parallel([
+        Animated.spring(modalScale, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(modalScale, {
+          toValue: 0.9,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showUpdateModal]);
+  
+  // Animaciones del modal de avatar
+  useEffect(() => {
+    if (showAvatarModal) {
+      Animated.parallel([
+        Animated.spring(avatarModalScale, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(avatarModalOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(avatarModalScale, {
+          toValue: 0.9,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(avatarModalOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showAvatarModal]);
+  
+  // Función para guardar avatar seleccionado
+  const saveAvatar = async (avatarId: string) => {
+    try {
+      await api.patch('/api/profiles/me/', { avatar: avatarId });
+      setSelectedAvatar(avatarId);
+      setShowAvatarModal(false);
+      
+      // Pequeña animación de confirmación
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+    } catch (error) {
+      console.error("Error al guardar avatar:", error);
+      Alert.alert("Error", "No se pudo actualizar el avatar. Intenta de nuevo.");
+    }
+  };
+  
+  // Función para obtener la imagen del avatar
+  const getAvatarImage = () => {
+    const avatar = AVAILABLE_AVATARS.find(a => a.id === selectedAvatar);
+    return avatar ? avatar.source : AVAILABLE_AVATARS[0].source;
+  };
   
   // Función para cerrar sesión
   const handleLogout = async () => {
@@ -205,12 +305,8 @@ export default function ProfileScreen() {
     );
   };
   
-  // Renderizar avatar con iniciales
+  // Renderizar avatar con imagen
   const renderAvatar = () => {
-    const initials = userProfile.first_name 
-      ? userProfile.first_name.charAt(0).toUpperCase() 
-      : userProfile.username.charAt(0).toUpperCase();
-    
     return (
       <Animated.View 
         style={[
@@ -220,10 +316,157 @@ export default function ProfileScreen() {
           }
         ]}
       >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
-        </View>
+        <TouchableOpacity 
+          style={styles.avatar}
+          onPress={() => setShowAvatarModal(true)}
+          activeOpacity={0.8}
+        >
+          <Image 
+            source={getAvatarImage()}
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
+          
+          {/* Indicador de que es clickeable */}
+          <View style={styles.avatarEditIndicator}>
+            <Icon name="camera" size={16} color={theme.colors.white} />
+          </View>
+        </TouchableOpacity>
       </Animated.View>
+    );
+  };
+  
+  // Renderizar modal de selección de avatar
+  const renderAvatarModal = () => {
+    return (
+      <Modal
+        visible={showAvatarModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowAvatarModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View 
+            style={[
+              styles.avatarModalContainer,
+              {
+                opacity: avatarModalOpacity,
+                transform: [{ scale: avatarModalScale }]
+              }
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <View style={styles.modalIconContainer}>
+                <Icon name="person-circle" size={32} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.modalTitle}>Elige tu Avatar</Text>
+            </View>
+            
+            <View style={styles.avatarGrid}>
+              {AVAILABLE_AVATARS.map((avatar) => (
+                <TouchableOpacity
+                  key={avatar.id}
+                  style={[
+                    styles.avatarOption,
+                    selectedAvatar === avatar.id && styles.avatarOptionSelected
+                  ]}
+                  onPress={() => saveAvatar(avatar.id)}
+                >
+                  <Image 
+                    source={avatar.source}
+                    style={styles.avatarOptionImage}
+                    resizeMode="cover"
+                  />
+                  {selectedAvatar === avatar.id && (
+                    <View style={styles.avatarSelectedIndicator}>
+                      <Icon name="checkmark" size={16} color={theme.colors.white} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.modalButtonSecondary}
+                onPress={() => setShowAvatarModal(false)}
+              >
+                <Text style={styles.modalButtonSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+    );
+  };
+  
+  // Renderizar modal de información de actualización
+  const renderUpdateModal = () => {
+    return (
+      <Modal
+        visible={showUpdateModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View 
+            style={[
+              styles.modalContainer,
+              {
+                opacity: modalOpacity,
+                transform: [{ scale: modalScale }]
+              }
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <View style={styles.modalIconContainer}>
+                <Icon name="information-circle" size={32} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.modalTitle}>Actualizar Datos Clínicos</Text>
+            </View>
+            
+            <View style={styles.modalContent}>
+              <Text style={styles.modalText}>
+                Para actualizar tu información clínica (peso, altura, resultados de pruebas), 
+                deberás completar los cuestionarios al inicio del próximo ciclo.
+              </Text>
+              
+              <View style={styles.modalSteps}>
+                <View style={styles.modalStep}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>1</Text>
+                  </View>
+                  <Text style={styles.stepText}>El sistema te notificará cuando inicie un nuevo ciclo</Text>
+                </View>
+                
+                <View style={styles.modalStep}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>2</Text>
+                  </View>
+                  <Text style={styles.stepText}>Podrás actualizar tus datos en los cuestionarios iniciales</Text>
+                </View>
+                
+                <View style={styles.modalStep}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>3</Text>
+                  </View>
+                  <Text style={styles.stepText}>Tu programa se adaptará automáticamente a la nueva información</Text>
+                </View>
+              </View>
+            </View>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.modalButton}
+                onPress={() => setShowUpdateModal(false)}
+              >
+                <Text style={styles.modalButtonText}>Entendido</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     );
   };
   
@@ -253,10 +496,10 @@ export default function ProfileScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Datos Clínicos</Text>
           <TouchableOpacity 
-            style={styles.editButton}
-            onPress={() => navigation.navigate('ProfileUpdate')}
+            style={styles.infoButton}
+            onPress={() => setShowUpdateModal(true)}
           >
-            <Icon name="create-outline" size={20} color={theme.colors.primary} />
+            <Icon name="information-circle-outline" size={20} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
         
@@ -319,21 +562,9 @@ export default function ProfileScreen() {
     );
   };
   
-  // Renderizar configuración mejorada
+  // Renderizar configuración simplificada
   const renderSettings = () => {
     const settingsItems = [
-      {
-        icon: <Icon name="notifications-outline" size={22} color={theme.colors.primary} />,
-        label: 'Notificaciones',
-        type: 'switch',
-        value: notificationsEnabled,
-        onValueChange: (value: boolean) => {
-          setNotificationsEnabled(value);
-          if (value) {
-            console.log("Activando notificaciones");
-          }
-        }
-      },
       {
         icon: <Icon name="lock-closed-outline" size={22} color={theme.colors.primary} />,
         label: 'Cambiar Contraseña',
@@ -356,32 +587,15 @@ export default function ProfileScreen() {
         <View style={styles.settingsCard}>
           {settingsItems.map((item, index) => (
             <View key={index}>
-              {item.type === 'switch' ? (
-                <View style={styles.settingRow}>
-                  <View style={styles.settingLeft}>
-                    {item.icon}
-                    <Text style={[styles.settingLabel, item.danger && styles.dangerText]}>
-                      {item.label}
-                    </Text>
-                  </View>
-                  <Switch
-                    value={item.value}
-                    onValueChange={item.onValueChange}
-                    trackColor={{ false: '#E0E0E0', true: `${theme.colors.primary}50` }}
-                    thumbColor={item.value ? theme.colors.primary : '#f4f3f4'}
-                  />
+              <TouchableOpacity style={styles.settingRow} onPress={item.onPress}>
+                <View style={styles.settingLeft}>
+                  {item.icon}
+                  <Text style={[styles.settingLabel, item.danger && styles.dangerText]}>
+                    {item.label}
+                  </Text>
                 </View>
-              ) : (
-                <TouchableOpacity style={styles.settingRow} onPress={item.onPress}>
-                  <View style={styles.settingLeft}>
-                    {item.icon}
-                    <Text style={[styles.settingLabel, item.danger && styles.dangerText]}>
-                      {item.label}
-                    </Text>
-                  </View>
-                  <Icon name="chevron-forward" size={20} color="#999999" />
-                </TouchableOpacity>
-              )}
+                <Icon name="chevron-forward" size={20} color="#999999" />
+              </TouchableOpacity>
               {index < settingsItems.length - 1 && <View style={styles.settingDivider} />}
             </View>
           ))}
@@ -390,7 +604,7 @@ export default function ProfileScreen() {
     );
   };
   
-  // Renderizar sección de ayuda mejorada
+  // Renderizar sección de ayuda
   const renderSupport = () => {
     const supportItems = [
       {
@@ -528,6 +742,10 @@ export default function ProfileScreen() {
         </ScrollView>
       )}
       
+      {/* Modales */}
+      {renderUpdateModal()}
+      {renderAvatarModal()}
+      
       <TabNavigationBar />
     </View>
   );
@@ -604,12 +822,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 4,
     borderColor: '#ffffff',
+    position: 'relative',
+    overflow: 'hidden',
     ...theme.shadows.lg,
   },
-  avatarText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#ffffff',
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 46,
+  },
+  avatarEditIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   profileName: {
     fontSize: theme.fontSize.xxl,
@@ -643,11 +876,166 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
   },
-  editButton: {
+  infoButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     backgroundColor: `${theme.colors.primary}10`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Modal de información
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
+  modalContainer: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    ...theme.shadows.lg,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  modalIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: `${theme.colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  modalTitle: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  modalContent: {
+    marginBottom: theme.spacing.xl,
+  },
+  modalText: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  modalSteps: {
+    gap: theme.spacing.md,
+  },
+  modalStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  stepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+    marginTop: 2,
+  },
+  stepNumberText: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  stepText: {
+    flex: 1,
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.text.primary,
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  modalButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.lg,
+    minWidth: 120,
+  },
+  modalButtonText: {
+    fontSize: theme.fontSize.base,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+  modalButtonSecondary: {
+    backgroundColor: 'transparent',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+    minWidth: 120,
+  },
+  modalButtonSecondaryText: {
+    fontSize: theme.fontSize.base,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+  },
+  
+  // Modal de avatar
+  avatarModalContainer: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xl,
+    width: '90%',
+    maxWidth: 350,
+    ...theme.shadows.lg,
+  },
+  avatarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
+  },
+  avatarOption: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'transparent',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  avatarOptionSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: `${theme.colors.primary}10`,
+  },
+  avatarOptionImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 27,
+  },
+  avatarSelectedIndicator: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -716,7 +1104,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   
-  // Configuración
+  // Configuración simplificada
   settingsCard: {
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.md,

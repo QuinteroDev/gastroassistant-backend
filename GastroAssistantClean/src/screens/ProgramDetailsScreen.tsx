@@ -1,3 +1,5 @@
+// ProgramDetailsScreen.tsx - Versión final completa y corregida
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -39,297 +41,34 @@ type RootStackParamList = {
   OnboardingDiagnosticTests: undefined;
   OnboardingHabits: undefined;
   GeneratingProgram: undefined;
+  Tracker: undefined;
+  Education: undefined;
+  Stats: undefined;
+  Profile: undefined;
+  ChangePassword: undefined;
+  HelpCenter: undefined;
+  ProfileUpdate: undefined;
 };
 
 type ProgramDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProgramDetails'>;
 
-// Colores para cada tipo de programa (ahora solo para la decoración interna)
-const PROGRAM_COLORS = {
-  'A': ['#2DC653', '#3DD15F'], // ERGE Erosiva (verde)
-  'B': ['#FFD166', '#FFDA85'], // ERGE No Erosiva (amarillo)
-  'C': ['#3A86FF', '#61A0FF'], // Reflujo Extraesofágico (azul)
-  'D': ['#9D4EDD', '#B76EF0']  // Programa D (morado)
-};
-
 // Iconos para cada sección del programa
 const SECTION_ICONS: { [key: string]: JSX.Element } = {
-  'que_significa': <MaterialIcons name="psychology" size={24} color="#ffffff" />,
-  'por_que_importante': <Icon name="alert-circle" size={24} color="#ffffff" />,
-  'que_hacer': <Icon name="checkmark-circle" size={24} color="#ffffff" />,
-  'seguimiento_medico': <FontAwesome5 name="hospital-user" size={22} color="#ffffff" />
+  'psychology': <MaterialIcons name="psychology" size={24} color="#ffffff" />,
+  'alert-circle': <Icon name="alert-circle" size={24} color="#ffffff" />,
+  'checkmark-circle': <Icon name="checkmark-circle" size={24} color="#ffffff" />,
+  'hospital-user': <FontAwesome5 name="hospital-user" size={22} color="#ffffff" />
 };
 
-// Contenido para cada bloque
-const PROGRAM_BLOCKS: { [key: number]: any } = {
-  // Bloque 1 - ERGE Erosiva (🟩)
-  1: {
-    title: "ERGE Erosiva",
-    sections: [
-      {
-        id: 'que_significa',
-        title: "¿Qué significa tu perfil?",
-        content: "En tu endoscopia se ha identificado una inflamación en el esófago, conocida como esofagitis erosiva. Esto confirma que tu reflujo está generando daño en el tejido esofágico, y requiere un abordaje médico adecuado."
-      },
-      {
-        id: 'por_que_importante',
-        title: "¿Por qué es importante prestarle atención?",
-        content: [
-          "La esofagitis puede producir síntomas como ardor, molestias al tragar, acidez o incluso dolor torácico.",
-          "En algunos casos, si no se trata bien, puede dar lugar a complicaciones como úlceras, estrechamiento del esófago o un tipo especial de cambio en la mucosa (llamado esófago de Barrett).",
-          "Por eso, este tipo de reflujo siempre debe ser supervisado por tu médico."
-        ]
-      },
-      {
-        id: 'que_hacer',
-        title: "¿Qué puedes hacer tú para mejorar?",
-        content: [
-          "Evita acostarte justo después de comer. Espera al menos 2 horas antes de tumbarte o irte a dormir.",
-          "Evita las comidas muy copiosas, especialmente por la noche.",
-          "Eleva el cabecero de la cama si tienes molestias al dormir (puedes usar un alza o cuñas, no solo almohadas).",
-          "Reduce o elimina el tabaco y el alcohol, ya que pueden irritar la mucosa y empeorar el reflujo.",
-          "Pierde peso si tienes sobrepeso, ya que está demostrado que mejora los síntomas y favorece el control del reflujo."
-        ]
-      },
-      {
-        id: 'seguimiento_medico',
-        title: "¿Y el tratamiento médico?",
-        content: "Esta condición requiere un seguimiento profesional y posible tratamiento con medicación específica, indicado por tu médico. Si no estás en tratamiento actualmente o tienes síntomas persistentes, te recomendamos consultar lo antes posible con tu especialista."
-      }
-    ]
-  },
-  // Bloque 2 - ERGE No Erosiva (🟨)
-  2: {
-    title: "ERGE No Erosiva (NERD)",
-    sections: [
-      {
-        id: 'que_significa',
-        title: "¿Qué significa tu perfil?",
-        content: "Tienes síntomas claros de reflujo, pero tu endoscopia no muestra lesiones visibles en el esófago. Sin embargo, las pruebas funcionales como la pH-metría han detectado una exposición anormal al reflujo ácido. Esto se conoce como ERGE no erosiva o NERD, y es una forma muy frecuente de reflujo."
-      },
-      {
-        id: 'por_que_importante',
-        title: "¿Por qué es importante tenerlo en cuenta?",
-        content: [
-          "Aunque no haya daño visible, los síntomas pueden ser igual de molestos o incapacitantes que en otros tipos de reflujo.",
-          "Muchas veces, este tipo de reflujo no responde del todo a la medicación y requiere una atención especial a los hábitos diarios.",
-          "Es importante no subestimar este perfil, ya que un buen manejo puede mejorar mucho tu calidad de vida."
-        ]
-      },
-      {
-        id: 'que_hacer',
-        title: "¿Qué puedes hacer tú para mejorar?",
-        content: [
-          "Evita las comidas muy abundantes, especialmente si vas a estar inactivo o tumbado después.",
-          "No te acuestes inmediatamente después de comer. Espera al menos dos horas.",
-          "Reduce el consumo de tabaco y alcohol, si los tomas.",
-          "Si tienes sobrepeso, perder algo de peso puede ayudarte mucho con los síntomas.",
-          "Elevar ligeramente el cabecero de la cama puede ayudarte si tienes molestias por la noche."
-        ]
-      },
-      {
-        id: 'seguimiento_medico',
-        title: "¿Y el seguimiento médico?",
-        content: "Aunque tu endoscopia sea normal, es importante que sigas en contacto con tu médico si los síntomas persisten o interfieren con tu día a día. En algunos casos puede ser necesario ajustar el enfoque terapéutico o realizar seguimiento adicional."
-      }
-    ]
-  },
-  // Bloque 3 - Reflujo Extraesofágico (🟦)
-  3: {
-    title: "Reflujo Extraesofágico",
-    sections: [
-      {
-        id: 'que_significa',
-        title: "¿Qué significa tu perfil?",
-        content: "Tus síntomas se relacionan con la garganta o el aparato respiratorio superior: carraspeo, ronquera, tos crónica, sensación de cuerpo extraño, etc. Estos casos se asocian con lo que se conoce como reflujo extraesofágico o \"reflujo silencioso\"."
-      },
-      {
-        id: 'por_que_importante',
-        title: "¿Por qué es importante entenderlo?",
-        content: [
-          "Este tipo de reflujo no siempre causa ardor o molestias típicas, por eso puede pasar desapercibido.",
-          "A veces se relaciona con el ascenso de pequeñas cantidades de ácido o contenido gástrico hacia la zona de la laringe o faringe.",
-          "Según la guía clínica, la relación entre estos síntomas y el reflujo no siempre está clara, pero muchos pacientes mejoran al modificar sus hábitos."
-        ]
-      },
-      {
-        id: 'que_hacer',
-        title: "¿Qué puedes hacer tú para mejorar?",
-        content: [
-          "Evita las cenas copiosas o muy tardías. Es ideal cenar ligero y al menos 2–3 horas antes de acostarte.",
-          "No te tumbes inmediatamente después de comer.",
-          "Evita comidas que notes que aumentan la mucosidad o el carraspeo.",
-          "Si tienes síntomas nocturnos, puede ayudar elevar ligeramente el cabecero de la cama.",
-          "Reducir el alcohol y el tabaco, si están presentes, también puede ser beneficioso."
-        ]
-      },
-      {
-        id: 'seguimiento_medico',
-        title: "¿Y el seguimiento médico?",
-        content: "La guía recomienda que si estos síntomas persisten, puede ser útil una evaluación adicional por otorrinolaringología o neumología, especialmente si no hay mejora tras cambios en el estilo de vida. Habla con tu médico si los síntomas se mantienen o interfieren en tu vida diaria."
-      }
-    ]
-  },
-  // Bloque 4 - Perfil Funcional/Hipersensibilidad (🟪)
-  4: {
-    title: "Perfil Funcional/Hipersensibilidad",
-    sections: [
-      {
-        id: 'que_significa',
-        title: "¿Qué significa tu perfil?",
-        content: "En tu caso, las pruebas digestivas realizadas no han mostrado reflujo ácido excesivo ni lesiones en el esófago. Aun así, los síntomas persisten. Esto puede deberse a una mayor sensibilidad del esófago o a una alteración funcional en la forma en la que tu cuerpo percibe ciertos estímulos. Es lo que se conoce como hipersensibilidad esofágica o pirosis funcional."
-      },
-      {
-        id: 'por_que_importante',
-        title: "¿Por qué es importante entenderlo?",
-        content: [
-          "Este tipo de diagnóstico no indica que no tengas nada: tus síntomas son reales, pero no se deben a un daño físico visible.",
-          "En estos casos, la guía clínica destaca que lo más útil es la educación y el abordaje desde el estilo de vida, más que tratamientos farmacológicos intensivos.",
-          "Factores como el estrés, la ansiedad, o incluso experiencias digestivas pasadas pueden influir en cómo percibes las molestias."
-        ]
-      },
-      {
-        id: 'que_hacer',
-        title: "¿Qué puedes hacer tú para mejorar?",
-        content: [
-          "Mantener horarios de comida regulares y evitar saltarte comidas.",
-          "Comer tranquilo y sin distracciones, permitiendo que tu cuerpo digiera de forma natural.",
-          "Evitar comidas excesivas o muy rápidas, ya que pueden aumentar la sensación de malestar.",
-          "Si identificas algún alimento que te genera síntomas, puedes evitarlo, pero no es necesario restringir de forma estricta si no hay una causa clara."
-        ]
-      },
-      {
-        id: 'seguimiento_medico',
-        title: "¿Y el seguimiento médico?",
-        content: "Este tipo de diagnóstico suele confirmarse tras haber descartado otras causas mediante pruebas. Si no te has hecho una evaluación completa aún, coméntaselo a tu médico. Y si ya estás en seguimiento, puede ser útil complementar el abordaje con estrategias enfocadas en el bienestar digestivo y emocional."
-      }
-    ]
-  },
-  // Bloque 5 - Síntomas sin pruebas diagnósticas (🟫)
-  5: {
-    title: "Síntomas sin Pruebas",
-    sections: [
-      {
-        id: 'que_significa',
-        title: "¿Qué significa tu perfil?",
-        content: "Tienes síntomas compatibles con reflujo gastroesofágico o molestias relacionadas, pero aún no te has hecho pruebas digestivas específicas. Esto no significa que no haya un problema, pero sí que aún no se ha podido confirmar el tipo exacto de reflujo o su causa concreta."
-      },
-      {
-        id: 'por_que_importante',
-        title: "¿Por qué es importante tenerlo en cuenta?",
-        content: [
-          "La guía clínica indica que, si no hay signos de alarma, no es necesario hacer pruebas de inmediato.",
-          "Muchas personas mejoran significativamente al aplicar estrategias de estilo de vida, incluso antes de iniciar un tratamiento específico.",
-          "Aun así, si los síntomas persisten o aumentan, consultar con un médico es clave para avanzar en el diagnóstico."
-        ]
-      },
-      {
-        id: 'que_hacer',
-        title: "¿Qué puedes hacer tú para mejorar?",
-        content: [
-          "Evita comidas copiosas, especialmente por la noche.",
-          "No te tumbes justo después de comer. Espera al menos 2 horas.",
-          "Si tienes sobrepeso, perder algo de peso puede ayudarte.",
-          "Evita alimentos o bebidas que claramente notes que te sientan mal. No es necesario eliminarlos todos si no hay una relación evidente.",
-          "Elevar ligeramente el cabecero de la cama puede ser útil si tienes molestias nocturnas.",
-          "Evita el tabaco y reduce el alcohol, si están presentes en tu día a día."
-        ]
-      },
-      {
-        id: 'seguimiento_medico',
-        title: "¿Y el seguimiento médico?",
-        content: "Si tus síntomas son persistentes, afectan a tu calidad de vida o no mejoras tras aplicar estas medidas, consulta con tu médico de cabecera o especialista en digestivo. Puede valorar si es necesario hacer una prueba como la endoscopia o la pH-metría para conocer mejor tu caso."
-      }
-    ]
-  },
-  // Bloque 6 - Sin síntomas ni pruebas relevantes (⚪)
-  6: {
-    title: "Bienestar Digestivo",
-    sections: [
-      {
-        id: 'que_significa',
-        title: "¿Qué significa tu perfil?",
-        content: "Según tus respuestas, no se detectan síntomas típicos de reflujo ni molestias digestivas relevantes en este momento. Tampoco hay constancia de pruebas digestivas con hallazgos que indiquen un problema activo."
-      },
-      {
-        id: 'por_que_importante',
-        title: "¿Por qué es útil conocer esto?",
-        content: [
-          "No tener síntomas ahora no significa que no debas cuidar tu digestión.",
-          "Prestar atención a tus hábitos puede ayudarte a mantener una buena salud digestiva a largo plazo.",
-          "Si en algún momento notas molestias, sabrás qué observar y cómo actuar de forma preventiva."
-        ]
-      },
-      {
-        id: 'que_hacer',
-        title: "¿Qué puedes hacer tú para mantener una buena salud digestiva?",
-        content: [
-          "Come tranquilo, sin prisas ni distracciones.",
-          "Evita comidas excesivas o muy tardías, especialmente si vas a acostarte después.",
-          "Mantén horarios regulares y una alimentación variada, según tu tolerancia.",
-          "Haz actividad física moderada a diario.",
-          "Hidrátate bien, pero sin excesos durante las comidas.",
-          "Intenta no fumar y limitar el alcohol, si lo consumes."
-        ]
-      },
-      {
-        id: 'seguimiento_medico',
-        title: "¿Y si en algún momento aparecen síntomas?",
-        content: "Si en el futuro experimentas ardor, acidez, molestias digestivas, tos persistente o sensación de reflujo, te recomendamos repetir los cuestionarios y valorar una consulta médica si los síntomas persisten."
-      }
-    ]
-  }
-};
-
-// Contenido condicional para factores clínicos con iconos
-const CLINICAL_FACTORS_CONTENT: { [key: string]: any } = {
-  hernia: {
-    icon: <FontAwesome5 name="stomach" size={24} color="#ffffff" />,
-    title: "Hernia de hiato o cardias incompetente",
-    content: "La hernia de hiato puede debilitar la barrera que separa el estómago del esófago, facilitando que los ácidos asciendan con más facilidad. Esto puede estar influyendo en tus síntomas. En tu caso, trabajar la respiración diafragmática y cuidar la postura abdominal puede ayudarte.",
-    tools: "Respiración diafragmática, posturas correctas, evitar presión abdominal."
-  },
-  motility: {
-    icon: <MaterialIcons name="moving" size={24} color="#ffffff" />,
-    title: "Motilidad esofágica alterada",
-    content: "Algunas personas tienen alteraciones en la forma en la que el esófago empuja los alimentos hacia el estómago. Si este movimiento está debilitado, el ácido puede quedar más tiempo en el esófago. Masticar bien, comer despacio y evitar mezclar alimentos sólidos con bebidas frías puede ayudarte.",
-    tools: "Alimentación suave, registro de sensaciones, técnicas de masticación."
-  },
-  emptying: {
-    icon: <Icon name="hourglass-outline" size={24} color="#ffffff" />,
-    title: "Vaciamiento gástrico lento (gastroparesia)",
-    content: "Cuando el estómago tarda mucho en vaciarse, aumenta la presión interna y eso puede favorecer el reflujo. En tu caso, hacer comidas pequeñas, repartidas y con bajo contenido graso puede ayudarte a sentirte mejor.",
-    tools: "Comidas fraccionadas, pautas de vaciamiento, control de volumen."
-  },
-  saliva: {
-    icon: <Icon name="water-outline" size={24} color="#ffffff" />,
-    title: "Salivación reducida / sequedad bucal",
-    content: "La saliva ayuda a neutralizar el ácido que asciende al esófago. Si tienes poca salivación, el aclaramiento natural se debilita. Beber agua a lo largo del día, evitar el tabaco y revisar efectos secundarios de medicamentos puede ser clave para mejorar.",
-    tools: "Hidratación adecuada, higiene bucal, evitar alcohol/tabaco."
-  },
-  constipation: {
-    icon: <MaterialIcons name="pending-actions" size={24} color="#ffffff" />,
-    title: "Estreñimiento o esfuerzo al defecar",
-    content: "El estreñimiento aumenta la presión abdominal y puede empeorar el reflujo. Mejorar tu evacuación puede tener un impacto positivo. Te recomendamos hidratarte bien, incluir fibra y usar un taburete para adoptar una mejor postura al defecar.",
-    tools: "Aumento de fibra, uso de taburete, hidratación adecuada, actividad física."
-  },
-  stress_yes: {
-    icon: <MaterialIcons name="psychology" size={24} color="#ffffff" />,
-    title: "Estrés o ansiedad como agravantes",
-    content: "El estrés puede hacer que el cuerpo esté más sensible a los estímulos digestivos. Muchas personas sienten que sus síntomas aumentan en periodos de tensión. Trabajar el bienestar emocional también es parte del cuidado digestivo.",
-    tools: "Respiración consciente, relajación guiada, diario emocional."
-  },
-  stress_sometimes: {
-    icon: <MaterialIcons name="psychology" size={24} color="#ffffff" />,
-    title: "Manejo ocasional del estrés",
-    content: "Notas que a veces el estrés influye en tus síntomas digestivos. Esto es normal y parte de la conexión mente-intestino. Tener algunas estrategias básicas de manejo del estrés puede ser beneficioso para tu bienestar digestivo.",
-    tools: "Técnicas de relajación básicas, mindfulness simple."
-  },
-  bmi_high: {
-    icon: <MaterialIcons name="monitor-weight" size={24} color="#ffffff" />,
-    title: "El peso y tus síntomas digestivos",
-    content: "Tu índice de masa corporal (IMC) sugiere que podrías tener un exceso de peso corporal. Esto no es una crítica, sino una información relevante que puede ayudarte a entender mejor tus síntomas digestivos. El exceso de peso abdominal puede aumentar la presión en el estómago y favorecer el reflujo. Por eso, una pequeña mejora en tu composición corporal puede tener un gran impacto positivo.",
-    tools: "Plan de movimiento moderado, pautas alimentarias progresivas, seguimiento de hábitos digestivos."
-  }
+// Iconos para factores clínicos
+const FACTOR_ICONS: { [key: string]: JSX.Element } = {
+  'stomach': <FontAwesome5 name="stomach" size={24} color="#ffffff" />,
+  'moving': <MaterialIcons name="moving" size={24} color="#ffffff" />,
+  'hourglass-outline': <Icon name="hourglass-outline" size={24} color="#ffffff" />,
+  'water-outline': <Icon name="water-outline" size={24} color="#ffffff" />,
+  'pending-actions': <MaterialIcons name="pending-actions" size={24} color="#ffffff" />,
+  'psychology': <MaterialIcons name="psychology" size={24} color="#ffffff" />,
+  'monitor-weight': <MaterialIcons name="monitor-weight" size={24} color="#ffffff" />
 };
 
 const { width } = Dimensions.get('window');
@@ -364,47 +103,46 @@ export default function ProgramDetailsScreen() {
   const slideAnim = useState(new Animated.Value(50))[0];
   
   // Verificar si debe mostrar el modal de renovación
-// Modifica el useEffect existente para añadir logs
-useEffect(() => {
-  const checkRenewalStatus = async () => {
-    console.log('=== VERIFICANDO RENOVACIÓN ===');
-    console.log('needsRenewal:', needsRenewal);
-    console.log('cycleLoading:', cycleLoading);
-    console.log('currentCycle:', currentCycle);
-    
-    if (needsRenewal && !cycleLoading && currentCycle) {
-      console.log('Condiciones básicas cumplidas');
-      console.log('onboarding_completed_at:', currentCycle.onboarding_completed_at);
+  useEffect(() => {
+    const checkRenewalStatus = async () => {
+      console.log('=== VERIFICANDO RENOVACIÓN ===');
+      console.log('needsRenewal:', needsRenewal);
+      console.log('cycleLoading:', cycleLoading);
+      console.log('currentCycle:', currentCycle);
       
-      // Solo mostrar si el ciclo ya completó el onboarding
-      if (currentCycle.onboarding_completed_at) {
-        console.log('Onboarding completado, verificando recordatorio...');
+      if (needsRenewal && !cycleLoading && currentCycle) {
+        console.log('Condiciones básicas cumplidas');
+        console.log('onboarding_completed_at:', currentCycle.onboarding_completed_at);
         
-        // Verificar si ya se pospuso el recordatorio hoy
-        const reminderKey = `cycle_reminder_${currentCycle.id}_postponed`;
-        const postponedDate = await getData(reminderKey);
-        const today = new Date().toDateString();
-        
-        console.log('Reminder key:', reminderKey);
-        console.log('Postponed date:', postponedDate);
-        console.log('Today:', today);
-        
-        if (postponedDate !== today) {
-          console.log('MOSTRANDO MODAL DE RENOVACIÓN');
-          setShowRenewalModal(true);
+        // Solo mostrar si el ciclo ya completó el onboarding
+        if (currentCycle.onboarding_completed_at) {
+          console.log('Onboarding completado, verificando recordatorio...');
+          
+          // Verificar si ya se pospuso el recordatorio hoy
+          const reminderKey = `cycle_reminder_${currentCycle.id}_postponed`;
+          const postponedDate = await getData(reminderKey);
+          const today = new Date().toDateString();
+          
+          console.log('Reminder key:', reminderKey);
+          console.log('Postponed date:', postponedDate);
+          console.log('Today:', today);
+          
+          if (postponedDate !== today) {
+            console.log('MOSTRANDO MODAL DE RENOVACIÓN');
+            setShowRenewalModal(true);
+          } else {
+            console.log('Modal pospuesto para hoy');
+          }
         } else {
-          console.log('Modal pospuesto para hoy');
+          console.log('Onboarding NO completado');
         }
       } else {
-        console.log('Onboarding NO completado');
+        console.log('Condiciones NO cumplidas');
       }
-    } else {
-      console.log('Condiciones NO cumplidas');
-    }
-  };
-  
-  checkRenewalStatus();
-}, [needsRenewal, cycleLoading, currentCycle]);
+    };
+    
+    checkRenewalStatus();
+  }, [needsRenewal, cycleLoading, currentCycle]);
   
   // Función para manejar el inicio de renovación
   const handleStartRenewal = () => {
@@ -424,11 +162,10 @@ useEffect(() => {
     }
     
     // Programar para mostrar nuevamente en 24 horas
-    // En una app real, aquí programarías una notificación local
     console.log('Recordatorio pospuesto para mañana');
   };
   
-  // Componente modal de información de ciclos
+  // Componente modal de información de ciclos - CORREGIDO
   const CycleInfoModal = () => (
     <Modal
       visible={showCycleInfoModal}
@@ -457,10 +194,15 @@ useEffect(() => {
               <Icon name="close" size={24} color={theme.colors.text.secondary} />
             </TouchableOpacity>
           </View>
-
+  
           <Text style={styles.modalTitle}>¿Qué son los ciclos?</Text>
           
-          <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+          {/* ScrollView mejorado con más altura */}
+          <ScrollView 
+            style={styles.modalScrollView} 
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={styles.modalScrollContent}
+          >
             <View style={styles.modalSection}>
               <View style={styles.modalSectionHeader}>
                 <Icon name="calendar-outline" size={20} color={theme.colors.primary} />
@@ -470,7 +212,7 @@ useEffect(() => {
                 Tu programa se organiza en ciclos de 30 días. Cada ciclo es una oportunidad para mejorar tus hábitos digestivos y evaluar tu progreso.
               </Text>
             </View>
-
+  
             <View style={styles.modalSection}>
               <View style={styles.modalSectionHeader}>
                 <Icon name="refresh-outline" size={20} color={theme.colors.primary} />
@@ -480,7 +222,7 @@ useEffect(() => {
                 Al finalizar cada ciclo, realizarás una nueva evaluación para ajustar tu programa según tu evolución y necesidades actuales.
               </Text>
             </View>
-
+  
             <View style={styles.modalSection}>
               <View style={styles.modalSectionHeader}>
                 <Icon name="trending-up-outline" size={20} color={theme.colors.primary} />
@@ -490,7 +232,7 @@ useEffect(() => {
                 Podrás ver cómo has mejorado comparando tus puntuaciones GERDq y RSI entre ciclos, además del progreso en tus hábitos.
               </Text>
             </View>
-
+  
             <View style={styles.modalSection}>
               <View style={styles.modalSectionHeader}>
                 <Icon name="notifications-outline" size={20} color={theme.colors.primary} />
@@ -500,8 +242,19 @@ useEffect(() => {
                 Cuando queden 3 días o menos para terminar tu ciclo, verás una notificación para prepararte para la siguiente evaluación.
               </Text>
             </View>
+  
+            {/* Contenido adicional para probar scroll */}
+            <View style={styles.modalSection}>
+              <View style={styles.modalSectionHeader}>
+                <Icon name="checkmark-circle-outline" size={20} color={theme.colors.primary} />
+                <Text style={styles.modalSectionTitle}>Beneficios del sistema</Text>
+              </View>
+              <Text style={styles.modalText}>
+                Este sistema de ciclos te permite mantener un seguimiento constante de tu progreso y ajustar tu tratamiento según tus necesidades cambiantes.
+              </Text>
+            </View>
           </ScrollView>
-
+  
           <TouchableOpacity
             style={styles.modalButton}
             onPress={() => setShowCycleInfoModal(false)}
@@ -512,6 +265,7 @@ useEffect(() => {
       </TouchableOpacity>
     </Modal>
   );
+  
   
   // Cargar datos del programa
   useEffect(() => {
@@ -538,11 +292,11 @@ useEffect(() => {
           }
         }
         
-        // Cargar el programa asignado
+        // Cargar el programa asignado (ahora con contenido incluido desde el backend)
         const programResponse = await api.get('/api/programs/my-program/');
         
         if (programResponse.data) {
-          console.log("Programa cargado:", programResponse.data);
+          console.log("Programa cargado desde backend:", programResponse.data);
           setUserProgram(programResponse.data);
         }
         
@@ -591,20 +345,6 @@ useEffect(() => {
     fetchProgramData();
   }, [navigation]);
   
-  // Obtener el bloque del programa basado en el perfil
-  const getProgramBlock = () => {
-    if (!userProgram || !userProgram.profile_data) return null;
-    
-    const { display_block } = userProgram.profile_data;
-    
-    // Si no hay bloque específico, usar uno por defecto
-    if (!display_block || !PROGRAM_BLOCKS[display_block]) {
-      return 6; // Bloque de bienestar digestivo por defecto
-    }
-    
-    return display_block;
-  };
-  
   // Alternar expandir/colapsar sección
   const toggleSection = (sectionId: string) => {
     if (expandedSection === sectionId) {
@@ -615,61 +355,13 @@ useEffect(() => {
   };
   
   // Alternar expandir/colapsar factor clínico
-  const toggleFactor = (factorId: string) => {
+  const toggleFactor = (factorIndex: number) => {
+    const factorId = `factor-${factorIndex}`;
     if (expandedFactor === factorId) {
       setExpandedFactor(null);
     } else {
       setExpandedFactor(factorId);
     }
-  };
-  
-  // Obtener contenido de factores clínicos adicionales
-  const getClinicalFactorsContent = () => {
-    if (!userProgram || !userProgram.profile_data) return [];
-    
-    const {
-      has_hernia, 
-      has_altered_motility, 
-      has_slow_emptying,
-      has_dry_mouth,
-      has_constipation,
-      stress_affects,
-      has_excess_weight
-    } = userProgram.profile_data;
-    
-    const factors = [];
-    
-    if (has_hernia === 'YES') {
-      factors.push(CLINICAL_FACTORS_CONTENT.hernia);
-    }
-    
-    if (has_altered_motility === 'YES') {
-      factors.push(CLINICAL_FACTORS_CONTENT.motility);
-    }
-    
-    if (has_slow_emptying === 'YES') {
-      factors.push(CLINICAL_FACTORS_CONTENT.emptying);
-    }
-    
-    if (has_dry_mouth === 'YES') {
-      factors.push(CLINICAL_FACTORS_CONTENT.saliva);
-    }
-    
-    if (has_constipation === 'YES') {
-      factors.push(CLINICAL_FACTORS_CONTENT.constipation);
-    }
-    
-    if (stress_affects === 'YES') {
-      factors.push(CLINICAL_FACTORS_CONTENT.stress_yes);
-    } else if (stress_affects === 'SOMETIMES') {
-      factors.push(CLINICAL_FACTORS_CONTENT.stress_sometimes);
-    }
-    
-    if (has_excess_weight) {
-      factors.push(CLINICAL_FACTORS_CONTENT.bmi_high);
-    }
-    
-    return factors;
   };
   
   // Renderizar una lista con viñetas
@@ -782,12 +474,12 @@ useEffect(() => {
     );
   };
   
-  // Renderizar el contenido del programa
+  // Renderizar el contenido del programa usando datos del backend
   const renderProgramContent = () => {
-    const blockNumber = getProgramBlock();
-    if (!blockNumber || !PROGRAM_BLOCKS[blockNumber]) return null;
+    if (!userProgram || !userProgram.program_content) return null;
     
-    const programBlock = PROGRAM_BLOCKS[blockNumber];
+    const programContent = userProgram.program_content;
+    const clinicalFactors = userProgram.clinical_factors || [];
     
     return (
       <Animated.View 
@@ -799,8 +491,8 @@ useEffect(() => {
           },
         ]}
       >
-        {/* Secciones del programa */}
-        {programBlock.sections.map((section: any, index: number) => (
+        {/* Secciones del programa - Datos del backend */}
+        {programContent.sections.map((section: any, index: number) => (
           <TouchableOpacity
             key={section.id}
             style={[
@@ -815,7 +507,7 @@ useEffect(() => {
                 styles.sectionIconContainer,
                 { backgroundColor: theme.colors.primary }
               ]}>
-                {SECTION_ICONS[section.id]}
+                {SECTION_ICONS[section.icon]}
               </View>
               <Text style={styles.sectionTitle}>{section.title}</Text>
               <Icon 
@@ -833,8 +525,8 @@ useEffect(() => {
           </TouchableOpacity>
         ))}
         
-        {/* Factores clínicos adicionales - Ahora con desplegables */}
-        {getClinicalFactorsContent().length > 0 && (
+        {/* Factores clínicos adicionales - Datos del backend */}
+        {clinicalFactors.length > 0 && (
           <View style={styles.clinicalFactorsSection}>
             <View style={styles.sectionDivider}>
               <View style={styles.dividerLine} />
@@ -844,7 +536,7 @@ useEffect(() => {
               <View style={styles.dividerLine} />
             </View>
             
-            {getClinicalFactorsContent().map((factor, index) => {
+            {clinicalFactors.map((factor: any, index: number) => {
               const factorId = `factor-${index}`;
               const isExpanded = expandedFactor === factorId;
               
@@ -855,7 +547,7 @@ useEffect(() => {
                     styles.clinicalFactorCard,
                     isExpanded && styles.expandedFactorCard
                   ]}
-                  onPress={() => toggleFactor(factorId)}
+                  onPress={() => toggleFactor(index)}
                   activeOpacity={0.8}
                 >
                   <View style={styles.factorHeader}>
@@ -863,7 +555,7 @@ useEffect(() => {
                       styles.factorIconContainer,
                       { backgroundColor: theme.colors.accent }
                     ]}>
-                      {factor.icon}
+                      {FACTOR_ICONS[factor.icon]}
                     </View>
                     <Text style={styles.factorTitle}>{factor.title}</Text>
                     <Icon 
@@ -1383,15 +1075,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
   },
-  factorToolsContainer: {
-    marginTop: theme.spacing.sm,
-  },
-  factorToolsTitle: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: 'bold',
-    color: theme.colors.accent,
-    marginBottom: theme.spacing.sm,
-  },
   // Sección de recomendaciones
   recommendationsSection: {
     marginTop: theme.spacing.xl,
@@ -1431,21 +1114,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  priorityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.full,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 4,
-    marginRight: theme.spacing.sm,
-  },
-  priorityText: {
-    color: theme.colors.white,
-    fontSize: theme.fontSize.xs,
-    fontWeight: 'bold',
-    marginLeft: 4,
-  },
   recommendationTitle: {
     flex: 1,
     fontSize: theme.fontSize.base,
@@ -1463,27 +1131,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.border.light,
   },
-  recommendationContent: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.text.primary,
-    lineHeight: 22,
-  },
-  toolsSection: {
-    marginTop: theme.spacing.md,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-  },
   toolsTitle: {
     fontSize: theme.fontSize.sm,
     fontWeight: 'bold',
     color: theme.colors.primary,
     marginBottom: theme.spacing.sm,
-  },
-  toolsContent: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.text.primary,
-    lineHeight: 20,
   },
   // Nuevos estilos para listas de herramientas
   toolsList: {
@@ -1492,13 +1144,13 @@ const styles = StyleSheet.create({
   toolItem: {
     flexDirection: 'row',
     alignItems: 'center',
-   marginBottom: theme.spacing.sm,
- },
- toolText: {
-   flex: 1,
-   fontSize: theme.fontSize.sm,
-   color: theme.colors.text.primary,
-   marginLeft: theme.spacing.sm,
-   lineHeight: 20,
- }
+    marginBottom: theme.spacing.sm,
+  },
+  toolText: {
+    flex: 1,
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.text.primary,
+    marginLeft: theme.spacing.sm,
+    lineHeight: 20,
+  }
 });

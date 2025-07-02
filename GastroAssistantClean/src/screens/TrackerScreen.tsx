@@ -14,7 +14,8 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -47,7 +48,7 @@ type RootStackParamList = {
 
 type TrackerScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Tracker'>;
 
-// Interfaces simplificadas
+// Interfaces
 interface Habit {
   id: number;
   habit_type: string;
@@ -68,7 +69,26 @@ interface HabitTracker {
   };
 }
 
-// Mapeo de títulos de hábitos mejorados (sin preguntas)
+interface Medal {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  required_points: number;
+  required_level: string;
+  required_cycle_number?: number;
+}
+
+interface NewMedal {
+  id: number;
+  medal: Medal;
+  earned_at: string;
+  points_when_earned: number;
+  level_when_earned: string;
+  cycle_number: number;
+}
+
+// Mapeo de títulos de hábitos
 const HABIT_TITLES: { [key: string]: string } = {
   'MEAL_SIZE': 'Control de porciones',
   'DINNER_TIME': 'Horario de cena temprano',
@@ -84,7 +104,7 @@ const HABIT_TITLES: { [key: string]: string } = {
   'CHEWING': 'Masticación consciente'
 };
 
-// Iconos para tipos de hábitos con colores del tema
+// Iconos para tipos de hábitos
 const HABIT_ICONS: { [key: string]: JSX.Element } = {
   'MEAL_SIZE': <MaterialCommunityIcons name="food-variant" size={24} color="#ffffff" />,
   'DINNER_TIME': <Icon name="time-outline" size={24} color="#ffffff" />,
@@ -100,22 +120,21 @@ const HABIT_ICONS: { [key: string]: JSX.Element } = {
   'CHEWING': <MaterialCommunityIcons name="food-apple" size={24} color="#ffffff" />
 };
 
-// Colores para niveles de completado usando el tema
+// Colores para niveles
 const COMPLETION_COLORS = {
-  null: '#f8f9fa', // Sin seleccionar - gris claro
+  null: '#f8f9fa',
   0: theme.colors.habits.notAchieved,
   1: theme.colors.habits.partial,
   2: theme.colors.habits.good,
   3: theme.colors.habits.excellent
 };
 
-// Fecha actual en formato ISO
+// Funciones auxiliares
 const getToday = () => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
-// Formato legible para mostrar fecha
 const formatDisplayDate = (date = new Date()) => {
   return date.toLocaleDateString('es-ES', {
     weekday: 'long',
@@ -131,6 +150,8 @@ const todayFormatted = formatDisplayDate();
 // Componente principal
 export default function TrackerScreen() {
   const navigation = useNavigation<TrackerScreenNavigationProp>();
+  
+  // Estados
   const [habits, setHabits] = useState<HabitTracker[]>([]);
   const [selectedHabitIndex, setSelectedHabitIndex] = useState<number>(0);
   const [completionLevel, setCompletionLevel] = useState<number | null>(null);
@@ -145,29 +166,37 @@ export default function TrackerScreen() {
   const [allCompleted, setAllCompleted] = useState<boolean>(false);
   const [modalAlreadyShown, setModalAlreadyShown] = useState<boolean>(false);
   
+  // Estados para medallas
+  const [showMedalModal, setShowMedalModal] = useState<boolean>(false);
+  const [newMedal, setNewMedal] = useState<NewMedal | null>(null);
+  
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const confettiAnim = useRef(new Animated.Value(0)).current;
   const progressFillAnim = useRef(new Animated.Value(0)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
+  
+  // Animaciones para medallas
+  const medalFadeAnim = useRef(new Animated.Value(0)).current;
+  const medalScaleAnim = useRef(new Animated.Value(0)).current;
+  const medalBounceAnim = useRef(new Animated.Value(0)).current;
+  const medalShineAnim = useRef(new Animated.Value(0)).current;
 
-  // Cargar datos al inicio
+  // useEffect existentes
   useEffect(() => {
     loadHabits();
     checkCompletionStatus();
   }, []);
 
-  // Animar la barra de progreso cuando cambie
   useEffect(() => {
-    // Animar el llenado
+    // Animar la barra de progreso cuando cambie
     Animated.timing(progressFillAnim, {
       toValue: dailyProgress,
       duration: 1000,
       useNativeDriver: false,
     }).start();
 
-    // Si llega al 100%, hacer bounce y detener shimmer
     if (dailyProgress === 100) {
       // Bounce effect
       Animated.sequence([
@@ -184,11 +213,10 @@ export default function TrackerScreen() {
         }),
       ]).start();
       
-      // Detener shimmer
       shimmerAnim.stopAnimation();
       shimmerAnim.setValue(0);
     } else if (dailyProgress > 0) {
-      // Efecto shimmer solo cuando está entre 0 y 100
+      // Efecto shimmer
       Animated.loop(
         Animated.sequence([
           Animated.timing(shimmerAnim, {
@@ -206,7 +234,63 @@ export default function TrackerScreen() {
     }
   }, [dailyProgress]);
 
-  // Función para verificar si ya se mostró el modal hoy
+  // Efecto para animar medallas
+  useEffect(() => {
+    if (showMedalModal) {
+      // Resetear animaciones
+      medalFadeAnim.setValue(0);
+      medalScaleAnim.setValue(0);
+      medalBounceAnim.setValue(0);
+      medalShineAnim.setValue(0);
+
+      // Secuencia de animación
+      Animated.sequence([
+        // Fade in
+        Animated.timing(medalFadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        // Scale in con bounce
+        Animated.spring(medalScaleAnim, {
+          toValue: 1,
+          friction: 4,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        // Bounce de celebración
+        Animated.sequence([
+          Animated.timing(medalBounceAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(medalBounceAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+
+      // Animación de brillo continua
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(medalShineAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(medalShineAnim, {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [showMedalModal]);
+
   const checkCompletionStatus = async () => {
     try {
       const response = await api.get('/api/habits/check-completion/');
@@ -218,7 +302,6 @@ export default function TrackerScreen() {
     }
   };
 
-  // Función para cargar hábitos
   const loadHabits = async () => {
     setIsLoading(true);
     try {
@@ -229,7 +312,6 @@ export default function TrackerScreen() {
         habitData = response.data.slice(0, 5);
         setHabits(habitData);
         
-        // Cargar los logs de hábitos para hoy
         if (habitData.length > 0) {
           const completionMap: {[key: number]: number | null} = {};
           
@@ -257,12 +339,10 @@ export default function TrackerScreen() {
             
             setCompletionLevels(completionMap);
             
-            // Calcular progreso
             const completedCount = Object.values(completionMap).filter(level => level !== null && level >= 0).length;
             const progress = habitData.length > 0 ? (completedCount / habitData.length) * 100 : 0;
             setDailyProgress(progress);
             
-            // Establecer el nivel de completado del primer hábito
             if (habitData.length > 0 && completionMap[habitData[0].id] !== undefined) {
               setCompletionLevel(completionMap[habitData[0].id]);
             }
@@ -271,7 +351,6 @@ export default function TrackerScreen() {
           }
         }
         
-        // Animación de entrada
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 600,
@@ -286,7 +365,7 @@ export default function TrackerScreen() {
     }
   };
 
-  // Función para guardar un registro de hábito y avanzar al siguiente
+  // Función para guardar hábito con gamificación
   const saveHabitAndProceed = async (level: number) => {
     if (habits.length === 0) return;
     
@@ -307,37 +386,65 @@ export default function TrackerScreen() {
         notes: ''
       };
       
+      console.log('💾 Guardando hábito:', data);
       await api.post('/api/habits/log/', data);
+      console.log('💾 Hábito guardado, llamando a gamificación...');
+      
+      // Procesar gamificación después de guardar el hábito
+      try {
+        console.log('🎮 Llamando a gamificación API...');
+        const gamificationResponse = await api.post('/api/gamification/process/', {
+          date: today
+        });
+        
+        console.log('🎮 Respuesta completa:', JSON.stringify(gamificationResponse.data, null, 2));
+        
+        // Verificar si se ganó una medalla
+        if (gamificationResponse.data.new_medals_count > 0 && gamificationResponse.data.new_medals) {
+          const earnedMedal = gamificationResponse.data.new_medals[0]; // Mostrar la primera medalla
+          console.log('🏆 ¡MEDALLA DETECTADA!:', earnedMedal);
+          setNewMedal(earnedMedal);
+          setShowMedalModal(true);
+          console.log('🏆 Modal de medalla activado');
+        } else {
+          console.log('😐 Sin medallas nuevas:', {
+            count: gamificationResponse.data.new_medals_count,
+            medals: gamificationResponse.data.new_medals
+          });
+        }
+        
+      } catch (gamificationError) {
+        console.error('❌ Error gamificación:', gamificationError);
+        console.error('❌ Detalles del error:', gamificationError.response?.data);
+        // No bloquear el flujo si falla la gamificación
+      }
       
       // Recalcular el progreso
       const completedCount = Object.values(updatedLevels).filter(l => l !== null && l >= 0).length;
       const newProgress = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
       setDailyProgress(newProgress);
       
-      // NUEVO: Verificar si completamos TODOS los hábitos
+      // Verificar si completamos TODOS los hábitos
       if (completedCount === habits.length && !allCompleted) {
-        // Mostrar el modal solo UNA vez
         setAllCompleted(true);
         setShowCompletionModal(true);
       }
       
-      // Avanzar al siguiente hábito si no es el último
+      // Avanzar al siguiente hábito
       if (selectedHabitIndex < habits.length - 1) {
         const nextIndex = selectedHabitIndex + 1;
         setSelectedHabitIndex(nextIndex);
-        
-        // Establecer el nivel de completado del siguiente hábito
         const nextHabitId = habits[nextIndex].id;
         setCompletionLevel(updatedLevels[nextHabitId] || null);
       }
       
     } catch (err) {
-      console.error('Error al guardar el registro:', err);
+      console.error('❌ Error al guardar el registro:', err);
+      console.error('❌ Detalles del error:', err.response?.data);
       Alert.alert('Error', 'No pudimos guardar tu registro. Intenta de nuevo más tarde.');
     }
   };
 
-  // Función para guardar las notas finales
   const saveFinalNotes = async () => {
     if (!notes.trim()) {
       setShowCompletionModal(false);
@@ -355,9 +462,6 @@ export default function TrackerScreen() {
       setShowCompletionModal(false);
       setSuccessMessage('¡Excelente trabajo! Has completado todos tus hábitos del día.');
       
-      // IMPORTANTE: No volver a mostrar el modal
-      // El estado allCompleted ya está en true, así que no se volverá a mostrar
-      
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
@@ -369,10 +473,8 @@ export default function TrackerScreen() {
     }
   };
 
-  // Función para omitir las notas
   const skipNotes = async () => {
     try {
-      // Guardar registro vacío para marcar que el modal ya se mostró
       await api.post('/api/habits/daily-notes/', {
         date: today,
         notes: '',
@@ -387,24 +489,522 @@ export default function TrackerScreen() {
     }
   };
 
-  // Función para cambiar de hábito
   const changeHabit = (index: number) => {
     setSelectedHabitIndex(index);
     const habitId = habits[index].id;
     setCompletionLevel(completionLevels[habitId] || null);
   };
 
-  // Opciones de nivel de cumplimiento
+  // Opciones de nivel con imágenes
   const completionOptions = [
-    { value: 0, label: 'No logrado', emoji: '😔' },
-    { value: 1, label: 'Parcialmente', emoji: '🙂' },
-    { value: 2, label: 'Bastante bien', emoji: '😊' },
-    { value: 3, label: 'Excelente', emoji: '🎉' },
+    { 
+      value: 0, 
+      label: 'No logrado', 
+      image: require('../assets/tracker/no_logrado.png')
+    },
+    { 
+      value: 1, 
+      label: 'Parcialmente', 
+      image: require('../assets/tracker/parcialmente.png')
+    },
+    { 
+      value: 2, 
+      label: 'Bastante bien', 
+      image: require('../assets/tracker/bastante_bien.png')
+    },
+    { 
+      value: 3, 
+      label: 'Excelente', 
+      image: require('../assets/tracker/excelente.png')
+    },
   ];
 
-  // Modal de celebración - VERSIÓN CORREGIDA
+  // Testing de medallas (VERSIÓN MEJORADA)
+  const testMedalAPI = async () => {
+    try {
+      console.log('🧪 Probando API de medallas...');
+      
+      // Primero intentar crear una medalla fácil
+      const createResponse = await api.post('/api/gamification/test/', {
+        action: 'add_points',
+        points: 200
+      });
+      console.log('🧪 Puntos añadidos:', createResponse.data);
+      
+      // Luego forzar una medalla
+      const forceResponse = await api.post('/api/gamification/test/', {
+        action: 'force_medal',
+        medal_name: 'Testing Medal'
+      });
+      console.log('🧪 Respuesta force medal:', forceResponse.data);
+      
+      // Si devuelve una medalla, mostrar el modal
+      if (forceResponse.data.medal) {
+        setNewMedal(forceResponse.data.medal);
+        setShowMedalModal(true);
+        console.log('🏆 ¡MODAL ACTIVADO!');
+      } else if (forceResponse.data.action === 'medal_forced') {
+        // Simular medalla para testing
+        const testMedal = {
+          id: 999,
+          medal: {
+            id: 999,
+            name: 'Medalla de Testing',
+            description: '¡Has probado exitosamente el sistema de medallas!',
+            icon: 'trophy'
+          },
+          earned_at: new Date().toISOString(),
+          points_when_earned: 300,
+          level_when_earned: 'NOVATO'
+        };
+        setNewMedal(testMedal);
+        setShowMedalModal(true);
+        console.log('🏆 ¡MODAL ACTIVADO CON MEDALLA DE TESTING!');
+      }
+      
+      // FUERZA DIRECTA DEL MODAL - SIEMPRE SE EJECUTA
+      console.log('🧪 Forzando modal con datos de prueba...');
+      const fallbackMedal = {
+        id: 888,
+        medal: {
+          id: 888,
+          name: 'Medalla de Prueba',
+          description: '¡Esta es una medalla de testing para probar el modal!',
+          icon: 'star'
+        },
+        earned_at: new Date().toISOString(),
+        points_when_earned: 100,
+        level_when_earned: 'NOVATO'
+      };
+      setNewMedal(fallbackMedal);
+      setShowMedalModal(true);
+      console.log('🏆 ¡MODAL FORZADO CON DATOS DE PRUEBA!');
+      
+    } catch (error) {
+      console.error('❌ Error test medal:', error);
+      
+      // Como último recurso, forzar el modal con datos de prueba
+      console.log('🧪 Forzando modal con datos de prueba (catch)...');
+      const fallbackMedal = {
+        id: 888,
+        medal: {
+          id: 888,
+          name: 'Medalla de Prueba',
+          description: '¡Esta es una medalla de testing para probar el modal!',
+          icon: 'star'
+        },
+        earned_at: new Date().toISOString(),
+        points_when_earned: 100,
+        level_when_earned: 'NOVATO'
+      };
+      setNewMedal(fallbackMedal);
+      setShowMedalModal(true);
+      console.log('🏆 ¡MODAL FORZADO CON DATOS DE PRUEBA (catch)!');
+    }
+  };
+
+  // MODAL DE MEDALLAS EMBELLECIDO
+  const renderMedalModal = () => {
+    if (!newMedal) return null;
+
+    const dismissKeyboard = () => {
+      Keyboard.dismiss();
+    };
+
+    const closeMedalModal = () => {
+      setShowMedalModal(false);
+      setNewMedal(null);
+      // Resetear animaciones
+      medalFadeAnim.setValue(0);
+      medalScaleAnim.setValue(0);
+      medalBounceAnim.setValue(0);
+      medalShineAnim.setValue(0);
+    };
+
+    // Función para obtener imagen de medalla (CORREGIDA - ruta con /images/)
+    const getMedalImage = (medalName: string) => {
+      const medalImages: { [key: string]: any } = {
+        // Medallas de testing
+        'Testing Medal': require('../assets/images/medals/mes1.png'),
+        
+        // Medallas por ciclo con los nombres actualizados
+        'Maestro de Hábitos': require('../assets/images/medals/mes1.png'),
+        'Guardián Nutricional': require('../assets/images/medals/mes2.png'),
+        'Campeón del Movimiento': require('../assets/images/medals/mes3.png'),
+        'Domador del Estrés': require('../assets/images/medals/mes4.png'),
+        'Campeón del Descanso': require('../assets/images/medals/mes5.png'),
+        'Maestro Digestivo Supremo': require('../assets/images/medals/mes6.png'),
+        
+        // Fallbacks para testing
+        'Medalla de Testing': require('../assets/images/medals/mes1.png'),
+        'Medalla de Prueba': require('../assets/images/medals/mes1.png'),
+      };
+      
+      return medalImages[medalName] || null;
+    };
+
+    const medalImage = getMedalImage(newMedal.medal.name);
+
+    return (
+      <Modal
+        visible={showMedalModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeMedalModal}
+      >
+        <TouchableWithoutFeedback onPress={closeMedalModal}>
+          <View style={styles.medalModalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <Animated.View 
+                style={[
+                  styles.medalModalContainer,
+                  {
+                    opacity: medalFadeAnim,
+                    transform: [{ scale: medalScaleAnim }]
+                  }
+                ]}
+              >
+                {/* Elementos decorativos de fondo */}
+                <View style={styles.medalBackgroundDecorations}>
+                  {/* Círculos decorativos */}
+                  <Animated.View 
+                    style={[
+                      styles.decorativeCircle1,
+                      {
+                        opacity: medalShineAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.1, 0.3]
+                        }),
+                        transform: [
+                          {
+                            scale: medalShineAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.8, 1.2]
+                            })
+                          }
+                        ]
+                      }
+                    ]}
+                  />
+                  <Animated.View 
+                    style={[
+                      styles.decorativeCircle2,
+                      {
+                        opacity: medalShineAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.2, 0.1]
+                        }),
+                        transform: [
+                          {
+                            scale: medalShineAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1.2, 0.8]
+                            })
+                          }
+                        ]
+                      }
+                    ]}
+                  />
+                  
+                  {/* Estrellas decorativas */}
+                  <Animated.View 
+                    style={[
+                      styles.decorativeStar1,
+                      {
+                        opacity: medalBounceAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 1]
+                        }),
+                        transform: [
+                          {
+                            rotate: medalShineAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['0deg', '360deg']
+                            })
+                          }
+                        ]
+                      }
+                    ]}
+                  >
+                    <Text style={styles.decorativeEmoji}>⭐</Text>
+                  </Animated.View>
+                  
+                  <Animated.View 
+                    style={[
+                      styles.decorativeStar2,
+                      {
+                        opacity: medalBounceAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 1]
+                        }),
+                        transform: [
+                          {
+                            rotate: medalShineAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['360deg', '0deg']
+                            })
+                          }
+                        ]
+                      }
+                    ]}
+                  >
+                    <Text style={styles.decorativeEmoji}>✨</Text>
+                  </Animated.View>
+                  
+                  <Animated.View 
+                    style={[
+                      styles.decorativeStar3,
+                      {
+                        opacity: medalBounceAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 1]
+                        }),
+                        transform: [
+                          {
+                            scale: medalBounceAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.5, 1]
+                            })
+                          }
+                        ]
+                      }
+                    ]}
+                  >
+                    <Text style={styles.decorativeEmoji}>🎉</Text>
+                  </Animated.View>
+                </View>
+
+                {/* Fondo con gradiente sutil */}
+                <Animated.View 
+                  style={[
+                    styles.medalShineBackground,
+                    {
+                      opacity: medalShineAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.05, 0.15]
+                      })
+                    }
+                  ]}
+                />
+                
+                {/* Contenido del modal */}
+                <View style={styles.medalContent}>
+                  {/* Contenedor de la medalla con efectos */}
+                  <Animated.View
+                    style={[
+                      styles.medalMainContainer,
+                      {
+                        transform: [
+                          {
+                            scale: medalBounceAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.1]
+                            })
+                          },
+                          {
+                            rotate: medalShineAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['0deg', '5deg']
+                            })
+                          }
+                        ]
+                      }
+                    ]}
+                  >
+                    {/* Círculo de fondo dorado */}
+                    <View style={styles.medalBackgroundCircle}>
+                      <Animated.View 
+                        style={[
+                          styles.medalGlowEffect,
+                          {
+                            opacity: medalShineAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.3, 0.8]
+                            })
+                          }
+                        ]}
+                      />
+                    </View>
+                    
+                    {/* Imagen o Icono de la medalla */}
+                    <View style={styles.medalImageContainer}>
+                      {medalImage ? (
+                        <Animated.View
+                          style={{
+                            transform: [
+                              {
+                                scale: medalBounceAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [1, 1.05]
+                                })
+                              }
+                            ]
+                          }}
+                        >
+                          <Image 
+                            source={medalImage}
+                            style={styles.medalImage}
+                            resizeMode="contain"
+                          />
+                        </Animated.View>
+                      ) : (
+                        <Animated.View
+                          style={{
+                            transform: [
+                              {
+                                scale: medalBounceAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [1, 1.05]
+                                })
+                              }
+                            ]
+                          }}
+                        >
+                          <Icon name="trophy" size={70} color={theme.colors.accent} />
+                        </Animated.View>
+                      )}
+                      
+                      {/* Efecto de brillo rotativo */}
+                      <Animated.View 
+                        style={[
+                          styles.medalShineOverlay,
+                          {
+                            opacity: medalShineAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0, 0.6]
+                            }),
+                            transform: [
+                              {
+                                rotate: medalShineAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ['0deg', '180deg']
+                                })
+                              }
+                            ]
+                          }
+                        ]}
+                      />
+                    </View>
+                  </Animated.View>
+                  
+                  {/* Título de celebración mejorado */}
+                  <Animated.View
+                    style={{
+                      opacity: medalFadeAnim,
+                      transform: [
+                        {
+                          translateY: medalFadeAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [20, 0]
+                          })
+                        }
+                      ]
+                    }}
+                  >
+                    <Text style={styles.medalCelebrationTitle}>¡Felicitaciones!</Text>
+                    <Text style={styles.medalSubtitle}>Has desbloqueado una nueva medalla</Text>
+                  </Animated.View>
+                  
+                  {/* Nombre de la medalla con estilo */}
+                  <Animated.View 
+                    style={[
+                      styles.medalNameContainer,
+                      {
+                        opacity: medalFadeAnim,
+                        transform: [
+                          {
+                            translateY: medalFadeAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [30, 0]
+                            })
+                          }
+                        ]
+                      }
+                    ]}
+                  >
+                    <Text style={styles.medalName}>{newMedal.medal.name}</Text>
+                  </Animated.View>
+                  
+                  {/* Descripción con mejor formato */}
+                  <Animated.View
+                    style={{
+                      opacity: medalFadeAnim,
+                      transform: [
+                        {
+                          translateY: medalFadeAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [40, 0]
+                          })
+                        }
+                      ]
+                    }}
+                  >
+                    <Text style={styles.medalDescription}>
+                      {newMedal.medal.description}
+                    </Text>
+                  </Animated.View>
+                  
+                  {/* Info adicional embellecida */}
+                  <Animated.View 
+                    style={[
+                      styles.medalInfoContainer,
+                      {
+                        opacity: medalFadeAnim,
+                        transform: [
+                          {
+                            translateY: medalFadeAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [50, 0]
+                            })
+                          }
+                        ]
+                      }
+                    ]}
+                  >
+                    <View style={styles.medalInfoRow}>
+                      <View style={styles.medalInfoIcon}>
+                        <Icon name="star" size={16} color={theme.colors.accent} />
+                      </View>
+                      <Text style={styles.medalInfoText}>
+                        Nivel: {newMedal.level_when_earned}
+                      </Text>
+                    </View>
+                  </Animated.View>
+                  
+                  {/* Botón de cerrar mejorado */}
+                  <Animated.View
+                    style={{
+                      opacity: medalFadeAnim,
+                      transform: [
+                        {
+                          translateY: medalFadeAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [60, 0]
+                          })
+                        }
+                      ]
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={styles.medalCloseButton}
+                      onPress={closeMedalModal}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.medalCloseButtonText}>¡Increíble!</Text>
+                      <Icon name="chevron-forward" size={16} color={theme.colors.white} style={{ marginLeft: 4 }} />
+                    </TouchableOpacity>
+                  </Animated.View>
+                </View>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    );
+  };
+
+  // Modal de celebración de hábitos (mantener igual)
   const renderCompletionModal = () => {
-    // Función para cerrar teclado
     const dismissKeyboard = () => {
       Keyboard.dismiss();
     };
@@ -507,7 +1107,7 @@ export default function TrackerScreen() {
     );
   };
 
-  // Renderizar indicadores de progreso
+  // Funciones de renderizado (mantener igual)
   const renderProgressIndicators = () => {
     return (
       <View style={styles.progressIndicatorsContainer}>
@@ -535,7 +1135,6 @@ export default function TrackerScreen() {
     );
   };
 
-  // Renderizar el contenido principal
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -594,7 +1193,6 @@ export default function TrackerScreen() {
                 <Text style={styles.progressPercentage}>{Math.round(dailyProgress)}%</Text>
               </View>
               
-              {/* Barra de progreso con gradiente animado */}
               <Animated.View style={[styles.progressBar, {
                 transform: [{ scale: dailyProgress === 100 ? scaleAnim : 1 }]
               }]}>
@@ -609,11 +1207,11 @@ export default function TrackerScreen() {
                       backgroundColor: progressFillAnim.interpolate({
                         inputRange: [0, 25, 50, 75, 100],
                         outputRange: [
-                          theme.colors.error.main,     // 0-25%: Rojo
-                          theme.colors.warning.main,   // 25-50%: Naranja
-                          theme.colors.warning.light,  // 50-75%: Amarillo
-                          theme.colors.success.light,  // 75-99%: Verde claro
-                          theme.colors.success.main    // 100%: Verde brillante
+                          theme.colors.error.main,
+                          theme.colors.warning.main,
+                          theme.colors.warning.light,
+                          theme.colors.success.light,
+                          theme.colors.success.main
                         ],
                       }),
                     }
@@ -695,21 +1293,15 @@ export default function TrackerScreen() {
                   key={option.value}
                   style={[
                     styles.completionCard,
-                    currentCompletionLevel === option.value && styles.selectedCard,
-                    currentCompletionLevel === option.value && {
-                      backgroundColor: COMPLETION_COLORS[option.value],
-                      borderColor: theme.colors.primary
-                    }
+                    currentCompletionLevel === option.value && styles.selectedCard
                   ]}
                   onPress={() => saveHabitAndProceed(option.value)}
                 >
-                  <Text style={styles.completionEmoji}>{option.emoji}</Text>
-                  <Text style={[
-                    styles.completionLabel,
-                    currentCompletionLevel === option.value && styles.selectedLabel
-                  ]}>
-                    {option.label}
-                  </Text>
+                  <Image 
+                    source={option.image}
+                    style={styles.completionImage}
+                    resizeMode="cover" // Cambiado a "cover" para mejor escalado
+                  />
                 </TouchableOpacity>
               ))}
             </View>
@@ -764,6 +1356,22 @@ export default function TrackerScreen() {
             </View>
           </View>
 
+          {/* BOTÓN DE TESTING TEMPORAL */}
+          <TouchableOpacity 
+            onPress={testMedalAPI}
+            style={{
+              backgroundColor: '#FF6B6B',
+              padding: 15,
+              borderRadius: 10,
+              margin: 20,
+              alignItems: 'center'
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+              🧪 TEST MEDALLA
+            </Text>
+          </TouchableOpacity>
+
           {/* Mensaje de éxito */}
           {successMessage && (
             <Animated.View style={[styles.successMessage, { opacity: fadeAnim }]}>
@@ -783,12 +1391,15 @@ export default function TrackerScreen() {
       <MainHeaderComponent />
       {renderContent()}
       {renderCompletionModal()}
+      {renderMedalModal()}
       <TabNavigationBar />
     </View>
   );
 }
 
+// ESTILOS COMPLETOS (incluyendo los nuevos estilos embellecidos)
 const styles = StyleSheet.create({
+  // Estilos base existentes
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -1015,21 +1626,28 @@ const styles = StyleSheet.create({
   },
   completionCard: {
     width: '48%',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff', // Fondo blanco
     borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
+    padding: theme.spacing.sm, // Aún menos padding
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#E0E0E0', // Borde gris claro por defecto
     ...theme.shadows.sm,
+    minHeight: 160, // Más altura
   },
   selectedCard: {
-    borderColor: theme.colors.primary,
+    borderColor: theme.colors.primary, // Solo cambia el borde
+    borderWidth: 3, // Borde más grueso cuando está seleccionado
     ...theme.shadows.md,
   },
   completionEmoji: {
     fontSize: 32,
     marginBottom: theme.spacing.sm,
+  },
+  completionImage: {
+    width: 130, // MÁS GRANDE AÚN
+    height: 130, // MÁS GRANDE AÚN
   },
   completionLabel: {
     fontSize: theme.fontSize.sm,
@@ -1070,7 +1688,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   
-  // Modal de celebración
+  // Modal de celebración existente
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1154,6 +1772,233 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: theme.fontSize.base,
     fontWeight: '600',
+  },
+  
+  // NUEVOS ESTILOS EMBELLECIDOS: Modal de medallas
+  medalModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)', // Más oscuro para mayor impacto
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
+  medalModalContainer: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 24, // Más redondeado
+    width: '95%',
+    maxWidth: 400,
+    position: 'relative',
+    overflow: 'hidden',
+    ...theme.shadows.xl,
+    // Sombra más dramática
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  
+  // Decoraciones de fondo
+  medalBackgroundDecorations: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  decorativeCircle1: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: theme.colors.accent,
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    bottom: -40,
+    left: -40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: theme.colors.primary,
+  },
+  decorativeStar1: {
+    position: 'absolute',
+    top: 60,
+    right: 30,
+  },
+  decorativeStar2: {
+    position: 'absolute',
+    top: 120,
+    left: 40,
+  },
+  decorativeStar3: {
+    position: 'absolute',
+    bottom: 100,
+    right: 50,
+  },
+  decorativeEmoji: {
+    fontSize: 24,
+  },
+  
+  medalShineBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.primary,
+  },
+  
+  medalContent: {
+    padding: theme.spacing.xxl,
+    paddingTop: 40,
+    paddingBottom: 40,
+    alignItems: 'center',
+    position: 'relative',
+    zIndex: 1,
+  },
+  
+  // Contenedor principal de la medalla
+  medalMainContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  medalBackgroundCircle: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: `${theme.colors.accent}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  medalGlowEffect: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: 70,
+    backgroundColor: theme.colors.accent,
+  },
+  medalImageContainer: {
+    position: 'relative',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    ...theme.shadows.lg,
+  },
+  medalImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  medalShineOverlay: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 30,
+    height: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 15,
+  },
+  
+  // Títulos y textos mejorados
+  medalCelebrationTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
+    textAlign: 'center',
+  },
+  medalSubtitle: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  medalNameContainer: {
+    backgroundColor: `${theme.colors.primary}08`,
+    borderRadius: theme.borderRadius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: `${theme.colors.primary}20`,
+  },
+  medalName: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    textAlign: 'center',
+  },
+  medalDescription: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg,
+    lineHeight: 24,
+    paddingHorizontal: theme.spacing.md,
+  },
+  
+  // Info mejorada
+  medalInfoContainer: {
+    backgroundColor: `${theme.colors.background}80`,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: `${theme.colors.border.light}50`,
+  },
+  medalInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  medalInfoIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: `${theme.colors.accent}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.sm,
+  },
+  medalInfoText: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.text.primary,
+    fontWeight: '600',
+    flex: 1,
+  },
+  
+  // Botón mejorado
+  medalCloseButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 160,
+    ...theme.shadows.lg,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  medalCloseButtonText: {
+    color: '#ffffff',
+    fontSize: theme.fontSize.base,
+    fontWeight: 'bold',
   },
   
   // Mensaje de éxito

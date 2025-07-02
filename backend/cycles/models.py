@@ -84,18 +84,60 @@ class UserCycle(models.Model):
         return f"{self.user.username} - Ciclo {self.cycle_number} ({self.status})"
     
     @property
-    def days_remaining(self):
-        """Días restantes en el ciclo actual"""
-        if self.status != 'ACTIVE':
+    def days_elapsed(self):
+        """
+        Calcula los días transcurridos desde el inicio del ciclo.
+        El primer día cuenta como día 1, no día 0.
+        """
+        if not self.start_date:
             return 0
-        remaining = (self.end_date - timezone.now()).days
-        return max(0, remaining)
+        
+        # Obtener solo la fecha (sin hora) para evitar problemas de timezone
+        if hasattr(self.start_date, 'date'):
+            start_date = self.start_date.date()
+        else:
+            start_date = self.start_date
+        
+        today = timezone.now().date()
+        
+        # Calcular diferencia en días
+        diff_days = (today - start_date).days
+        
+        # El primer día cuenta como día 1
+        return diff_days + 1
     
     @property
-    def days_elapsed(self):
-        """Días transcurridos desde el inicio del ciclo"""
-        elapsed = (timezone.now() - self.start_date).days + 1  
-        return min(30, max(1, elapsed)) 
+    def days_remaining(self):
+        """
+        Calcula los días restantes hasta el final del ciclo.
+        """
+        if not self.end_date:
+            return 0
+        
+        # Obtener solo la fecha (sin hora)
+        if hasattr(self.end_date, 'date'):
+            end_date = self.end_date.date()
+        else:
+            end_date = self.end_date
+        
+        today = timezone.now().date()
+        
+        # Calcular días restantes
+        diff_days = (end_date - today).days
+        
+        # Si ya pasó la fecha, devolver 0
+        return max(0, diff_days)
+
+    def check_and_update_status(self):
+        """
+        Verifica y actualiza el estado del ciclo basado en la fecha actual.
+        """
+        if self.status == 'ACTIVE':
+            if self.days_remaining <= 0:
+                self.status = 'PENDING_RENEWAL'
+                self.save()
+        
+        return self.status
     
     def check_and_update_status(self):
         """Verifica y actualiza el estado del ciclo"""

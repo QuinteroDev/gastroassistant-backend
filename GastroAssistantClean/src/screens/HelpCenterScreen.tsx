@@ -101,12 +101,6 @@ export default function HelpCenterScreen() {
       icon: "analytics"
     },
     {
-      id: 3,
-      question: "¿Puedo actualizar mis datos clínicos?",
-      answer: "¡Por supuesto! Mantener tu información actualizada es fundamental. Ve a 'Mi Perfil' y selecciona 'Actualizar Datos Clínicos'. Cada vez que tengas nuevos resultados de pruebas o cambios en tu condición, actualízalos para que podamos ajustar tu programa y darte las mejores recomendaciones.",
-      icon: "create"
-    },
-    {
       id: 4,
       question: "¿Es segura mi información médica?",
       answer: "Tu privacidad es nuestra prioridad. Utilizamos encriptación de grado médico para proteger todos tus datos. Cumplimos con las regulaciones de protección de datos de salud más estrictas. Solo tú tienes acceso a tu información y nunca la compartimos sin tu consentimiento explícito.",
