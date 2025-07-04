@@ -1,5 +1,3 @@
-
-
 [
   {
     "model": "recommendations.conditionalrecommendation",
@@ -20,9 +18,9 @@
     "fields": {
       "recommendation_type": 2,
       "title": "Manejo de la hernia de hiato",
-      "content": "La hernia de hiato puede debilitar la barrera que separa el estómago del esófago, facilitando que los ácidos asciendan con más facilidad. Esto puede estar influyendo en tus síntomas. En tu caso, trabajar la respiración diafragmática y cuidar la postura abdominal puede ayudarte.",
+      "content": "La hernia de hiato o un cardias débil pueden facilitar que el contenido del estómago suba hacia el esófago, especialmente al agacharse o acostarse. Esto puede ser una causa importante de tus síntomas. Por eso, trabajar la respiración diafragmática, cuidar la postura y reducir la presión en la zona abdominal son estrategias fundamentales.",
       "condition_value": "YES",
-      "tools": "Ejercicios de respiración diafragmática, Posturas correctas, Evitar presión abdominal",
+      "tools": "Respiración diafragmática: Practica a diario ejercicios de respiración profunda para fortalecer el diafragma y reducir la presión abdominal. Realiza 5–10 minutos en ayunas y antes de acostarte, Postura elevada al dormir: Eleva el respaldo de la cama o usa dos almohadas firmes para mantener el torso inclinado. Evita flexionar el abdomen, Evitar presión abdominal: Evita ropa apretada, ejercicios que compriman el abdomen o levantar peso tras las comidas",
       "order": 1,
       "is_active": true
     }
@@ -31,11 +29,11 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 3,
     "fields": {
-      "recommendation_type": 3,
-      "title": "Mejorando la función esofágica",
-      "content": "Algunas personas tienen alteraciones en la forma en la que el esófago empuja los alimentos hacia el estómago. Si este movimiento está debilitado, el ácido puede quedar más tiempo en el esófago. Masticar bien, comer despacio y evitar mezclar alimentos sólidos con bebidas frías puede ayudarte.",
+      "recommendation_type": 10,
+      "title": "Gastritis: enfoque suave para proteger tu estómago",
+      "content": "Como presentas signos de gastritis, vamos a iniciar con un enfoque más suave para proteger tu estómago. Priorizaremos alimentos fáciles de digerir, ritmos tranquilos al comer y algunas pautas específicas que favorecen la regeneración digestiva. Es importante que, en paralelo, trabajes con tu médico para identificar y corregir la causa de la inflamación, como puede ser el uso de fármacos, infecciones o irritantes alimentarios.",
       "condition_value": "YES",
-      "tools": "Alimentación suave, Registro de sensaciones, Técnicas de masticación",
+      "tools": "Prioriza proteínas suaves como pescado blanco, pollo o pavo sin piel, y huevos cocidos o en tortilla, Toma verduras cocidas fáciles de digerir: calabacín, zanahoria, calabaza, patata o judía verde, Evita verduras crudas, fritos, salsas grasas o platos muy condimentados, Cocina al vapor, hervido o al horno suave, usando poco aceite, Mantén las texturas blandas y fáciles de masticar",
       "order": 1,
       "is_active": true
     }
@@ -44,11 +42,11 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 4,
     "fields": {
-      "recommendation_type": 4,
-      "title": "Estrategias para el vaciamiento gástrico lento",
-      "content": "Cuando el estómago tarda mucho en vaciarse, aumenta la presión interna y eso puede favorecer el reflujo. En tu caso, hacer comidas pequeñas, repartidas y con bajo contenido graso puede ayudarte a sentirte mejor.",
-      "condition_value": "YES",
-      "tools": "Comidas fraccionadas, Pautas de vaciamiento, Control de volumen",
+      "recommendation_type": 11,
+      "title": "H. pylori activo: tratamiento y cuidados",
+      "content": "Se ha identificado una infección activa por Helicobacter pylori. Es fundamental que sigas el tratamiento pautado por tu médico para erradicarla de forma eficaz. Mientras tanto, aplicaremos recomendaciones enfocadas en reducir la irritación gástrica y favorecer un entorno digestivo más saludable y priorizar comidas suaves.",
+      "condition_value": "ACTIVE",
+      "tools": "Prioriza proteínas suaves como pescado blanco, pollo o pavo sin piel, y huevos cocidos o en tortilla, Toma verduras cocidas fáciles de digerir: calabacín, zanahoria, calabaza, patata o judía verde, Evita verduras crudas, fritos, salsas grasas o platos muy condimentados, Cocina al vapor, hervido o al horno suave, usando poco aceite, Mantén las texturas blandas y fáciles de masticar",
       "order": 1,
       "is_active": true
     }
@@ -57,12 +55,12 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 5,
     "fields": {
-      "recommendation_type": 5,
-      "title": "Mejorando la salivación",
-      "content": "La saliva ayuda a neutralizar el ácido que asciende al esófago. Si tienes poca salivación, el aclaramiento natural se debilita. Beber agua a lo largo del día, evitar el tabaco y revisar efectos secundarios de medicamentos puede ser clave para mejorar.",
-      "condition_value": "YES",
-      "tools": "Hidratación adecuada, Higiene bucal, Evitar alcohol/tabaco",
-      "order": 1,
+      "recommendation_type": 11,
+      "title": "H. pylori tratado: recuperación progresiva",
+      "content": "Aunque ya trataste la infección por Helicobacter pylori, es común que persista cierta sensibilidad digestiva durante un tiempo. Por eso, es importante seguir las pautas que refuercen tu salud digestiva y apoyen tu proceso de recuperación, con un enfoque progresivo y adaptado a tu tolerancia. Requiere tiempo, así que ánimo.",
+      "condition_value": "TREATED",
+      "tools": "Alimentación progresiva adaptada a tu tolerancia, Seguimiento de la recuperación digestiva, Refuerzo de la salud intestinal",
+      "order": 2,
       "is_active": true
     }
   },
@@ -70,11 +68,11 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 6,
     "fields": {
-      "recommendation_type": 6,
-      "title": "Mejorando el tránsito intestinal",
-      "content": "El estreñimiento aumenta la presión abdominal y puede empeorar el reflujo. Mejorar tu evacuación puede tener un impacto positivo. Te recomendamos hidratarte bien, incluir fibra y usar un taburete para adoptar una mejor postura al defecar.",
+      "recommendation_type": 3,
+      "title": "Mejorando la motilidad esofágica",
+      "content": "Algunas personas presentan una motilidad esofágica reducida, lo que significa que el esófago no se contrae correctamente para empujar el contenido hacia el estómago. Esto afecta al aclaramiento esofágico, que es una de las principales defensas frente al reflujo. Cuando este mecanismo está alterado, el ácido o los alimentos pueden permanecer más tiempo en el esófago, generando molestias. Masticar bien, comer despacio, elegir alimentos más blandos y húmedos, y mantener una buena hidratación con sorbos pequeños entre horas puede ayudarte mucho.",
       "condition_value": "YES",
-      "tools": "Aumento de fibra, Uso de taburete, Hidratación adecuada, Actividad física",
+      "tools": "Alimentación suave y húmeda: Opta por preparaciones cocinadas, con texturas blandas y bien hidratadas (purés, cremas, smoothies…), Masticación consciente: Mastica más de 20 veces cada bocado, deja los cubiertos en la mesa entre bocados y evita distracciones, Hidratación progresiva: Bebe pequeños sorbos a lo largo del día. Evita grandes cantidades de golpe. Esto favorece el aclaramiento esofágico",
       "order": 1,
       "is_active": true
     }
@@ -83,11 +81,11 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 7,
     "fields": {
-      "recommendation_type": 7,
-      "title": "El estrés y tu digestión",
-      "content": "El estrés puede hacer que el cuerpo esté más sensible a los estímulos digestivos. Muchas personas sienten que sus síntomas aumentan en periodos de tensión. Trabajar el bienestar emocional también es parte del cuidado digestivo.",
+      "recommendation_type": 5,
+      "title": "Estrategias para el vaciamiento gástrico lento",
+      "content": "Si tu estómago se vacía lentamente, es normal que sientas pesadez, hinchazón o más reflujo. Evitar comidas muy abundantes, con exceso de grasa o que te dejen demasiado lleno puede aliviar esa carga y favorecer una digestión más fluida. También ayuda comer en un estado de calma y sin distracciones, para que tu sistema digestivo funcione de forma más eficiente.",
       "condition_value": "YES",
-      "tools": "Respiración consciente, Relajación guiada, Diario emocional",
+      "tools": "Evita sentirte completamente lleno al comer para facilitar la digestión, Comer en calma: Tómate al menos 20–30 minutos por comida. Prioriza entornos tranquilos sin pantallas. Puedes hacer unas 5 respiraciones profundas antes de empezar a comer, Masticación consciente: Mastica más de 20 veces cada bocado, deja los cubiertos en la mesa entre bocados y evita distracciones, Reducción de grasa y volumen: Cocina con poca grasa, elige métodos suaves (horno, vapor) y porciones ajustadas a tu tolerancia",
       "order": 1,
       "is_active": true
     }
@@ -96,12 +94,12 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 8,
     "fields": {
-      "recommendation_type": 7,
-      "title": "Manejo ocasional del estrés",
-      "content": "Notas que a veces el estrés influye en tus síntomas digestivos. Esto es normal y parte de la conexión mente-intestino. Tener algunas estrategias básicas de manejo del estrés puede ser beneficioso para tu bienestar digestivo.",
-      "condition_value": "SOMETIMES",
-      "tools": "Técnicas de relajación básicas, Mindfulness simple",
-      "order": 2,
+      "recommendation_type": 6,
+      "title": "Mejorando la salivación",
+      "content": "La saliva es una defensa natural frente al ácido: ayuda a neutralizarlo y limpiar el esófago. Si tu producción es baja, tu sistema digestivo pierde parte de esa protección. Hidratarte bien, revisar posibles fármacos y evitar tabaco y alcohol puede marcar una gran diferencia.",
+      "condition_value": "YES",
+      "tools": "Mantente bien hidratado, evitando beber grandes cantidades durante las comidas, Evita el exceso de cafeína (café, té), alcohol y tabaco, Limita los alimentos muy azucarados, Respira por la nariz siempre que sea posible, Mantén una buena higiene oral y evita enjuagues con alcohol, Si la sequedad persiste o causa molestias importantes, consulta con un dentista o médico para valorar otras causas y recibir el tratamiento adecuado",
+      "order": 1,
       "is_active": true
     }
   },
@@ -109,12 +107,25 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 9,
     "fields": {
-      "recommendation_type": 8,
-      "title": "ERGE Erosiva: Cuidados específicos",
-      "content": "Tu perfil corresponde a Enfermedad por Reflujo Gastroesofágico Erosiva, lo que significa que el ácido ha causado lesiones visibles en tu esófago. Este tipo de reflujo requiere tratamiento médico específico además de cambios en el estilo de vida.",
-      "condition_value": "EROSIVE",
-      "tools": "Seguimiento médico regular, Elevación de la cabecera, Evitar irritantes",
+      "recommendation_type": 6,
+      "title": "Mejorando el tránsito intestinal",
+      "content": "El esfuerzo al defecar aumenta la presión en el abdomen, lo que puede agravar el reflujo. Mejorar la regularidad intestinal también favorece tu salud digestiva general. La fibra, el movimiento y una correcta postura al defecar te pueden ayudar.",
+      "condition_value": "YES",
+      "tools": "Agua templada al despertar para activar el tránsito, Hidratación adecuada entre comidas, Añade grasas saludables como aceite de oliva o aguacate en tus platos, Camina a diario. Es importante la actividad diaria, Masaje abdominal: Haz un masaje suave en el abdomen siguiendo las agujas del reloj, ideal por la mañana o al final del día, Mantén un buen aporte de fibra: frutas, verduras y pequeñas semillas hidratadas como la chía, Utiliza un taburete en el baño para facilitar la evacuación",
       "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.conditionalrecommendation",
+    "pk": 15,
+    "fields": {
+      "recommendation_type": 6,
+      "title": "Estreñimiento ocasional",
+      "content": "A veces tienes dificultades con el tránsito intestinal. Esto puede aumentar la presión abdominal y empeorar el reflujo ocasionalmente. Mantener una rutina de hábitos saludables puede ayudarte.",
+      "condition_value": "SOMETIMES",
+      "tools": "Hidratación regular, Actividad física diaria, Rutina matutina con agua templada",
+      "order": 2,
       "is_active": true
     }
   },
@@ -123,11 +134,11 @@
     "pk": 10,
     "fields": {
       "recommendation_type": 8,
-      "title": "ERGE No Erosiva: Estrategia integral",
-      "content": "Tu perfil corresponde a Enfermedad por Reflujo Gastroesofágico No Erosiva (NERD), lo que significa que tienes síntomas de reflujo sin lesiones visibles en el esófago. Los cambios en el estilo de vida pueden ser especialmente efectivos en tu caso.",
-      "condition_value": "NERD",
-      "tools": "Control de desencadenantes, Gestión del estrés, Hábitos alimentarios",
-      "order": 2,
+      "title": "El estrés y tu digestión",
+      "content": "El sistema digestivo está estrechamente conectado con el sistema nervioso. En situaciones de estrés o ansiedad, la sensibilidad digestiva puede aumentar, lo que hace que las molestias se perciban con más intensidad. Por eso es clave trabajar también el bienestar emocional.",
+      "condition_value": "YES",
+      "tools": "La meditación puede ayudarte a calmar el sistema nervioso y reducir la reactividad ante los síntomas digestivos, Las respiraciones profundas (diafragmáticas) son útiles para activar el sistema parasimpático y mejorar la digestión, Practica al menos unos minutos al día, preferiblemente en un entorno tranquilo, Si el estrés es persistente o genera malestar significativo, puede ser recomendable acudir a un psicólogo o terapeuta especializado, El trabajo emocional también forma parte del proceso de recuperación digestiva",
+      "order": 1,
       "is_active": true
     }
   },
@@ -136,11 +147,11 @@
     "pk": 11,
     "fields": {
       "recommendation_type": 8,
-      "title": "Reflujo Extraesofágico: Abordaje específico",
-      "content": "Tu perfil corresponde a Reflujo Extraesofágico, lo que significa que el reflujo está afectando principalmente estructuras fuera del esófago, como la garganta o vías respiratorias. Este tipo de reflujo requiere un abordaje específico.",
-      "condition_value": "EXTRAESOPHAGEAL",
-      "tools": "Hidratación laríngea, Evitar irritantes, Técnicas de respiración",
-      "order": 3,
+      "title": "Manejo ocasional del estrés",
+      "content": "Notas que a veces el estrés influye en tus síntomas digestivos. Esto es normal y parte de la conexión mente-intestino. Tener algunas estrategias básicas de manejo del estrés puede ser beneficioso para tu bienestar digestivo.",
+      "condition_value": "SOMETIMES",
+      "tools": "Técnicas de relajación básicas, Mindfulness simple, Respiración consciente en momentos de tensión",
+      "order": 2,
       "is_active": true
     }
   },
@@ -148,11 +159,11 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 12,
     "fields": {
-      "recommendation_type": 9,
-      "title": "Mejorando el control de porciones",
-      "content": "Comer en exceso aumenta la presión en el estómago y puede debilitar la válvula que evita el reflujo. Aprender a reconocer la saciedad y servir porciones adecuadas puede ayudarte a reducir tus síntomas de reflujo.",
-      "condition_value": "MEAL_SIZE_LOW",
-      "tools": "Control de porciones, Conciencia alimentaria, Técnicas de saciedad",
+      "recommendation_type": 12,
+      "title": "Alteraciones intestinales y reflujo",
+      "content": "Has indicado que tienes una alteración digestiva como SIBO, disbiosis intestinal o síndrome del intestino irritable (SII). Estas condiciones pueden provocar distensión abdominal y aumentar la presión dentro del sistema digestivo, lo que en algunos casos agrava los síntomas de reflujo. Es fundamental trabajar con tu médico o nutricionista para abordar el origen de estos desequilibrios, mientras aplicamos pautas que ayuden a reducir la producción de gases, mejorar la motilidad intestinal y favorecer un entorno digestivo más estable.",
+      "condition_value": "YES",
+      "tools": "Seguimiento médico especializado para la condición intestinal, Pautas para reducir la producción de gases, Estrategias para mejorar la motilidad intestinal, Alimentación adaptada a tu tolerancia digestiva",
       "order": 1,
       "is_active": true
     }
@@ -161,12 +172,12 @@
     "model": "recommendations.conditionalrecommendation",
     "pk": 13,
     "fields": {
-      "recommendation_type": 9,
-      "title": "Tiempo adecuado entre cena y acostarse",
-      "content": "Acostarse con el estómago lleno es una de las principales causas de reflujo nocturno. Intenta cenar al menos 3 horas antes de acostarte para dar tiempo a que el estómago se vacíe parcialmente.",
-      "condition_value": "DINNER_TIME_LOW",
-      "tools": "Planificación de horarios, Cenas ligeras, Infusiones digestivas",
-      "order": 2,
+      "recommendation_type": 8,
+      "title": "Dejar de fumar para mejorar el reflujo",
+      "content": "Fumar reduce la presión del esfínter esofágico inferior, enlentece el aclaramiento del ácido y disminuye la producción de saliva protectora. Cuanto más tiempo se mantiene el hábito, mayor suele ser la frecuencia e intensidad de los síntomas. Dejar de fumar no solo mejora el reflujo, sino que también favorece la digestión y la salud intestinal a medio y largo plazo.",
+      "condition_value": "YES",
+      "tools": "Plan de cesación tabáquica, Estrategias para fortalecer el esfínter esofágico, Técnicas para mejorar el aclaramiento esofágico, Apoyo para el proceso de abandono del tabaco",
+      "order": 1,
       "is_active": true
     }
   },
@@ -175,12 +186,13 @@
     "pk": 14,
     "fields": {
       "recommendation_type": 9,
-      "title": "Evitar tumbarse después de las comidas",
-      "content": "La posición horizontal facilita que los ácidos del estómago suban hacia el esófago. Intenta mantener una posición vertical o ligeramente inclinada durante al menos 30-60 minutos después de comer.",
-      "condition_value": "LIE_DOWN_LOW",
-      "tools": "Actividades post-comida, Posturas correctas",
-      "order": 3,
+      "title": "Reducir el consumo de alcohol",
+      "content": "El alcohol puede relajar el esfínter esofágico inferior, facilitar el paso del ácido al esófago y dañar la mucosa digestiva. Esto es más evidente en consumos altos o frecuentes. En muchas personas actúa como desencadenante directo de síntomas, especialmente si se combina con comidas copiosas o cenas tardías. Reducir su consumo puede ayudarte a mejorar los síntomas y proteger tu sistema digestivo a largo plazo.",
+      "condition_value": "YES",
+      "tools": "Reducción progresiva del consumo de alcohol, Identificación de desencadenantes relacionados con el alcohol, Alternativas saludables para ocasiones sociales, Estrategias para proteger la mucosa digestiva",
+      "order": 1,
       "is_active": true
     }
   }
+
 ]

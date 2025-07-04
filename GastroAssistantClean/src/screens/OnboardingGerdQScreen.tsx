@@ -64,7 +64,7 @@ interface Questionnaire {
 
 export default function OnboardingGerdQScreen() {
  const navigation = useNavigation<OnboardingGerdQNavigationProp>();
- const route = useRoute(); // ← MOVIDO AQUÍ
+ const route = useRoute();
  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
  const [answers, setAnswers] = useState<{[key: number]: number}>({});
  const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +87,7 @@ export default function OnboardingGerdQScreen() {
      
      // Guardar la pantalla actual
      await saveOnboardingProgress('OnboardingGerdQ');
-     const isRenewal = (route.params as any)?.isRenewal || false; // ← CAMBIADO
+     const isRenewal = (route.params as any)?.isRenewal || false;
 
      // Solo verificar onboarding completo si NO es una renovación
      if (!isRenewal) {
@@ -422,18 +422,18 @@ export default function OnboardingGerdQScreen() {
        <ScrollView contentContainerStyle={styles.scrollContainer}>
          <View style={styles.content}>
            <View style={styles.headerSection}>
-             <Icon name="medical" size={40} color={theme.colors.primary} />
-             <Text style={styles.title}>{questionnaire.title || 'Cuestionario GerdQ'}</Text>
-           </View>
+             <Icon name="document-text-outline" size={40} color={theme.colors.primary} />
+             <Text style={styles.title}>Síntomas Digestivos</Text>
+             </View>
            
-           <Text style={styles.description}>
-             {questionnaire.description || 'Por favor responde todas las preguntas del cuestionario.'}
-           </Text>
+             <Text style={styles.description}>
+            Queremos entender cómo te afectan los síntomas típicos del reflujo.
+          </Text>
            
            <View style={styles.infoCard}>
              <Icon name="information-circle" size={20} color={theme.colors.info.main} />
              <Text style={styles.infoText}>
-               Responde basándote en cómo te has sentido durante las últimas 4 semanas
+             Responde basándote en cómo te has sentido durante la última semana.
              </Text>
            </View>
            
@@ -441,7 +441,7 @@ export default function OnboardingGerdQScreen() {
            {questionnaire.questions && questionnaire.questions.length > 0 ? (
              questionnaire.questions.map((question: Question, index: number) => (
                <View key={question.id} style={styles.questionCard}>
-                 <View style={styles.questionHeader}>
+                 <View style={question.order === 5 ? styles.questionHeaderVertical : styles.questionHeader}>
                    <View style={styles.questionNumber}>
                      <Text style={styles.questionNumberText}>{index + 1}</Text>
                    </View>
@@ -573,11 +573,20 @@ const styles = StyleSheet.create({
    borderRadius: theme.borderRadius.md,
    padding: theme.spacing.md,
    marginBottom: theme.spacing.lg,
+   minHeight: 120,
    ...theme.shadows.sm,
  },
+ // Layout horizontal normal (preguntas 1-4 y 6)
  questionHeader: {
    flexDirection: 'row',
    marginBottom: theme.spacing.md,
+   alignItems: 'flex-start',
+ },
+ // Layout vertical SOLO para pregunta 5
+ questionHeaderVertical: {
+   flexDirection: 'column',
+   marginBottom: theme.spacing.md,
+   alignItems: 'flex-start',
  },
  questionNumber: {
    width: 28,
@@ -587,6 +596,9 @@ const styles = StyleSheet.create({
    justifyContent: 'center',
    alignItems: 'center',
    marginRight: theme.spacing.md,
+   marginBottom: theme.spacing.sm,
+   marginTop: 2,
+   flexShrink: 0,
  },
  questionNumberText: {
    color: theme.colors.surface,

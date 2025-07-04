@@ -110,7 +110,7 @@ const TabNavigationBar = () => {
         onPress={() => navigateToTab('Stats')}
       >
         <Icon 
-          name={currentTab === 'Stats' ? "analytics" : "analytics-outline"} 
+          name={currentTab === 'Stats' ? "trophy" : "trophy-outline"} 
           size={24} 
           color={currentTab === 'Stats' ? theme.colors.tabBar.active : theme.colors.tabBar.inactive} 
         />
@@ -118,7 +118,7 @@ const TabNavigationBar = () => {
           styles.tabLabel,
           currentTab === 'Stats' ? styles.tabLabelActive : styles.tabLabelInactive
         ]}>
-          Stats
+          Logros
         </Text>
       </TouchableOpacity>
       

@@ -348,3 +348,216 @@ class SubmitHabitQuestionnaireView(APIView):
             'prioritized_recommendations': len(prioritized),
             'onboarding_complete': final_status
         }, status=status.HTTP_201_CREATED)
+    
+
+# questionnaires/views.py - Añadir estas nuevas vistas
+
+class ClinicalFactorsQuestionnaireView(APIView):
+    """
+    Vista para obtener el cuestionario de factores clínicos.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Buscar el cuestionario de factores clínicos
+            questionnaire = Questionnaire.objects.prefetch_related(
+                'questions__options'
+            ).get(name='Clinical_Factors_v1')
+            
+            serializer = QuestionnaireDetailSerializer(questionnaire)
+            return Response(serializer.data)
+            
+        except Questionnaire.DoesNotExist:
+            return Response({
+                'error': 'Cuestionario de factores clínicos no encontrado',
+                'hint': 'Ejecuta: python manage.py create_clinical_factors'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+
+class SubmitClinicalFactorsView(APIView):
+    """
+    Vista para enviar las respuestas del cuestionario de factores clínicos.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        try:
+            questionnaire = Questionnaire.objects.get(name='Clinical_Factors_v1')
+        except Questionnaire.DoesNotExist:
+            return Response({
+                'error': 'Cuestionario de factores clínicos no encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = QuestionnaireSubmitSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        validated_answers = serializer.validated_data['answers']
+        user = request.user
+        answers_to_create = []
+        
+        # Mapeo de preguntas a campos del perfil
+        question_to_field_mapping = {
+            1: 'has_hernia',                # Hernia de hiato
+            2: 'has_gastritis',             # Gastritis
+            3: 'h_pylori_status',           # Helicobacter pylori
+            4: 'has_altered_motility',      # Motilidad alterada  
+            5: 'has_slow_emptying',         # Vaciamiento lento
+            6: 'has_dry_mouth',             # Sequedad bucal
+            7: 'has_constipation',          # Estreñimiento
+            8: 'stress_affects',            # Estrés
+            9: 'has_intestinal_disorders',  # Alteraciones intestinales
+        }
+
+        # Diccionario para almacenar los valores a actualizar en el perfil
+        profile_updates = {}
+
+        # 1. Validar y preparar UserAnswer para bulk_create
+        for answer_data in validated_answers:
+            question_id = answer_data['question_id']
+            option_id = answer_data['selected_option_id']
+
+            try:
+                question = Question.objects.select_related('questionnaire').get(pk=question_id)
+                option = AnswerOption.objects.get(pk=option_id, question=question)
+            except (Question.DoesNotExist, AnswerOption.DoesNotExist):
+                return Response({
+                    'error': f'Datos inválidos para pregunta {question_id} u opción {option_id}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Verificar que la pregunta pertenece al cuestionario correcto
+            if question.questionnaire != questionnaire:
+                return Response({
+                    'error': f'La pregunta {question_id} no pertenece al cuestionario de factores clínicos'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            answers_to_create.append(
+                UserAnswer(
+                    user=user,
+                    question=question,
+                    selected_option=option
+                )
+            )
+
+            # Mapear el valor de la respuesta al campo correspondiente del perfil
+            if question.order in question_to_field_mapping:
+                field_name = question_to_field_mapping[question.order]
+                
+                # Convertir el valor numérico a string según el campo
+                if field_name == 'h_pylori_status':
+                    # Helicobacter pylori: 0=NO, 1=UNKNOWN, 2=TREATED, 3=ACTIVE
+                    value_mapping = {0: 'NO', 1: 'UNKNOWN', 2: 'TREATED', 3: 'ACTIVE'}
+                    profile_updates[field_name] = value_mapping.get(option.value, 'UNKNOWN')
+                    
+                elif field_name == 'stress_affects':
+                    # Estrés: 0=NO, 1=SOMETIMES, 2=YES
+                    value_mapping = {0: 'NO', 1: 'SOMETIMES', 2: 'YES'}
+                    profile_updates[field_name] = value_mapping.get(option.value, 'NO')
+                    
+                elif field_name == 'alcohol_consumption':
+                    # Alcohol: 0=NO, 1=OCCASIONALLY, 2=YES
+                    value_mapping = {0: 'NO', 1: 'SOMETIMES', 2: 'YES'}
+                    profile_updates[field_name] = value_mapping.get(option.value, 'NO')
+        
+                elif field_name == 'is_smoker':
+                    # Tabaquismo: 0=NO, 1=YES
+                    value_mapping = {0: 'NO', 1: 'YES'}
+                    profile_updates[field_name] = value_mapping.get(option.value, 'NO')
+                    
+                else:
+                    # Para el resto (YES/NO/UNKNOWN): 0=NO, 1=YES, 2=UNKNOWN
+                    value_mapping = {0: 'NO', 1: 'YES', 2: 'UNKNOWN'}
+                    profile_updates[field_name] = value_mapping.get(option.value, 'UNKNOWN')
+
+        # 2. Crear todas las respuestas
+        UserAnswer.objects.bulk_create(answers_to_create)
+
+        # 3. Actualizar el perfil del usuario con los factores clínicos
+        try:
+            user_profile = user.profile
+            for field_name, field_value in profile_updates.items():
+                setattr(user_profile, field_name, field_value)
+            
+            user_profile.save()
+            
+            print(f'✅ Perfil actualizado para {user.username}: {profile_updates}')
+            
+        except Exception as e:
+            return Response({
+                'error': f'Error actualizando perfil: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 4. Crear el registro de finalización
+        completion = QuestionnaireCompletion.objects.create(
+            user=user,
+            questionnaire=questionnaire,
+            score=None,  # Los factores clínicos no tienen score
+            is_onboarding=True
+        )
+
+        # 5. Verificar si debe completar el onboarding
+        try:
+            # Verificar si ha completado todos los cuestionarios necesarios
+            gerdq_done = QuestionnaireCompletion.objects.filter(
+                user=user,
+                questionnaire__type='GERDQ',
+                is_onboarding=True
+            ).exists()
+
+            rsi_done = QuestionnaireCompletion.objects.filter(
+                user=user,
+                questionnaire__type='RSI',
+                is_onboarding=True
+            ).exists()
+
+            habits_done = QuestionnaireCompletion.objects.filter(
+                user=user,
+                questionnaire__type='HABITS',
+                is_onboarding=True
+            ).exists()
+
+            # Verificar información básica del perfil
+            profile_complete = (
+                user_profile.weight_kg is not None and
+                user_profile.height_cm is not None
+            )
+
+            # Si completó todo, marcar onboarding como terminado
+            all_complete = gerdq_done and rsi_done and habits_done and profile_complete
+            
+            if all_complete:
+                user_profile.onboarding_complete = True
+                user_profile.save(update_fields=['onboarding_complete'])
+                
+                # Generar recomendaciones y configurar hábitos
+                from recommendations.services import RecommendationService, HabitTrackingService
+                
+                # Generar recomendaciones basadas en factores clínicos
+                recommendations = RecommendationService.generate_recommendations_for_user(user)
+                prioritized = RecommendationService.prioritize_recommendations(user)
+                
+                # Configurar seguimiento de hábitos
+                trackers, promoted_habit = HabitTrackingService.setup_habit_tracking(user)
+                
+                return Response({
+                    'message': 'Factores clínicos guardados correctamente',
+                    'completion_id': completion.id,
+                    'profile_updated': profile_updates,
+                    'onboarding_complete': True,
+                    'recommendations_generated': len(recommendations),
+                    'prioritized_recommendations': len(prioritized),
+                    'habit_trackers_created': len(trackers),
+                    'promoted_habit': promoted_habit.habit.habit_type if promoted_habit else None
+                }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            print(f'Error en configuración post-onboarding: {e}')
+
+        return Response({
+            'message': 'Factores clínicos guardados correctamente',
+            'completion_id': completion.id,
+            'profile_updated': profile_updates,
+            'onboarding_complete': False
+        }, status=status.HTTP_201_CREATED)

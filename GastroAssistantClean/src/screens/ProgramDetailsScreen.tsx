@@ -1,4 +1,4 @@
-// ProgramDetailsScreen.tsx - Versión final completa y corregida
+// ProgramDetailsScreen.tsx - VERSIÓN COMPLETA CON SECCIÓN "RECUERDA" Y AVATAR POR DEFECTO
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -14,6 +14,7 @@ import {
   Dimensions,
   Animated,
   Modal,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -52,6 +53,21 @@ type RootStackParamList = {
 
 type ProgramDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProgramDetails'>;
 
+// 🆕 Lista de avatares disponibles CON avatar por defecto (debe coincidir con ProfileScreen)
+const AVAILABLE_AVATARS = [
+  { 
+    id: 'default', 
+    source: null, // Sin imagen - usará icono
+    name: 'Sin avatar',
+    isDefault: true 
+  },
+  { id: 'avatar1', source: require('../assets/images/avatars/avatar1.png'), name: 'Avatar 1' },
+  { id: 'avatar2', source: require('../assets/images/avatars/avatar2.png'), name: 'Avatar 2' },
+  { id: 'avatar3', source: require('../assets/images/avatars/avatar3.png'), name: 'Avatar 3' },
+  { id: 'avatar4', source: require('../assets/images/avatars/avatar4.png'), name: 'Avatar 4' },
+  { id: 'avatar5', source: require('../assets/images/avatars/avatar5.png'), name: 'Avatar 5' },
+];
+
 // Iconos para cada sección del programa
 const SECTION_ICONS: { [key: string]: JSX.Element } = {
   'psychology': <MaterialIcons name="psychology" size={24} color="#ffffff" />,
@@ -84,7 +100,10 @@ export default function ProgramDetailsScreen() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [expandedFactor, setExpandedFactor] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("Usuario");
+  const [userAvatar, setUserAvatar] = useState<string>('default'); // 🆕 Por defecto 'default'
   const [showCycleInfoModal, setShowCycleInfoModal] = useState(false);
+  const [showClinicalFactorsModal, setShowClinicalFactorsModal] = useState(false);
+  const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   
   // Añadir el hook de ciclos
@@ -101,6 +120,17 @@ export default function ProgramDetailsScreen() {
   // Animaciones
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
+  
+  // 🆕 Función mejorada para obtener la imagen del avatar
+  const getAvatarImage = () => {
+    const avatar = AVAILABLE_AVATARS.find(a => a.id === userAvatar);
+    return avatar?.source || null;
+  };
+  
+  // 🆕 Función para verificar si es avatar por defecto
+  const isDefaultAvatar = () => {
+    return userAvatar === 'default' || !userAvatar;
+  };
   
   // Verificar si debe mostrar el modal de renovación
   useEffect(() => {
@@ -165,7 +195,7 @@ export default function ProgramDetailsScreen() {
     console.log('Recordatorio pospuesto para mañana');
   };
   
-  // Componente modal de información de ciclos - CORREGIDO
+  // MODAL 1: Información de ciclos
   const CycleInfoModal = () => (
     <Modal
       visible={showCycleInfoModal}
@@ -173,99 +203,153 @@ export default function ProgramDetailsScreen() {
       animationType="fade"
       onRequestClose={() => setShowCycleInfoModal(false)}
     >
-      <TouchableOpacity 
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={() => setShowCycleInfoModal(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalContent}
-          activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
-        >
-          <View style={styles.modalHeader}>
-            <View style={styles.modalIconContainer}>
+      <View style={styles.cycleModalOverlay}>
+        <View style={styles.cycleModalContent}>
+          <View style={styles.cycleModalHeader}>
+            <View style={styles.cycleModalIconContainer}>
               <Icon name="information-circle" size={40} color={theme.colors.primary} />
             </View>
             <TouchableOpacity
-              style={styles.modalCloseButton}
+              style={styles.cycleModalCloseButton}
               onPress={() => setShowCycleInfoModal(false)}
             >
               <Icon name="close" size={24} color={theme.colors.text.secondary} />
             </TouchableOpacity>
           </View>
   
-          <Text style={styles.modalTitle}>¿Qué son los ciclos?</Text>
+          <Text style={styles.cycleModalTitle}>¿Qué son los ciclos?</Text>
           
-          {/* ScrollView mejorado con más altura */}
-          <ScrollView 
-            style={styles.modalScrollView} 
-            showsVerticalScrollIndicator={true}
-            contentContainerStyle={styles.modalScrollContent}
-          >
-            <View style={styles.modalSection}>
-              <View style={styles.modalSectionHeader}>
-                <Icon name="calendar-outline" size={20} color={theme.colors.primary} />
-                <Text style={styles.modalSectionTitle}>Ciclos de 30 días</Text>
+          <View style={styles.cycleModalScrollContainer}>
+            <ScrollView 
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+            >
+              <View style={styles.cycleModalSection}>
+                <View style={styles.cycleModalSectionHeader}>
+                  <Icon name="calendar-outline" size={20} color={theme.colors.primary} />
+                  <Text style={styles.cycleModalSectionTitle}>Ciclos de 30 días</Text>
+                </View>
+                <Text style={styles.cycleModalText}>
+                  Tu Plan Digestivo se organiza en ciclos de 30 días. Cada ciclo es una oportunidad para mejorar tus hábitos digestivos y evaluar tu progreso.
+                </Text>
               </View>
-              <Text style={styles.modalText}>
-                Tu programa se organiza en ciclos de 30 días. Cada ciclo es una oportunidad para mejorar tus hábitos digestivos y evaluar tu progreso.
-              </Text>
-            </View>
-  
-            <View style={styles.modalSection}>
-              <View style={styles.modalSectionHeader}>
-                <Icon name="refresh-outline" size={20} color={theme.colors.primary} />
-                <Text style={styles.modalSectionTitle}>Evaluación mensual</Text>
+    
+              <View style={styles.cycleModalSection}>
+                <View style={styles.cycleModalSectionHeader}>
+                  <Icon name="refresh-outline" size={20} color={theme.colors.primary} />
+                  <Text style={styles.cycleModalSectionTitle}>Evaluación mensual</Text>
+                </View>
+                <Text style={styles.cycleModalText}>
+                  Al finalizar cada ciclo, realizarás una nueva evaluación para ajustar tu plan según tu evolución y necesidades actuales.
+                </Text>
               </View>
-              <Text style={styles.modalText}>
-                Al finalizar cada ciclo, realizarás una nueva evaluación para ajustar tu programa según tu evolución y necesidades actuales.
-              </Text>
-            </View>
-  
-            <View style={styles.modalSection}>
-              <View style={styles.modalSectionHeader}>
-                <Icon name="trending-up-outline" size={20} color={theme.colors.primary} />
-                <Text style={styles.modalSectionTitle}>Seguimiento de progreso</Text>
+    
+              <View style={styles.cycleModalSection}>
+                <View style={styles.cycleModalSectionHeader}>
+                  <Icon name="checkmark-circle-outline" size={20} color={theme.colors.primary} />
+                  <Text style={styles.cycleModalSectionTitle}>Beneficios del sistema</Text>
+                </View>
+                <Text style={styles.cycleModalText}>
+                  Este sistema de ciclos te permite mantener un seguimiento constante de tu progreso y adaptarte a los cambios en tu salud digestiva.
+                </Text>
               </View>
-              <Text style={styles.modalText}>
-                Podrás ver cómo has mejorado comparando tus puntuaciones GERDq y RSI entre ciclos, además del progreso en tus hábitos.
-              </Text>
-            </View>
-  
-            <View style={styles.modalSection}>
-              <View style={styles.modalSectionHeader}>
-                <Icon name="notifications-outline" size={20} color={theme.colors.primary} />
-                <Text style={styles.modalSectionTitle}>Recordatorios</Text>
-              </View>
-              <Text style={styles.modalText}>
-                Cuando queden 3 días o menos para terminar tu ciclo, verás una notificación para prepararte para la siguiente evaluación.
-              </Text>
-            </View>
-  
-            {/* Contenido adicional para probar scroll */}
-            <View style={styles.modalSection}>
-              <View style={styles.modalSectionHeader}>
-                <Icon name="checkmark-circle-outline" size={20} color={theme.colors.primary} />
-                <Text style={styles.modalSectionTitle}>Beneficios del sistema</Text>
-              </View>
-              <Text style={styles.modalText}>
-                Este sistema de ciclos te permite mantener un seguimiento constante de tu progreso y ajustar tu tratamiento según tus necesidades cambiantes.
-              </Text>
-            </View>
-          </ScrollView>
+              
+              <View style={{ height: 20 }} />
+            </ScrollView>
+          </View>
   
           <TouchableOpacity
-            style={styles.modalButton}
+            style={styles.cycleModalButton}
             onPress={() => setShowCycleInfoModal(false)}
           >
-            <Text style={styles.modalButtonText}>Entendido</Text>
+            <Text style={styles.cycleModalButtonText}>Entendido</Text>
           </TouchableOpacity>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
-  
+
+  // MODAL 2: Información de factores clínicos
+  const ClinicalFactorsInfoModal = () => (
+    <Modal
+      visible={showClinicalFactorsModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowClinicalFactorsModal(false)}
+    >
+      <View style={styles.clinicalModalOverlay}>
+        <View style={styles.clinicalModalContent}>
+          <View style={styles.clinicalModalHeader}>
+            <View style={styles.clinicalModalIconContainer}>
+              <Icon name="medical" size={40} color={theme.colors.primary} />
+            </View>
+            <TouchableOpacity
+              style={styles.clinicalModalCloseButton}
+              onPress={() => setShowClinicalFactorsModal(false)}
+            >
+              <Icon name="close" size={24} color={theme.colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.clinicalModalTitle}>¿Por qué se muestran estos factores?</Text>
+          
+          <View style={styles.clinicalModalSimpleContent}>
+            <Text style={styles.clinicalModalSimpleText}>
+              Pueden estar influyendo en tus síntomas digestivos. Tenerlos en cuenta te ayudará a enfocar mejor tu recuperación junto con el seguimiento médico.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.clinicalModalButton}
+            onPress={() => setShowClinicalFactorsModal(false)}
+          >
+            <Text style={styles.clinicalModalButtonText}>Entendido</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // MODAL 3: Información de recomendaciones
+  const RecommendationsInfoModal = () => (
+    <Modal
+      visible={showRecommendationsModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowRecommendationsModal(false)}
+    >
+      <View style={styles.recModalOverlay}>
+        <View style={styles.recModalContent}>
+          <View style={styles.recModalHeader}>
+            <View style={styles.recModalIconContainer}>
+              <Icon name="bulb" size={40} color={theme.colors.primary} />
+            </View>
+            <TouchableOpacity
+              style={styles.recModalCloseButton}
+              onPress={() => setShowRecommendationsModal(false)}
+            >
+              <Icon name="close" size={24} color={theme.colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.recModalTitle}>¿Por qué estas recomendaciones?</Text>
+          
+          <View style={styles.recModalSimpleContent}>
+            <Text style={styles.recModalSimpleText}>
+              Estas pautas han sido seleccionadas para ayudarte a mejorar según tu situación actual y los factores que pueden estar influyendo en tus síntomas digestivos. Es un plan personalizado que puedes comenzar a aplicar desde hoy mismo.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.recModalButton}
+            onPress={() => setShowRecommendationsModal(false)}
+          >
+            <Text style={styles.recModalButtonText}>Entendido</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
   
   // Cargar datos del programa
   useEffect(() => {
@@ -290,9 +374,19 @@ export default function ProgramDetailsScreen() {
           } else if (profileResponse.data.username) {
             setUserName(profileResponse.data.username);
           }
+          
+          // 🆕 Cargar avatar del usuario con mejor lógica
+          console.log('🖼️ Avatar desde backend (ProgramDetails):', profileResponse.data.avatar);
+          if (profileResponse.data.avatar && profileResponse.data.avatar !== '' && profileResponse.data.avatar !== null) {
+            console.log('✅ Usando avatar guardado:', profileResponse.data.avatar);
+            setUserAvatar(profileResponse.data.avatar);
+          } else {
+            console.log('⚠️ Sin avatar guardado, usando default');
+            setUserAvatar('default');
+          }
         }
         
-        // Cargar el programa asignado (ahora con contenido incluido desde el backend)
+        // Cargar el programa asignado
         const programResponse = await api.get('/api/programs/my-program/');
         
         if (programResponse.data) {
@@ -300,19 +394,14 @@ export default function ProgramDetailsScreen() {
           setUserProgram(programResponse.data);
         }
         
-        // Cargar recomendaciones prioritarias
-        const priorityResponse = await api.get('/api/recommendations/prioritized/');
-        
-        if (priorityResponse.data) {
-          console.log("Recomendaciones prioritarias:", priorityResponse.data);
-          setPriorityRecommendations(priorityResponse.data);
-        }
-        
-        // Cargar todas las recomendaciones
+        // Cargar TODAS las recomendaciones
         const allRecommendationsResponse = await api.get('/api/recommendations/');
         
         if (allRecommendationsResponse.data) {
           console.log("Todas las recomendaciones:", allRecommendationsResponse.data);
+          
+          // Usar TODAS las recomendaciones como "prioritarias"
+          setPriorityRecommendations(allRecommendationsResponse.data);
           setRecommendations(allRecommendationsResponse.data);
         }
         
@@ -364,22 +453,39 @@ export default function ProgramDetailsScreen() {
     }
   };
   
-  // Renderizar una lista con viñetas
-  const renderBulletList = (items: any) => {
+  // Renderizar una lista sin viñetas
+  const renderBulletList = (items: any, isWhatCanYouDo = false) => {
     if (!Array.isArray(items)) {
-      return <Text style={styles.listText}>{items}</Text>;
+      return (
+        <View style={styles.forceWhiteBackground}>
+          <Text style={styles.forceBlackText}>{items}</Text>
+        </View>
+      );
+    }
+    
+    if (isWhatCanYouDo) {
+      return (
+        <View style={styles.forceWhiteBackground}>
+          <View style={styles.whatCanYouDoList}>
+            {items.map((item: string, index: number) => (
+              <View key={index} style={styles.whatCanYouDoItemClean}>
+                <Text style={styles.whatCanYouDoText}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      );
     }
     
     return (
-      <View style={styles.listContainer}>
-        {items.map((item: string, index: number) => (
-          <View key={index} style={styles.listItem}>
-            <View style={styles.bulletPoint}>
-              <Icon name="checkmark-circle" size={18} color={theme.colors.secondary} />
+      <View style={styles.forceWhiteBackground}>
+        <View style={styles.listContainer}>
+          {items.map((item: string, index: number) => (
+            <View key={index} style={styles.listItemClean}>
+              <Text style={styles.forceBlackText}>{item}</Text>
             </View>
-            <Text style={styles.listText}>{item}</Text>
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
     );
   };
@@ -391,7 +497,6 @@ export default function ProgramDetailsScreen() {
         is_read: true
       });
       
-      // Actualizar estado local
       setRecommendations(prev => 
         prev.map(rec => 
           rec.id === recommendationId 
@@ -418,12 +523,11 @@ export default function ProgramDetailsScreen() {
       setExpandedRecommendation(null);
     } else {
       setExpandedRecommendation(id);
-      // Marcar como leída al expandir
       markRecommendationAsRead(id);
     }
   };
   
-  // Renderizar una recomendación con solo las herramientas en bullet points
+  // Renderizar una recomendación
   const renderRecommendation = (item: any, isPriority: boolean = false) => {
     const isExpanded = expandedRecommendation === item.id;
     
@@ -457,17 +561,84 @@ export default function ProgramDetailsScreen() {
         </View>
         
         {isExpanded && item.recommendation.tools && (
-          <View style={styles.expandedContent}>
+          <View style={styles.forceWhiteBackground}>
             <Text style={styles.toolsTitle}>Herramientas sugeridas:</Text>
-            {/* Convertir las herramientas en bullet points */}
             <View style={styles.toolsList}>
               {item.recommendation.tools.split(',').map((tool: string, index: number) => (
-                <View key={index} style={styles.toolItem}>
-                  <Icon name="checkmark-circle" size={16} color={theme.colors.secondary} />
-                  <Text style={styles.toolText}>{tool.trim()}</Text>
+                <View key={index} style={styles.toolItemClean}>
+                  <Text style={styles.forceBlackText}>{tool.trim()}</Text>
                 </View>
               ))}
             </View>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  // 🔥 NUEVA FUNCIÓN: Renderizar sección "Recuerda" como párrafo informativo
+  const renderRecuerdaSection = () => {
+    if (!userProgram || !userProgram.program_content) return null;
+    
+    const programContent = userProgram.program_content;
+    const recuerdaSection = programContent.sections.find((section: any) => 
+      section.id === 'recordatorio'
+    );
+
+    if (!recuerdaSection) return null;
+
+    return (
+      <View style={styles.recuerdaInfoSection}>
+        <View style={styles.recuerdaHeader}>
+          <View style={styles.recuerdaIconContainer}>
+            <Icon name="information-circle" size={24} color={theme.colors.primary} />
+          </View>
+          <Text style={styles.recuerdaTitle}>Recuerda</Text>
+        </View>
+        <View style={styles.recuerdaContent}>
+          <Text style={styles.recuerdaText}>
+            {recuerdaSection.content}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  // Renderizar sección especial "¿Qué puedes hacer tú para mejorar?"
+  const renderWhatCanYouDoSection = () => {
+    if (!userProgram || !userProgram.program_content) return null;
+    
+    const programContent = userProgram.program_content;
+    const whatCanYouDoSection = programContent.sections.find((section: any) => 
+      section.title.toLowerCase().includes('qué puedes hacer') || 
+      section.title.toLowerCase().includes('que puedes hacer')
+    );
+
+    if (!whatCanYouDoSection) return null;
+
+    const isExpanded = expandedSection === 'what-can-you-do';
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.whatCanYouDoCard,
+          isExpanded && styles.expandedWhatCanYouDoCard
+        ]}
+        onPress={() => setExpandedSection(isExpanded ? null : 'what-can-you-do')}
+        activeOpacity={0.8}
+      >
+        <View style={styles.whatCanYouDoHeader}>
+          <Text style={styles.whatCanYouDoTitle}>¿Qué puedes hacer tú para mejorar?</Text>
+          <Icon 
+            name={isExpanded ? "chevron-up" : "chevron-down"} 
+            size={22} 
+            color={theme.colors.primary} 
+          />
+        </View>
+        
+        {isExpanded && (
+          <View style={styles.forceWhiteBackground}>
+            {renderBulletList(whatCanYouDoSection.content, true)}
           </View>
         )}
       </TouchableOpacity>
@@ -481,6 +652,13 @@ export default function ProgramDetailsScreen() {
     const programContent = userProgram.program_content;
     const clinicalFactors = userProgram.clinical_factors || [];
     
+    // Filtrar las secciones para excluir "¿Qué puedes hacer tú para mejorar?" Y "Recuerda"
+    const filteredSections = programContent.sections.filter((section: any) => 
+      !section.title.toLowerCase().includes('qué puedes hacer') && 
+      !section.title.toLowerCase().includes('que puedes hacer') &&
+      section.id !== 'recordatorio' // ← NUEVA EXCLUSIÓN
+    );
+    
     return (
       <Animated.View 
         style={[
@@ -491,8 +669,8 @@ export default function ProgramDetailsScreen() {
           },
         ]}
       >
-        {/* Secciones del programa - Datos del backend */}
-        {programContent.sections.map((section: any, index: number) => (
+        {/* Secciones del programa - Datos del backend (filtradas) */}
+        {filteredSections.map((section: any, index: number) => (
           <TouchableOpacity
             key={section.id}
             style={[
@@ -524,16 +702,23 @@ export default function ProgramDetailsScreen() {
             )}
           </TouchableOpacity>
         ))}
-        
+
+        {/* 🔥 NUEVO: Sección "Recuerda" como párrafo informativo */}
+        {renderRecuerdaSection()}
+
         {/* Factores clínicos adicionales - Datos del backend */}
         {clinicalFactors.length > 0 && (
           <View style={styles.clinicalFactorsSection}>
             <View style={styles.sectionDivider}>
-              <View style={styles.dividerLine} />
               <Text style={styles.clinicalFactorsTitle}>
-                Factores Clínicos Adicionales
+                Factores de Riesgo
               </Text>
-              <View style={styles.dividerLine} />
+              <TouchableOpacity
+                style={styles.clinicalFactorsInfoButton}
+                onPress={() => setShowClinicalFactorsModal(true)}
+              >
+                <Icon name="help-circle-outline" size={32} color={theme.colors.primary} />
+              </TouchableOpacity>
             </View>
             
             {clinicalFactors.map((factor: any, index: number) => {
@@ -575,24 +760,35 @@ export default function ProgramDetailsScreen() {
             })}
           </View>
         )}
-        
-        {/* Recomendaciones prioritarias integradas en la misma sección */}
+
+        {/* TODAS las recomendaciones */}
         {priorityRecommendations.length > 0 && (
-          <View style={styles.recommendationsSection}>
-            <View style={styles.sectionDivider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.recommendationsTitle}>
-                Recomendaciones Prioritarias
-              </Text>
-              <View style={styles.dividerLine} />
+          <View style={styles.recommendationsHighlightSection}>
+            <View style={styles.recommendationsBeautifulContainer}>
+              <View style={styles.recommendationsPromoHeader}>
+                <View style={styles.recommendationsPromoContent}>
+                  <View style={styles.recommendationsPromoTextContainer}>
+                    <Text style={styles.recommendationsPromoTitle}>Tus Pautas Personalizadas</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.recommendationsPromoInfoButton}
+                    onPress={() => setShowRecommendationsModal(true)}
+                  >
+                    <Icon name="help-circle-outline" size={28} color={theme.colors.white} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              <View style={styles.recommendationsContentContainer}>
+                {/* Primero: "¿Qué puedes hacer tú para mejorar?" */}
+                {renderWhatCanYouDoSection()}
+                
+                {/* Después: TODAS las recomendaciones */}
+                {priorityRecommendations.map(recommendation => 
+                  renderRecommendation(recommendation, true)
+                )}
+              </View>
             </View>
-            <Text style={styles.recommendationsSubtitle}>
-              Estas son las recomendaciones más importantes para tu caso particular
-            </Text>
-            
-            {priorityRecommendations.map(recommendation => 
-              renderRecommendation(recommendation, true)
-            )}
           </View>
         )}
       </Animated.View>
@@ -634,16 +830,27 @@ export default function ProgramDetailsScreen() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Cabecera con el nombre personalizado */}
+          {/* 🆕 Cabecera con el nombre personalizado Y AVATAR MEJORADO */}
           <View style={styles.programHeaderContainer}>
             <View style={styles.programHeaderGradient}>
               <View style={styles.programHeader}>
                 <View style={styles.programTitleContainer}>
-                  <View style={styles.rocketIconContainer}>
-                    <Icon name="rocket" size={32} color={theme.colors.primary} />
+                  <View style={styles.avatarIconContainer}>
+                    {getAvatarImage() ? (
+                      <Image 
+                        source={getAvatarImage()}
+                        style={styles.avatarImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      // 🆕 Avatar por defecto con icono
+                      <View style={styles.defaultAvatarContainer}>
+                        <Icon name="person" size={28} color={theme.colors.secondary} />
+                      </View>
+                    )}
                   </View>
                   <View style={styles.programTitleTextContainer}>
-                    <Text style={styles.programTitleSmall}>Tu Programa Personalizado</Text>
+                    <Text style={styles.programTitleSmall}>Tu Plan Personalizado</Text>
                     <Text style={styles.programTitle}>{userName}</Text>
                   </View>
                 </View>
@@ -667,10 +874,10 @@ export default function ProgramDetailsScreen() {
                     Día {daysElapsed} de 30
                   </Text>
                 </View>
-                {daysRemaining <= 3 && daysRemaining > 0 && (
+                {daysRemaining === 0 && (
                   <View style={styles.cycleWarningBadge}>
                     <Text style={styles.cycleWarningText}>
-                      {daysRemaining} días
+                      Ciclo finalizado
                     </Text>
                   </View>
                 )}
@@ -678,7 +885,7 @@ export default function ProgramDetailsScreen() {
                   style={styles.cycleInfoButton}
                   onPress={() => setShowCycleInfoModal(true)}
                 >
-                  <Icon name="information-circle-outline" size={24} color={theme.colors.primary} />
+                  <Icon name="information-circle-outline" size={32} color={theme.colors.primary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -689,10 +896,10 @@ export default function ProgramDetailsScreen() {
         </ScrollView>
       )}
       
-      {/* Modal de información de ciclos */}
+      {/* Modales */}
       <CycleInfoModal />
-      
-      {/* Modal de renovación de ciclo */}
+      <ClinicalFactorsInfoModal />
+      <RecommendationsInfoModal />
       <CycleRenewalModal
         visible={showRenewalModal}
         daysRemaining={daysRemaining}
@@ -700,7 +907,6 @@ export default function ProgramDetailsScreen() {
         onRemindLater={daysRemaining > 0 ? handleRemindLater : undefined}
       />
       
-      {/* Barra de navegación inferior */}
       <TabNavigationBar />
     </View>
   );
@@ -721,9 +927,24 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     backgroundColor: theme.colors.background,
-    paddingBottom: 80, // Espacio para el TabNavigationBar
+    paddingBottom: 80,
   },
-  // Cabecera personalizada con nombre del usuario
+  
+  // Estilos para forzar fondos blancos
+  forceWhiteBackground: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 4,
+  },
+  forceBlackText: {
+    color: '#000000',
+    fontSize: theme.fontSize.base,
+    lineHeight: 24,
+    flex: 1,
+  },
+  
+  // Cabecera personalizada con avatar
   programHeaderContainer: {
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.md,
@@ -760,15 +981,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.white,
   },
-  rocketIconContainer: {
+  avatarIconContainer: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: theme.colors.white,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: theme.spacing.md,
+    borderWidth: 2,
+    borderColor: '#000000',
+    overflow: 'hidden',
     ...theme.shadows.md,
+  },
+  avatarImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+  },
+  // 🆕 Estilos para avatar por defecto
+  defaultAvatarContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   headerDecoration: {
     position: 'absolute',
@@ -804,10 +1042,11 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.base,
     fontWeight: '600',
   },
+  
   // Estilos para la información del ciclo
   cycleInfoContainer: {
     paddingHorizontal: theme.spacing.md,
-    marginTop: -20, // Para acercarlo a la cabecera
+    marginTop: -20,
     marginBottom: theme.spacing.md,
     zIndex: 10,
   },
@@ -854,33 +1093,75 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.error.main,
   },
-  // Botón de información en el ciclo
   cycleInfoButton: {
     marginLeft: theme.spacing.sm,
     padding: theme.spacing.xs,
   },
-  // Estilos del modal
-  modalOverlay: {
+
+  // 🔥 NUEVO: Estilos para la sección "Recuerda"
+  recuerdaInfoSection: {
+    backgroundColor: '#E8F5E8', // Fondo verde muy suave
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginVertical: theme.spacing.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50', // Verde suave
+    ...theme.shadows.sm,
+  },
+  recuerdaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  recuerdaIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  recuerdaTitle: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: 'bold',
+    color: '#2E7D32', // Verde más oscuro
+  },
+  recuerdaContent: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+  },
+  recuerdaText: {
+    fontSize: theme.fontSize.base,
+    lineHeight: 24,
+    color: '#1B5E20', // Verde oscuro para el texto
+  },
+
+  // MODALES - Estilos únicos para cada modal
+  cycleModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
-  modalContent: {
+  cycleModalContent: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.xl,
-    width: '90%',
-    maxHeight: '80%',
+    width: '100%',
+    maxWidth: 400,
+    height: 500,
     ...theme.shadows.xl,
   },
-  modalHeader: {
+  cycleModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
   },
-  modalIconContainer: {
+  cycleModalIconContainer: {
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -888,57 +1169,206 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalCloseButton: {
+  cycleModalCloseButton: {
     position: 'absolute',
     right: 0,
     top: 0,
     padding: theme.spacing.sm,
   },
-  modalTitle: {
+  cycleModalTitle: {
     fontSize: theme.fontSize.xxl,
     fontWeight: 'bold',
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
     textAlign: 'center',
   },
-  modalScrollView: {
-    maxHeight: 300,
-    marginBottom: theme.spacing.lg,
+  cycleModalScrollContainer: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.xl,
   },
-  modalSection: {
+  cycleModalSection: {
     marginBottom: theme.spacing.lg,
     backgroundColor: theme.colors.background,
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
   },
-  modalSectionHeader: {
+  cycleModalSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: theme.spacing.sm,
   },
-  modalSectionTitle: {
+  cycleModalSectionTitle: {
     fontSize: theme.fontSize.lg,
     fontWeight: '600',
     color: theme.colors.text.primary,
     marginLeft: theme.spacing.sm,
   },
-  modalText: {
+  cycleModalText: {
     fontSize: theme.fontSize.base,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
-  modalButton: {
+  cycleModalButton: {
     backgroundColor: theme.colors.primary,
     paddingVertical: theme.spacing.md,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
     borderRadius: theme.borderRadius.md,
     alignItems: 'center',
     ...theme.shadows.sm,
   },
-  modalButtonText: {
-    color: theme.colors.white,
+  cycleModalButtonText: {
+    color: '#FFFFFF',
     fontSize: theme.fontSize.base,
-    fontWeight: '600',
+    fontWeight: 'normal',
   },
+
+  clinicalModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  clinicalModalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    width: '90%',
+    maxWidth: 400,
+    ...theme.shadows.xl,
+  },
+  clinicalModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
+  },
+  clinicalModalIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: `${theme.colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clinicalModalCloseButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    padding: theme.spacing.sm,
+  },
+  clinicalModalTitle: {
+    fontSize: theme.fontSize.xxl,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
+    textAlign: 'center',
+  },
+  clinicalModalSimpleContent: {
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  clinicalModalSimpleText: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.primary,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  clinicalModalButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    ...theme.shadows.sm,
+  },
+  clinicalModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: theme.fontSize.base,
+    fontWeight: 'normal',
+  },
+
+  recModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  recModalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '70%',
+    ...theme.shadows.xl,
+  },
+  recModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
+  },
+  recModalIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: `${theme.colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recModalCloseButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    padding: theme.spacing.sm,
+  },
+  recModalTitle: {
+    fontSize: theme.fontSize.xxl,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
+    textAlign: 'center',
+  },
+  recModalSimpleContent: {
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  recModalSimpleText: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.primary,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  recModalButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    ...theme.shadows.sm,
+  },
+  recModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: theme.fontSize.base,
+    fontWeight: 'normal',
+  },
+
   // Sección del contenido del programa
   programContentSection: {
     backgroundColor: theme.colors.surface,
@@ -946,80 +1376,16 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.xl,
     paddingHorizontal: theme.spacing.lg,
     margin: theme.spacing.md,
-    marginTop: -30, // Para superponerse a la cabecera
+    marginTop: -30,
     ...theme.shadows.lg,
   },
-  // Tarjetas de sección del programa
-  programSectionCard: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-    ...theme.shadows.sm,
-  },
-  expandedSectionCard: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing.md,
-    ...theme.shadows.sm,
-  },
-  sectionTitle: {
-    flex: 1,
-    fontSize: theme.fontSize.lg,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-  },
-  sectionContent: {
-    marginTop: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
-  },
-  // Estilo para listas con viñetas
-  listContainer: {
-    marginVertical: theme.spacing.xs,
-  },
-  listItem: {
-    flexDirection: 'row',
-    marginBottom: theme.spacing.md,
-    paddingRight: theme.spacing.sm,
-  },
-  bulletPoint: {
-    marginRight: theme.spacing.md,
-  },
-  listText: {
-    flex: 1,
-    fontSize: theme.fontSize.base,
-    lineHeight: 24,
-    color: theme.colors.text.primary,
-  },
-  // Divisor de sección
   sectionDivider: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: theme.colors.border.light,
-  },
-  // Factores clínicos
   clinicalFactorsSection: {
     marginTop: theme.spacing.xl,
     paddingTop: theme.spacing.lg,
@@ -1029,6 +1395,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.primary,
     paddingHorizontal: theme.spacing.md,
+    textAlign: 'center',
+  },
+  clinicalFactorsInfoButton: {
+    marginLeft: theme.spacing.sm,
+    padding: theme.spacing.xs,
   },
   clinicalFactorCard: {
     backgroundColor: theme.colors.background,
@@ -1075,61 +1446,185 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
   },
+  
   // Sección de recomendaciones
-  recommendationsSection: {
+  recommendationsHighlightSection: {
     marginTop: theme.spacing.xl,
-    paddingTop: theme.spacing.lg,
   },
-  recommendationsTitle: {
+  recommendationsBeautifulContainer: {
+    backgroundColor: theme.colors.secondary,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.xs,
+    borderWidth: 1,
+    borderColor: `${theme.colors.primary}30`,
+    ...theme.shadows.lg,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  recommendationsPromoHeader: {
+    backgroundColor: 'transparent',
+    marginBottom: theme.spacing.lg,
+  },
+  recommendationsPromoContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  recommendationsPromoTextContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  recommendationsPromoTitle: {
     fontSize: theme.fontSize.xl,
     fontWeight: 'bold',
-    color: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
+    color: theme.colors.white,
+    textAlign: 'center',
   },
-  recommendationsSubtitle: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.lg,
-    lineHeight: 22,
+  recommendationsPromoInfoButton: {
+    marginLeft: theme.spacing.md,
+    padding: theme.spacing.xs,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: `${theme.colors.white}20`,
   },
-  recommendationCard: {
+  recommendationsContentContainer: {
+    // Sin estilos especiales
+  },
+  
+  // Estilos para "¿Qué puedes hacer tú para mejorar?"
+  whatCanYouDoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.lg,
+  },
+  expandedWhatCanYouDoCard: {
+    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.secondary,
+    ...theme.shadows.xl,
+  },
+  whatCanYouDoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  whatCanYouDoTitle: {
+    flex: 1,
+    fontSize: theme.fontSize.lg,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  
+  // Tarjetas de sección del programa
+  programSectionCard: {
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
     marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
     ...theme.shadows.sm,
   },
-  priorityCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.primary,
+  expandedSectionCard: {
     backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.primary,
     ...theme.shadows.md,
   },
-  expandedCard: {
-    backgroundColor: theme.colors.surface,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+    ...theme.shadows.sm,
+  },
+  sectionTitle: {
+    flex: 1,
+    fontSize: theme.fontSize.lg,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  sectionContent: {
+    marginTop: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border.light,
+  },
+
+  // Estilos sin bullets
+  listContainer: {
+    marginVertical: 0,
+    paddingHorizontal: 0,
+  },
+  listItemClean: {
+    marginBottom: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+  },
+  whatCanYouDoList: {
+    paddingVertical: theme.spacing.xs,
+  },
+  whatCanYouDoItemClean: {
+    marginBottom: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+  },
+  whatCanYouDoText: {
+    fontSize: theme.fontSize.base,
+    lineHeight: 24,
+    color: '#000000',
+    fontWeight: '400',
+    textAlign: 'left',
+  },
+  recommendationCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: `${theme.colors.primary}30`,
     ...theme.shadows.md,
+  },
+  priorityCard: {
+    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.primary,
+    borderWidth: 2,
+    ...theme.shadows.lg,
+  },
+  expandedCard: {
+    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.secondary,
+    borderWidth: 2,
+    ...theme.shadows.xl,
   },
   recommendationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   recommendationTitle: {
     flex: 1,
     fontSize: theme.fontSize.base,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#000000',
     marginRight: theme.spacing.sm,
   },
   unreadTitle: {
     fontWeight: 'bold',
     color: theme.colors.primary,
-  },
-  expandedContent: {
-    marginTop: theme.spacing.md,
-    paddingTop: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
   },
   toolsTitle: {
     fontSize: theme.fontSize.sm,
@@ -1137,20 +1632,11 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     marginBottom: theme.spacing.sm,
   },
-  // Nuevos estilos para listas de herramientas
   toolsList: {
     marginTop: theme.spacing.xs,
   },
-  toolItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  toolItemClean: {
     marginBottom: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
   },
-  toolText: {
-    flex: 1,
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.text.primary,
-    marginLeft: theme.spacing.sm,
-    lineHeight: 20,
-  }
 });

@@ -42,27 +42,27 @@ const onboardingSteps = [
   {
     id: 1,
     title: 'Información General',
-    description: 'Datos básicos sobre tu peso y altura para personalizar tu experiencia.',
+    description: 'Datos básicos sobre tu peso y altura.',
     icon: 'person-outline',
     color: theme.colors.secondary,
   },
   {
     id: 2,
-    title: 'Cuestionario GerdQ',
-    description: 'Evaluación de síntomas de reflujo gastroesofágico.',
+    title: 'Síntomas Digestivos',
+    description: 'Evaluación cómo te afectan los síntomas de reflujo, pesadez ardor o malestar.',
     icon: 'medical-outline',
     color: theme.colors.primary,
   },
   {
     id: 3,
-    title: 'Cuestionario RSI',
-    description: 'Índice de síntomas de reflujo para evaluar la severidad.',
+    title: 'Síntomas Extra-digestivos',
+    description: 'Identificamos si hay signos menos evidentes de reflujo, como tos, carraspeo o sensación de cuerpo extraño.',
     icon: 'pulse-outline',
     color: theme.colors.primary,
   },
   {
     id: 4,
-    title: 'Factores Clínicos',
+    title: 'Factores de Riesgo',
     description: 'Información sobre factores que pueden influir en tu reflujo.',
     icon: 'medkit-outline',
     color: theme.colors.secondary,
@@ -164,8 +164,9 @@ export default function OnboardingWelcomeScreen() {
           <View style={styles.introCard}>
             <Text style={styles.introText}>
               Para brindarte la mejor experiencia y recomendaciones personalizadas,
-              necesitamos conocer más sobre tu salud digestiva. Vamos a realizar
-              algunos cuestionarios breves:
+              necesitamos conocer más sobre tu salud digestiva. Solo tardarás unos minutos
+              en responder unas preguntas clave para personalizar tu experiencia.
+
             </Text>
           </View>
 
@@ -206,7 +207,7 @@ export default function OnboardingWelcomeScreen() {
               <View style={styles.benefitIconContainer}>
                 <Icon name="newspaper-outline" size={22} color={theme.colors.primary} />
               </View>
-              <Text style={styles.benefitText}>Programa personalizado según tu perfil ERGE</Text>
+              <Text style={styles.benefitText}>Plan digestivo personalizado.</Text>
             </View>
             
             <View style={styles.benefitRow}>
@@ -309,6 +310,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.colors.text.primary,
     lineHeight: 24,
+    textAlign: 'center',  // ← AÑADIR AQUÍ
+
   },
   stepsContainer: {
     marginBottom: 25,

@@ -20,6 +20,21 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import api from '../utils/api';
 import { theme } from '../constants/theme';
 
+// Mapeo de títulos de hábitos - ACTUALIZADO
+const HABIT_TITLES: { [key: string]: string } = {
+  'MEAL_SIZE': 'Evitar llenarte en exceso',
+  'DINNER_TIME': 'Cenar temprano',
+  'LIE_DOWN': 'Evitar tumbarse tras comer',
+  'EXERCISE': 'Moverte cada día',
+  'AVOID_TRIGGERS': 'Evitar alimentos que te sientan mal',
+  'STRESS': 'Gestionar el estrés',
+  'HYDRATION_MEALS': 'Evitar beber durante las comidas',
+  'HYDRATION_DAY': 'Beber suficiente durante el día',
+  'CHEWING': 'Masticar bien los alimentos',
+  'PROCESSED_FOODS': 'Evitar ultraprocesados',
+  'MINDFUL_EATING': 'Comer sin distracciones'
+};
+
 // Tipos
 interface StatsData {
   weeklyProgress: number;
@@ -253,11 +268,14 @@ export default function StatsScreen() {
                 const daysWithLogs = new Set(logs.map((log: any) => log.date)).size;
                 const habitCompletionRate = daysWithLogs > 0 ? completedCount / daysWithLogs : 0;
                 
+                // 🆕 USAR TÍTULO ACTUALIZADO DEL MAPEO
+                const habitTitle = HABIT_TITLES[habit.habit.habit_type] || habit.habit.text;
+                
                 // Encontrar el mejor hábito
                 if (habit.streak.current_streak > topHabitData.streak || 
                     (habit.streak.current_streak === topHabitData.streak && habitCompletionRate > topHabitData.completionRate)) {
                   topHabitData = {
-                    name: habit.habit.text,
+                    name: habitTitle, // 🆕 USAR TÍTULO ACTUALIZADO
                     streak: habit.streak.current_streak,
                     completionRate: habitCompletionRate
                   };

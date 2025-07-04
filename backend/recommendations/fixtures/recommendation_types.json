@@ -1,4 +1,3 @@
-
 [
   {
     "model": "recommendations.recommendationtype",
@@ -74,9 +73,9 @@
     "model": "recommendations.recommendationtype",
     "pk": 8,
     "fields": {
-      "type": "PHENOTYPE",
-      "name": "Fenotipo ERGE",
-      "description": "Recomendaciones basadas en el fenotipo de ERGE.",
+      "type": "SMOKING",
+      "name": "Tabaquismo",
+      "description": "Recomendaciones para dejar de fumar y mejorar el reflujo.",
       "is_active": true
     }
   },
@@ -84,9 +83,39 @@
     "model": "recommendations.recommendationtype",
     "pk": 9,
     "fields": {
-      "type": "HABIT",
-      "name": "Hábito específico",
-      "description": "Recomendaciones para mejorar hábitos específicos.",
+      "type": "ALCOHOL",
+      "name": "Consumo de alcohol",
+      "description": "Recomendaciones para reducir el consumo de alcohol.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 10,
+    "fields": {
+      "type": "GASTRITIS",
+      "name": "Gastritis",
+      "description": "Recomendaciones para manejo de gastritis.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 11,
+    "fields": {
+      "type": "H_PYLORI",
+      "name": "Helicobacter pylori",
+      "description": "Recomendaciones para infección por H. pylori activa o tratada.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "recommendations.recommendationtype",
+    "pk": 12,
+    "fields": {
+      "type": "INTESTINAL",
+      "name": "Alteraciones intestinales",
+      "description": "Recomendaciones para SIBO, disbiosis o SII.",
       "is_active": true
     }
   }

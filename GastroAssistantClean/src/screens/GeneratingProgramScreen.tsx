@@ -45,20 +45,11 @@ const { width } = Dimensions.get('window');
 // Frases para mostrar durante la generación - relacionadas con las secciones
 const generatingPhrases = [
   "Iniciando análisis de tu perfil digestivo...",
-  "Creando tu Programa personalizado...",
-  "Configurando sección de Programa diario...",
-  "Preparando tu Tracker de síntomas...",
-  "Desarrollando herramientas de seguimiento...",
-  "Generando contenido educativo en Aprende...",
-  "Personalizando artículos y guías...",
-  "Configurando tus Estadísticas...",
-  "Preparando análisis de progreso...",
   "Ajustando tu Perfil de salud...",
+  "Creando tu Plan Digestivo personalizado...",
+  "Preparando tu Tracker de síntomas...",
+  "Generando contenido educativo en Aprende...",
   "Aplicando inteligencia artificial avanzada...",
-  "Optimizando recomendaciones con IA...",
-  "Integrando todas las secciones...",
-  "Sincronizando tu experiencia completa...",
-  "Finalizando configuración personalizada...",
   "¡Tu app está casi lista!",
 ];
 
@@ -551,7 +542,7 @@ export default function GeneratingProgramScreen() {
           />
         </Animated.View>
         
-        <Text style={styles.title}>Generando tu Programa</Text>
+        <Text style={styles.title}>Generando tu Plan Digestivo</Text>
         
         {/* Path de secciones de la app */}
         <View style={styles.sectionsContainer}>

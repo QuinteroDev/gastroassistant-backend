@@ -90,18 +90,32 @@ interface NewMedal {
 
 // Mapeo de títulos de hábitos
 const HABIT_TITLES: { [key: string]: string } = {
-  'MEAL_SIZE': 'Control de porciones',
-  'DINNER_TIME': 'Horario de cena temprano',
-  'LIE_DOWN': 'Tiempo después de comer',
-  'NIGHT_SYMPTOMS': 'Manejo síntomas nocturnos',
-  'SMOKING': 'Control del tabaco',
-  'ALCOHOL': 'Consumo moderado de alcohol',
-  'EXERCISE': 'Actividad física regular',
-  'AVOID_TRIGGERS': 'Evitar alimentos gatillo',
-  'STRESS': 'Manejo del estrés',
-  'HYDRATION_MEALS': 'Hidratación durante comidas',
-  'HYDRATION_DAY': 'Hidratación diaria',
-  'CHEWING': 'Masticación consciente'
+  'MEAL_SIZE': 'Evitar llenarte en exceso',
+  'DINNER_TIME': 'Cenar temprano',
+  'LIE_DOWN': 'Evitar tumbarse tras comer',
+  'EXERCISE': 'Moverte cada día',
+  'AVOID_TRIGGERS': 'Evitar alimentos que te sientan mal',
+  'STRESS': 'Gestionar el estrés',
+  'HYDRATION_MEALS': 'Evitar beber durante las comidas',
+  'HYDRATION_DAY': 'Beber suficiente durante el día',
+  'CHEWING': 'Masticar bien los alimentos',
+  'PROCESSED_FOODS': 'Evitar ultraprocesados',
+  'MINDFUL_EATING': 'Comer sin distracciones'
+};
+
+// Mapeo de descripciones de hábitos
+const HABIT_DESCRIPTIONS: { [key: string]: string } = {
+  'MEAL_SIZE': 'Comer porciones moderadas ayuda a prevenir molestias digestivas y sensación de pesadez.',
+  'DINNER_TIME': 'Cenar temprano da tiempo a que la digestión avance antes de acostarte, reduciendo el riesgo de reflujo.',
+  'LIE_DOWN': 'Permanecer erguido tras las comidas ayuda a evitar que el contenido del estómago suba hacia el esófago.',
+  'EXERCISE': 'Caminar o ejercicio físico puede mejorar la digestión y reducir molestias.',
+  'AVOID_TRIGGERS': 'Identificar lo que no toleras y evitarlo es clave para tu evolución al inicio.',
+  'STRESS': 'El estrés afecta directamente a tu digestión. Incorporar rutinas de relajación es fundamental.',
+  'HYDRATION_MEALS': 'Beber grandes cantidades mientras comes puede dificultar la digestión.',
+  'HYDRATION_DAY': 'Una buena hidratación fuera de las comidas mejora tu tránsito y tu energía.',
+  'CHEWING': 'Masticar despacio y conscientemente facilita la digestión y reduce la sensación de hinchazón.',
+  'PROCESSED_FOODS': 'Reducir bollería, snacks y comida rápida mejora la inflamación y el equilibrio digestivo.',
+  'MINDFUL_EATING': 'Comer con atención mejora tu conexión con la saciedad y tu digestión.'
 };
 
 // Iconos para tipos de hábitos
@@ -109,24 +123,14 @@ const HABIT_ICONS: { [key: string]: JSX.Element } = {
   'MEAL_SIZE': <MaterialCommunityIcons name="food-variant" size={24} color="#ffffff" />,
   'DINNER_TIME': <Icon name="time-outline" size={24} color="#ffffff" />,
   'LIE_DOWN': <FontAwesome5 name="bed" size={22} color="#ffffff" />,
-  'NIGHT_SYMPTOMS': <Icon name="moon-outline" size={24} color="#ffffff" />,
-  'SMOKING': <MaterialCommunityIcons name="smoking-off" size={24} color="#ffffff" />,
-  'ALCOHOL': <Icon name="wine-outline" size={24} color="#ffffff" />,
   'EXERCISE': <Icon name="fitness-outline" size={24} color="#ffffff" />,
   'AVOID_TRIGGERS': <Icon name="nutrition-outline" size={24} color="#ffffff" />,
   'STRESS': <Icon name="fitness" size={24} color="#ffffff" />,
   'HYDRATION_MEALS': <Icon name="water-outline" size={24} color="#ffffff" />,
   'HYDRATION_DAY': <Icon name="water" size={24} color="#ffffff" />,
-  'CHEWING': <MaterialCommunityIcons name="food-apple" size={24} color="#ffffff" />
-};
-
-// Colores para niveles
-const COMPLETION_COLORS = {
-  null: '#f8f9fa',
-  0: theme.colors.habits.notAchieved,
-  1: theme.colors.habits.partial,
-  2: theme.colors.habits.good,
-  3: theme.colors.habits.excellent
+  'CHEWING': <MaterialCommunityIcons name="food-apple" size={24} color="#ffffff" />,
+  'PROCESSED_FOODS': <MaterialCommunityIcons name="food-off" size={24} color="#ffffff" />,
+  'MINDFUL_EATING': <Icon name="eye" size={24} color="#ffffff" />
 };
 
 // Funciones auxiliares
@@ -169,6 +173,12 @@ export default function TrackerScreen() {
   // Estados para medallas
   const [showMedalModal, setShowMedalModal] = useState<boolean>(false);
   const [newMedal, setNewMedal] = useState<NewMedal | null>(null);
+  
+  // Estado para el párrafo introductorio colapsable
+  const [isIntroductoryExpanded, setIsIntroductoryExpanded] = useState<boolean>(false);
+  
+  // Estado para el modal de descripción del hábito
+  const [showHabitDescriptionModal, setShowHabitDescriptionModal] = useState<boolean>(false);
   
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -519,90 +529,6 @@ export default function TrackerScreen() {
     },
   ];
 
-  // Testing de medallas (VERSIÓN MEJORADA)
-  const testMedalAPI = async () => {
-    try {
-      console.log('🧪 Probando API de medallas...');
-      
-      // Primero intentar crear una medalla fácil
-      const createResponse = await api.post('/api/gamification/test/', {
-        action: 'add_points',
-        points: 200
-      });
-      console.log('🧪 Puntos añadidos:', createResponse.data);
-      
-      // Luego forzar una medalla
-      const forceResponse = await api.post('/api/gamification/test/', {
-        action: 'force_medal',
-        medal_name: 'Testing Medal'
-      });
-      console.log('🧪 Respuesta force medal:', forceResponse.data);
-      
-      // Si devuelve una medalla, mostrar el modal
-      if (forceResponse.data.medal) {
-        setNewMedal(forceResponse.data.medal);
-        setShowMedalModal(true);
-        console.log('🏆 ¡MODAL ACTIVADO!');
-      } else if (forceResponse.data.action === 'medal_forced') {
-        // Simular medalla para testing
-        const testMedal = {
-          id: 999,
-          medal: {
-            id: 999,
-            name: 'Medalla de Testing',
-            description: '¡Has probado exitosamente el sistema de medallas!',
-            icon: 'trophy'
-          },
-          earned_at: new Date().toISOString(),
-          points_when_earned: 300,
-          level_when_earned: 'NOVATO'
-        };
-        setNewMedal(testMedal);
-        setShowMedalModal(true);
-        console.log('🏆 ¡MODAL ACTIVADO CON MEDALLA DE TESTING!');
-      }
-      
-      // FUERZA DIRECTA DEL MODAL - SIEMPRE SE EJECUTA
-      console.log('🧪 Forzando modal con datos de prueba...');
-      const fallbackMedal = {
-        id: 888,
-        medal: {
-          id: 888,
-          name: 'Medalla de Prueba',
-          description: '¡Esta es una medalla de testing para probar el modal!',
-          icon: 'star'
-        },
-        earned_at: new Date().toISOString(),
-        points_when_earned: 100,
-        level_when_earned: 'NOVATO'
-      };
-      setNewMedal(fallbackMedal);
-      setShowMedalModal(true);
-      console.log('🏆 ¡MODAL FORZADO CON DATOS DE PRUEBA!');
-      
-    } catch (error) {
-      console.error('❌ Error test medal:', error);
-      
-      // Como último recurso, forzar el modal con datos de prueba
-      console.log('🧪 Forzando modal con datos de prueba (catch)...');
-      const fallbackMedal = {
-        id: 888,
-        medal: {
-          id: 888,
-          name: 'Medalla de Prueba',
-          description: '¡Esta es una medalla de testing para probar el modal!',
-          icon: 'star'
-        },
-        earned_at: new Date().toISOString(),
-        points_when_earned: 100,
-        level_when_earned: 'NOVATO'
-      };
-      setNewMedal(fallbackMedal);
-      setShowMedalModal(true);
-      console.log('🏆 ¡MODAL FORZADO CON DATOS DE PRUEBA (catch)!');
-    }
-  };
-
   // MODAL DE MEDALLAS EMBELLECIDO
   const renderMedalModal = () => {
     if (!newMedal) return null;
@@ -621,12 +547,9 @@ export default function TrackerScreen() {
       medalShineAnim.setValue(0);
     };
 
-    // Función para obtener imagen de medalla (CORREGIDA - ruta con /images/)
+    // Función para obtener imagen de medalla
     const getMedalImage = (medalName: string) => {
       const medalImages: { [key: string]: any } = {
-        // Medallas de testing
-        'Testing Medal': require('../assets/images/medals/mes1.png'),
-        
         // Medallas por ciclo con los nombres actualizados
         'Maestro de Hábitos': require('../assets/images/medals/mes1.png'),
         'Guardián Nutricional': require('../assets/images/medals/mes2.png'),
@@ -634,10 +557,6 @@ export default function TrackerScreen() {
         'Domador del Estrés': require('../assets/images/medals/mes4.png'),
         'Campeón del Descanso': require('../assets/images/medals/mes5.png'),
         'Maestro Digestivo Supremo': require('../assets/images/medals/mes6.png'),
-        
-        // Fallbacks para testing
-        'Medalla de Testing': require('../assets/images/medals/mes1.png'),
-        'Medalla de Prueba': require('../assets/images/medals/mes1.png'),
       };
       
       return medalImages[medalName] || null;
@@ -1003,7 +922,55 @@ export default function TrackerScreen() {
     );
   };
 
-  // Modal de celebración de hábitos (mantener igual)
+  // Modal de descripción del hábito
+  const renderHabitDescriptionModal = () => {
+    const selectedHabit = habits[selectedHabitIndex];
+    const habitTitle = HABIT_TITLES[selectedHabit?.habit.habit_type] || selectedHabit?.habit.text;
+    const habitDescription = HABIT_DESCRIPTIONS[selectedHabit?.habit.habit_type] || '';
+
+    return (
+      <Modal
+        visible={showHabitDescriptionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowHabitDescriptionModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowHabitDescriptionModal(false)}>
+          <View style={styles.habitModalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.habitModalContainer}>
+                <View style={styles.habitModalHeader}>
+                  <View style={styles.habitModalIconContainer}>
+                    <Icon name="information-circle" size={32} color={theme.colors.primary} />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.habitModalCloseButton}
+                    onPress={() => setShowHabitDescriptionModal(false)}
+                  >
+                    <Icon name="close" size={24} color={theme.colors.text.secondary} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.habitModalTitle}>¿Por qué es importante?</Text>
+                
+                <View style={styles.habitModalContent}>
+                  <Text style={styles.habitModalHabitTitle}>{habitTitle}</Text>
+                  <Text style={styles.habitModalDescription}>{habitDescription}</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.habitModalButton}
+                  onPress={() => setShowHabitDescriptionModal(false)}
+                >
+                  <Text style={styles.habitModalButtonText}>Entendido</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    );
+  };
   const renderCompletionModal = () => {
     const dismissKeyboard = () => {
       Keyboard.dismiss();
@@ -1107,7 +1074,40 @@ export default function TrackerScreen() {
     );
   };
 
-  // Funciones de renderizado (mantener igual)
+  // Función para renderizar el párrafo introductorio colapsable
+  const renderIntroductoryParagraph = () => {
+    return (
+      <View style={styles.introductorySection}>
+        <TouchableOpacity
+          style={styles.introductoryCard}
+          onPress={() => setIsIntroductoryExpanded(!isIntroductoryExpanded)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.introductoryHeader}>
+            <View style={styles.introductoryIconContainer}>
+              <Icon name="bulb" size={20} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.introductoryTitle}>Tu Plan de Hábitos</Text>
+            <Icon 
+              name={isIntroductoryExpanded ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color={theme.colors.primary} 
+            />
+          </View>
+          
+          {isIntroductoryExpanded && (
+            <View style={styles.introductoryContent}>
+              <Text style={styles.introductoryText}>
+                Hemos seleccionado los 5 hábitos más relevantes según tu caso. Trabajarlos cada día puede ayudarte a mejorar tus síntomas y recuperar tu salud digestiva.
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Funciones de renderizado
   const renderProgressIndicators = () => {
     return (
       <View style={styles.progressIndicatorsContainer}>
@@ -1170,6 +1170,7 @@ export default function TrackerScreen() {
     const selectedHabit = habits[selectedHabitIndex];
     const isPromoted = selectedHabit?.is_promoted || false;
     const habitTitle = HABIT_TITLES[selectedHabit?.habit.habit_type] || selectedHabit?.habit.text;
+    const habitDescription = HABIT_DESCRIPTIONS[selectedHabit?.habit.habit_type] || '';
     const currentCompletionLevel = completionLevels[selectedHabit.id];
 
     return (
@@ -1180,6 +1181,9 @@ export default function TrackerScreen() {
         ]}
       >
         <ScrollView showsVerticalScrollIndicator={false}>
+          {/* 🆕 PÁRRAFO INTRODUCTORIO - ARRIBA DEL PROGRESO */}
+          {renderIntroductoryParagraph()}
+
           {/* Header con fecha y progreso */}
           <View style={styles.headerCard}>
             <View style={styles.dateRow}>
@@ -1266,7 +1270,17 @@ export default function TrackerScreen() {
               </View>
               
               <View style={styles.habitInfo}>
-                <Text style={styles.habitTitle}>{habitTitle}</Text>
+                <View style={styles.habitTitleContainer}>
+                  <Text style={styles.habitTitle}>{habitTitle}</Text>
+                  {habitDescription && (
+                    <TouchableOpacity
+                      style={styles.habitInfoIcon}
+                      onPress={() => setShowHabitDescriptionModal(true)}
+                    >
+                      <Icon name="information-circle-outline" size={20} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
                 {isPromoted && (
                   <View style={styles.priorityBadge}>
                     <Icon name="star" size={12} color={theme.colors.accent} />
@@ -1300,7 +1314,7 @@ export default function TrackerScreen() {
                   <Image 
                     source={option.image}
                     style={styles.completionImage}
-                    resizeMode="cover" // Cambiado a "cover" para mejor escalado
+                    resizeMode="cover"
                   />
                 </TouchableOpacity>
               ))}
@@ -1356,22 +1370,6 @@ export default function TrackerScreen() {
             </View>
           </View>
 
-          {/* BOTÓN DE TESTING TEMPORAL */}
-          <TouchableOpacity 
-            onPress={testMedalAPI}
-            style={{
-              backgroundColor: '#FF6B6B',
-              padding: 15,
-              borderRadius: 10,
-              margin: 20,
-              alignItems: 'center'
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
-              🧪 TEST MEDALLA
-            </Text>
-          </TouchableOpacity>
-
           {/* Mensaje de éxito */}
           {successMessage && (
             <Animated.View style={[styles.successMessage, { opacity: fadeAnim }]}>
@@ -1392,14 +1390,15 @@ export default function TrackerScreen() {
       {renderContent()}
       {renderCompletionModal()}
       {renderMedalModal()}
+      {renderHabitDescriptionModal()}
       <TabNavigationBar />
     </View>
   );
 }
 
-// ESTILOS COMPLETOS (incluyendo los nuevos estilos embellecidos)
+// ESTILOS COMPLETOS
 const styles = StyleSheet.create({
-  // Estilos base existentes
+  // Estilos base
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -1519,6 +1518,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  // 🆕 Estilos para el párrafo introductorio colapsable
+  introductorySection: {
+    marginBottom: theme.spacing.md,
+  },
+  introductoryCard: {
+    backgroundColor: '#F0F8FF', // Fondo azul muy suave
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.primary,
+    ...theme.shadows.sm,
+  },
+  introductoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  introductoryIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  introductoryTitle: {
+    flex: 1,
+    fontSize: theme.fontSize.base,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  introductoryContent: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+  },
+  introductoryText: {
+    fontSize: theme.fontSize.sm,
+    lineHeight: 20,
+    color: theme.colors.text.primary,
+  },
   
   // Indicadores de progreso
   progressIndicatorsContainer: {
@@ -1578,11 +1620,23 @@ const styles = StyleSheet.create({
   habitInfo: {
     flex: 1,
   },
+  habitTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.xs,
+  },
   habitTitle: {
+    flex: 1,
     fontSize: theme.fontSize.xl,
     fontWeight: 'bold',
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.xs,
+    marginRight: theme.spacing.sm,
+  },
+  habitInfoIcon: {
+    padding: theme.spacing.xs,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: `${theme.colors.primary}10`,
   },
   priorityBadge: {
     flexDirection: 'row',
@@ -1626,37 +1680,24 @@ const styles = StyleSheet.create({
   },
   completionCard: {
     width: '48%',
-    backgroundColor: '#ffffff', // Fondo blanco
+    backgroundColor: '#ffffff',
     borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.sm, // Aún menos padding
+    padding: theme.spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#E0E0E0', // Borde gris claro por defecto
+    borderColor: '#E0E0E0',
     ...theme.shadows.sm,
-    minHeight: 160, // Más altura
+    minHeight: 160,
   },
   selectedCard: {
-    borderColor: theme.colors.primary, // Solo cambia el borde
-    borderWidth: 3, // Borde más grueso cuando está seleccionado
+    borderColor: theme.colors.primary,
+    borderWidth: 3,
     ...theme.shadows.md,
   },
-  completionEmoji: {
-    fontSize: 32,
-    marginBottom: theme.spacing.sm,
-  },
   completionImage: {
-    width: 130, // MÁS GRANDE AÚN
-    height: 130, // MÁS GRANDE AÚN
-  },
-  completionLabel: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.text.secondary,
-    textAlign: 'center',
-  },
-  selectedLabel: {
-    color: theme.colors.primary,
-    fontWeight: 'bold',
+    width: 130,
+    height: 130,
   },
   
   // Navegación
@@ -1687,8 +1728,90 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     fontWeight: '500',
   },
+
+  // Modal de descripción del hábito
+  habitModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  habitModalContainer: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    width: '90%',
+    maxWidth: 400,
+    ...theme.shadows.xl,
+  },
+  habitModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
+  },
+  habitModalIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: `${theme.colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  habitModalCloseButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    padding: theme.spacing.sm,
+  },
+  habitModalTitle: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.md,
+    textAlign: 'center',
+  },
+  habitModalContent: {
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  habitModalHabitTitle: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.md,
+    textAlign: 'center',
+  },
+  habitModalDescription: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.primary,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  habitModalButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    ...theme.shadows.sm,
+  },
+  habitModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: theme.fontSize.base,
+    fontWeight: '600',
+  },
+
+  // Descripción del hábito (removido - ya no se usa)
   
-  // Modal de celebración existente
+  // Modal de celebración
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1774,31 +1897,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // NUEVOS ESTILOS EMBELLECIDOS: Modal de medallas
+  // Modal de medallas
   medalModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)', // Más oscuro para mayor impacto
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.lg,
   },
   medalModalContainer: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 24, // Más redondeado
+    borderRadius: 24,
     width: '95%',
     maxWidth: 400,
     position: 'relative',
     overflow: 'hidden',
     ...theme.shadows.xl,
-    // Sombra más dramática
     shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 15,
   },
-  
-  // Decoraciones de fondo
   medalBackgroundDecorations: {
     position: 'absolute',
     top: 0,
@@ -1843,7 +1963,6 @@ const styles = StyleSheet.create({
   decorativeEmoji: {
     fontSize: 24,
   },
-  
   medalShineBackground: {
     position: 'absolute',
     top: 0,
@@ -1852,7 +1971,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: theme.colors.primary,
   },
-  
   medalContent: {
     padding: theme.spacing.xxl,
     paddingTop: 40,
@@ -1861,8 +1979,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 1,
   },
-  
-  // Contenedor principal de la medalla
   medalMainContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1908,8 +2024,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 15,
   },
-  
-  // Títulos y textos mejorados
   medalCelebrationTitle: {
     fontSize: 28,
     fontWeight: 'bold',

@@ -82,14 +82,11 @@ export default function OnboardingDiagnosticTestsScreen() {
     checkAuth();
   }, [navigation]);
 
-  // Opciones para resultados de endoscopia
+  // Opciones para resultados de endoscopia - ACTUALIZADAS
   const endoscopyOptions = [
-    { id: 'NORMAL', label: 'Normal (sin lesiones)' },
-    { id: 'ESOPHAGITIS_A', label: 'Esofagitis Grado A (leve)' },
-    { id: 'ESOPHAGITIS_B', label: 'Esofagitis Grado B (moderada)' },
-    { id: 'ESOPHAGITIS_C', label: 'Esofagitis Grado C (severa)' },
-    { id: 'ESOPHAGITIS_D', label: 'Esofagitis Grado D (muy severa)' },
-    { id: 'UNKNOWN', label: 'No recuerdo el resultado' }
+    { id: 'NORMAL', label: 'Normal (sin erosiones ni inflamación en el esófago)' },
+    { id: 'ESOPHAGITIS_A', label: 'Con esofagitis o erosiones en el esófago' },
+    { id: 'UNKNOWN', label: 'No lo recuerdo' }
   ];
 
   // Opciones para resultados de pH-metría
@@ -190,8 +187,7 @@ export default function OnboardingDiagnosticTestsScreen() {
             </View>
             
             <Text style={styles.description}>
-              Indica si te han realizado alguna de estas pruebas diagnósticas y cuál fue el resultado.
-              Esta información es importante para determinar tu perfil ERGE.
+            Indica si te han realizado alguna de estas pruebas diagnósticas y cuál fue el resultado. Esta información nos ayudará a entender mejor tu perfil digestivo y personalizar tus recomendaciones.
             </Text>
             
             {/* Sección Endoscopia */}
@@ -256,7 +252,7 @@ export default function OnboardingDiagnosticTestsScreen() {
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleContainer}>
                   <Icon name="analytics" size={24} color={theme.colors.primary} style={styles.sectionIcon} />
-                  <Text style={styles.sectionTitle}>pH-metría o Impedanciometría</Text>
+                  <Text style={styles.sectionTitle}>pH-metría</Text>
                 </View>
                 <Switch
                   trackColor={{ false: theme.colors.gray[300], true: theme.colors.secondary }}
@@ -267,8 +263,8 @@ export default function OnboardingDiagnosticTestsScreen() {
               </View>
               
               <Text style={styles.sectionDescription}>
-                La pH-metría mide el nivel de acidez en el esófago durante 24 horas.
-                Ayuda a determinar si hay reflujo ácido.
+              Esta prueba mide la acidez en el esófago durante 24 horas.
+              Ayuda a determinar si hay reflujo ácido y con qué frecuencia ocurre.
               </Text>
               
               {hasPHMonitoring && (
@@ -312,8 +308,9 @@ export default function OnboardingDiagnosticTestsScreen() {
             <View style={styles.infoCard}>
               <Icon name="information-circle" size={20} color={theme.colors.info.main} style={styles.infoIcon} />
               <Text style={styles.infoText}>
-                Si nunca te han realizado estas pruebas, no te preocupes. Podemos generar recomendaciones
-                basadas en tus síntomas y hábitos.
+              Si nunca te han realizado estas pruebas, no te preocupes.
+              Podemos generar recomendaciones personalizadas basadas en tus síntomas y hábitos actuales.
+
               </Text>
             </View>
             
@@ -480,7 +477,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     marginBottom: theme.spacing.lg,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Cambiar de 'center' a 'flex-start'
   },
   infoIcon: {
     marginRight: theme.spacing.sm,

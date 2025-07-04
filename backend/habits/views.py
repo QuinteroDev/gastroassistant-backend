@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from questionnaires.models import HabitQuestion, UserHabitAnswer, HabitOption
 from questionnaires.serializers import HabitQuestionSerializer, UserHabitAnswerSerializer
-from .models import HabitTracker, HabitLog, DailyNote
+from .models import HabitTracker, HabitLog, HabitStreak, DailyNote
 from .serializers import HabitTrackerSerializer, HabitLogSerializer, DailyNoteSerializer
 from recommendations.services import HabitTrackingService
 from recommendations.services import RecommendationService
@@ -118,7 +118,7 @@ class UserHabitTrackersView(generics.ListAPIView):
 class HabitLogView(APIView):
     """
     Vista para registrar el cumplimiento de un hábito.
-    MODIFICADA: Ahora incluye cálculo de gamificación
+    CORREGIDA: Implementación directa sin dependencia de HabitTrackingService.log_habit
     """
     permission_classes = [IsAuthenticated]
     
@@ -126,15 +126,17 @@ class HabitLogView(APIView):
         """
         Registra un hábito y actualiza gamificación automáticamente
         """
+        # Obtener datos del request
+        tracker_id = request.data.get('tracker_id')
         habit_id = request.data.get('habit_id')
         date_str = request.data.get('date')
         completion_level = request.data.get('completion_level')
         notes = request.data.get('notes', '')
         
-        # Validaciones básicas (mismo código que antes)
-        if habit_id is None or completion_level is None:
+        # Validaciones básicas
+        if completion_level is None:
             return Response({
-                'error': 'Se requieren habit_id y completion_level'
+                'error': 'Se requiere completion_level'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
@@ -158,43 +160,77 @@ class HabitLogView(APIView):
         else:
             date = timezone.now().date()
         
-        # Registrar el hábito (código existente)
-        log = HabitTrackingService.log_habit(
-            user=request.user,
-            habit_id=habit_id,
-            date=date,
-            completion_level=completion_level,
-            notes=notes
-        )
-        
-        if not log:
+        # REGISTRO DIRECTO DEL HÁBITO (sin HabitTrackingService.log_habit)
+        try:
+            # Buscar el tracker
+            if tracker_id:
+                tracker = HabitTracker.objects.get(
+                    id=tracker_id,
+                    user=request.user,
+                    is_active=True
+                )
+            elif habit_id:
+                tracker = HabitTracker.objects.get(
+                    habit_id=habit_id,
+                    user=request.user,
+                    is_active=True
+                )
+            else:
+                return Response({
+                    'error': 'Se requiere tracker_id o habit_id'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Crear o actualizar el log
+            log, created = HabitLog.objects.update_or_create(
+                tracker=tracker,
+                date=date,
+                defaults={
+                    'completion_level': completion_level,
+                    'notes': notes
+                }
+            )
+            
+            # Actualizar streak si es necesario
+            self._update_habit_streak(tracker, date, completion_level)
+            
+            print(f"✅ Hábito registrado: {log.id} - Nivel: {completion_level}")
+            
+        except HabitTracker.DoesNotExist:
             return Response({
-                'error': 'No se pudo registrar el hábito'
+                'error': 'No se encontró el tracker del hábito'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"❌ Error al crear log: {str(e)}")
+            return Response({
+                'error': f'Error al registrar el hábito: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # NUEVO: Procesar gamificación después de registrar el hábito
+        # PROCESAR GAMIFICACIÓN después de registrar el hábito
         try:
+            print(f"🎮 Procesando gamificación para usuario {request.user.id}")
             gamification_result = GamificationService.process_daily_gamification(
                 user=request.user,
                 target_date=date
             )
+            
+            print(f"🎮 Resultado gamificación: {gamification_result}")
             
             # Preparar respuesta con datos de gamificación
             response_data = {
                 'message': 'Hábito registrado con éxito',
                 'habit_data': HabitLogSerializer(log).data,
                 'gamification': {
-                    'points_earned_today': gamification_result['daily_points'].total_points,
-                    'total_cycle_points': gamification_result['user_level'].current_cycle_points,
-                    'current_level': gamification_result['user_level'].current_level,
-                    'current_streak': gamification_result['user_level'].current_streak,
-                    'new_medals': len(gamification_result['new_medals']),
-                    'level_up': gamification_result['level_up']
+                    'points_earned_today': self._safe_get_points(gamification_result, 'daily_points'),
+                    'total_cycle_points': self._safe_get_cycle_points(gamification_result, 'user_level'),
+                    'current_level': self._safe_get_level(gamification_result, 'user_level'),
+                    'current_streak': self._safe_get_streak(gamification_result, 'user_level'),
+                    'new_medals': len(gamification_result.get('new_medals', [])),
+                    'level_up': gamification_result.get('level_up', False)
                 }
             }
             
             # Añadir detalles de medallas nuevas si las hay
-            if gamification_result['new_medals']:
+            if gamification_result.get('new_medals'):
                 response_data['gamification']['medals_earned'] = [
                     {
                         'name': medal.medal.name,
@@ -208,7 +244,6 @@ class HabitLogView(APIView):
             
         except Exception as e:
             # Si falla la gamificación, aún devolver éxito del hábito
-            # pero loggear el error
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Error en gamificación para usuario {request.user.id}: {str(e)}")
@@ -218,6 +253,95 @@ class HabitLogView(APIView):
                 'habit_data': HabitLogSerializer(log).data,
                 'gamification_error': 'Error calculando puntos, pero el hábito se guardó correctamente'
             }, status=status.HTTP_201_CREATED)
+    
+    def _update_habit_streak(self, tracker, date, completion_level):
+        """
+        Actualiza la racha de cumplimiento de un hábito.
+        """
+        try:
+            # Obtener o crear el streak
+            streak, created = HabitStreak.objects.get_or_create(
+                tracker=tracker,
+                defaults={
+                    'current_streak': 0,
+                    'longest_streak': 0,
+                    'last_log_date': None
+                }
+            )
+            
+            # Si el hábito se completó (nivel >= 2)
+            if completion_level >= 2:
+                # Verificar si es consecutivo
+                if (streak.last_log_date and 
+                    (date - streak.last_log_date).days == 1):
+                    # Continuar racha
+                    streak.current_streak += 1
+                elif streak.last_log_date is None or (date - streak.last_log_date).days > 1:
+                    # Iniciar nueva racha
+                    streak.current_streak = 1
+                
+                # Actualizar racha más larga si es necesario
+                if streak.current_streak > streak.longest_streak:
+                    streak.longest_streak = streak.current_streak
+                    
+            else:
+                # Romper racha si no se completó adecuadamente
+                streak.current_streak = 0
+            
+            # Actualizar fecha del último registro
+            streak.last_log_date = date
+            streak.save()
+            
+        except Exception as e:
+            print(f"❌ Error al actualizar streak: {str(e)}")
+    
+    def _safe_get_points(self, gamification_result, key):
+        """Obtener puntos de forma segura"""
+        try:
+            daily_points = gamification_result.get(key)
+            if daily_points and hasattr(daily_points, 'total_points'):
+                return daily_points.total_points
+            elif isinstance(daily_points, dict):
+                return daily_points.get('total_points', 0)
+            return 0
+        except:
+            return 0
+    
+    def _safe_get_cycle_points(self, gamification_result, key):
+        """Obtener puntos del ciclo de forma segura"""
+        try:
+            user_level = gamification_result.get(key)
+            if user_level and hasattr(user_level, 'current_cycle_points'):
+                return user_level.current_cycle_points
+            elif isinstance(user_level, dict):
+                return user_level.get('current_cycle_points', 0)
+            return 0
+        except:
+            return 0
+    
+    def _safe_get_level(self, gamification_result, key):
+        """Obtener nivel de forma segura"""
+        try:
+            user_level = gamification_result.get(key)
+            if user_level and hasattr(user_level, 'current_level'):
+                return user_level.current_level
+            elif isinstance(user_level, dict):
+                return user_level.get('current_level', 'NOVATO')
+            return 'NOVATO'
+        except:
+            return 'NOVATO'
+    
+    def _safe_get_streak(self, gamification_result, key):
+        """Obtener streak de forma segura"""
+        try:
+            user_level = gamification_result.get(key)
+            if user_level and hasattr(user_level, 'current_streak'):
+                return user_level.current_streak
+            elif isinstance(user_level, dict):
+                return user_level.get('current_streak', 0)
+            return 0
+        except:
+            return 0
 
 class HabitLogsHistoryView(generics.ListAPIView):
     """

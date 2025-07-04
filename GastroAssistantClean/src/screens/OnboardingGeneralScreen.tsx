@@ -264,7 +264,7 @@ export default function OnboardingGeneralScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.fieldLabel}>¿Cuál es tu peso actual?</Text>
                   <View style={styles.inputContainer}>
-                    <Icon name="fitness-outline" size={20} color={theme.colors.primary} style={styles.inputIcon} />
+                    <Icon name="scale-outline" size={20} color={theme.colors.primary} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Peso en kg (ej: 75.5)"

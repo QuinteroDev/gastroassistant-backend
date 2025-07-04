@@ -18,6 +18,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'email',
             'first_name',
             'weight_kg',
+            'avatar',
             'height_cm',
             # Factores clínicos (todos)
             'has_hernia',

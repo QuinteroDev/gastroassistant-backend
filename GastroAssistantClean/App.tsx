@@ -1,10 +1,12 @@
-// App.tsx
+// App.tsx - VERSIÓN CON DEEP LINKS
 import React from 'react';
 import { enableScreens } from 'react-native-screens';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions } from '@react-navigation/native';  // ← AÑADIR LinkingOptions
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import ProgramDetailsScreen from './src/screens/ProgramDetailsScreen';
 import OnboardingWelcomeScreen from './src/screens/OnboardingWelcomeScreen';
 import OnboardingGeneralScreen from './src/screens/OnboardingGeneralScreen';
@@ -23,15 +25,14 @@ import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import HelpCenterScreen from './src/screens/HelpCenterScreen';
 import ProfileUpdateScreen from './src/screens/ProfileUpdateScreen';
 
-
-
-
 // Habilitar react-native-screens
 enableScreens();
 
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { token: string };
   OnboardingWelcome: undefined;
   OnboardingGeneral: undefined;
   OnboardingGeneralUpdate: undefined;
@@ -51,17 +52,33 @@ export type RootStackParamList = {
   ProfileUpdate: undefined;
 };
 
+// ✅ AÑADIR CONFIGURACIÓN DE DEEP LINKS
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['gastroassistant://'],
+  config: {
+    screens: {
+      ResetPassword: {
+        path: 'reset-password',
+        parse: {
+          token: (token: string) => token,
+        },
+      },
+    },
+  },
+};
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>  {/* ← AÑADIR linking prop */}
       <Stack.Navigator
         initialRouteName="Login"
         screenOptions={{
           headerShown: false
         }}
       >
+        {/* Auth Screens */}
         <Stack.Screen
           name="Login"
           component={LoginScreen}
@@ -71,9 +88,21 @@ export default function App() {
           component={RegisterScreen}
         />
         <Stack.Screen
+          name="ForgotPassword"
+          component={ForgotPasswordScreen}
+        />
+        <Stack.Screen
+          name="ResetPassword"
+          component={ResetPasswordScreen}
+        />
+        
+        {/* Main App Screens */}
+        <Stack.Screen
           name="ProgramDetails"
           component={ProgramDetailsScreen}
         />
+        
+        {/* Onboarding Screens */}
         <Stack.Screen
           name="OnboardingWelcome"
           component={OnboardingWelcomeScreen}
@@ -110,35 +139,36 @@ export default function App() {
           name="GeneratingProgram"
           component={GeneratingProgramScreen}
         />
-        {/* TODO: Añadir estas pantallas cuando las migremos */}
+        
+        {/* Other App Screens */}
         <Stack.Screen
-            name="Tracker"
-            component={TrackerScreen}
-          />
-          <Stack.Screen
-            name="Education"
-            component={EducationalContentScreen}
-          />
-          <Stack.Screen
-            name="Stats"
-            component={StatsScreen}
-          />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-          />
-          <Stack.Screen
+          name="Tracker"
+          component={TrackerScreen}
+        />
+        <Stack.Screen
+          name="Education"
+          component={EducationalContentScreen}
+        />
+        <Stack.Screen
+          name="Stats"
+          component={StatsScreen}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+        />
+        <Stack.Screen
           name="ChangePassword"
           component={ChangePasswordScreen}
         />
         <Stack.Screen
-        name="HelpCenter"
-        component={HelpCenterScreen}
-      />
-      <Stack.Screen
-        name="ProfileUpdate"
-        component={ProfileUpdateScreen}
-      />
+          name="HelpCenter"
+          component={HelpCenterScreen}
+        />
+        <Stack.Screen
+          name="ProfileUpdate"
+          component={ProfileUpdateScreen}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

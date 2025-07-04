@@ -468,20 +468,25 @@ export default function OnboardingRsiScreen() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.content}>
             <View style={styles.headerSection}>
-              <Icon name="pulse" size={40} color={theme.colors.primary} />
-              <Text style={styles.title}>{questionnaire.title || 'Cuestionario RSI'}</Text>
-            </View>
+              <Icon name="medical-outline" size={40} color={theme.colors.primary} />
+              <Text style={styles.title}>Síntomas extradigestivos</Text>
+              </View>
             
-            <Text style={styles.description}>
-              {questionnaire.description || 'Por favor responde todas las preguntas del cuestionario RSI.'}
+              <Text style={styles.description}>
+              Queremos conocer si presentas síntomas que podrían estar relacionados con el reflujo, aunque no ocurran directamente en el estómago.
             </Text>
             
             <View style={styles.infoCard}>
-              <Icon name="information-circle" size={20} color={theme.colors.info.main} />
-              <Text style={styles.infoText}>
-                Evalúa la severidad de cada síntoma durante el último mes
-              </Text>
+            <Icon name="information-circle" size={20} color={theme.colors.info.main} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>Evalúa la intensidad de cada síntoma durante el último mes.</Text>
+              <Text style={styles.infoSubtitle}>Usa esta escala:</Text>
+              <Text style={styles.scaleItem}>• 0 = No problema</Text>
+              <Text style={styles.scaleItem}>• 1–2 = Molestia leve</Text>
+              <Text style={styles.scaleItem}>• 3–4 = Molestia moderada</Text>
+              <Text style={styles.scaleItem}>• 5 = Problema severo</Text>
             </View>
+          </View>
             
             {/* Renderizado de preguntas */}
             {questionnaire.questions && questionnaire.questions.length > 0 ? (
@@ -602,7 +607,7 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Cambiar de 'center' a 'flex-start'
     backgroundColor: theme.colors.info.light,
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
@@ -742,5 +747,25 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
-  }
+  },
+  infoContent: {
+    flex: 1,
+    marginLeft: theme.spacing.sm,
+  },
+  infoTitle: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.info.dark,
+    fontWeight: '600',
+    marginBottom: theme.spacing.xs,
+  },
+  infoSubtitle: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.info.dark,
+    marginBottom: theme.spacing.xs,
+  },
+  scaleItem: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.info.dark,
+    lineHeight: 16,
+  },
 });

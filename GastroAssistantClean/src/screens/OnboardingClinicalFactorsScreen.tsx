@@ -21,7 +21,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { ONBOARDING_STEPS } from '../constants/onboarding';
 import { theme } from '../constants/theme';
 
-// Tipos de navegación - actualizar después en archivo separado
+// Tipos de navegación - EXACTOS como los tenías
 type RootStackParamList = {
   Login: undefined;
   Register: undefined;
@@ -36,32 +36,46 @@ type RootStackParamList = {
 
 type OnboardingClinicalFactorsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OnboardingClinicalFactors'>;
 
-interface ClinicalFactorsData {
-  has_hernia: string;
-  has_altered_motility: string;
-  has_slow_emptying: string;
-  has_dry_mouth: string;
-  has_constipation: string;
-  stress_affects: string;
+// Interfaces para el cuestionario dinámico
+interface AnswerOption {
+  id: number;
+  text: string;
+  value: number;
+  order: number;
+}
+
+interface Question {
+  id: number;
+  text: string;
+  order: number;
+  options: AnswerOption[];
+}
+
+interface Questionnaire {
+  id: number;
+  name: string;
+  title: string;
+  type: string;
+  description: string;
+  questions: Question[];
+}
+
+interface UserAnswer {
+  question_id: number;
+  selected_option_id: number;
 }
 
 export default function OnboardingClinicalFactorsScreen() {
   const navigation = useNavigation<OnboardingClinicalFactorsNavigationProp>();
   
-  // Estado para cada factor clínico
-  const [hasHernia, setHasHernia] = useState<string | null>(null);
-  const [alteredMotility, setAlteredMotility] = useState<string | null>(null);
-  const [slowEmptying, setSlowEmptying] = useState<string | null>(null);
-  const [dryMouth, setDryMouth] = useState<string | null>(null);
-  const [constipation, setConstipation] = useState<string | null>(null);
-  const [stressAffects, setStressAffects] = useState<string | null>(null);
-  
-  // Estado de la UI
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Estado para el cuestionario dinámico
+  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [loading, setLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Verificar token al cargar la pantalla
+  // Verificar token al cargar la pantalla - EXACTO como lo tenías
   useEffect(() => {
     const checkAuth = async () => {
       console.log("Verificando token en OnboardingClinicalFactorsScreen...");
@@ -78,108 +92,159 @@ export default function OnboardingClinicalFactorsScreen() {
       // Guardar la pantalla actual
       await saveOnboardingProgress('OnboardingClinicalFactors');
       
+      // Cargar cuestionario
+      await loadClinicalFactorsQuestionnaire();
     };
   
     checkAuth();
   }, [navigation]);
   
-  // Validar el formulario
-  const validateForm = (): boolean => {
-    if (!hasHernia || !alteredMotility || !slowEmptying || !dryMouth || !constipation || !stressAffects) {
-      setError('Por favor, responde todas las preguntas del cuestionario.');
-      return false;
+  // Cargar el cuestionario de factores clínicos desde el backend
+  const loadClinicalFactorsQuestionnaire = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log("Cargando cuestionario de factores clínicos...");
+      const response = await api.get('/api/questionnaires/clinical-factors/');
+      
+      console.log("Cuestionario cargado:", response.data);
+      setQuestionnaire(response.data);
+      
+    } catch (err: any) {
+      console.error('Error loading clinical factors questionnaire:', err);
+      
+      let errorMessage = 'No se pudo cargar el cuestionario de factores clínicos.';
+      
+      if (err.response?.status === 404) {
+        errorMessage = 'El cuestionario de factores clínicos no está disponible. Contacta con soporte.';
+      } else if (err.response?.status === 401) {
+        Alert.alert(
+          'Sesión expirada',
+          'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+          [{ 
+            text: 'Ir a Login', 
+            onPress: () => navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            })
+          }]
+        );
+        return;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    return true;
   };
   
-  // Enviar respuestas
+  // Manejar selección de respuesta
+  const handleAnswerSelect = (questionId: number, optionId: number) => {
+    console.log(`Pregunta ${questionId}: Opción seleccionada ${optionId}`);
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: optionId
+    }));
+    
+    // Limpiar error si existe
+    if (error) {
+      setError(null);
+    }
+  };
+  
+  // Validar el formulario - SIN efectos secundarios
+  const canProceed = () => {
+    if (!questionnaire) return false;
+    
+    // Verificar que todas las preguntas han sido respondidas
+    return questionnaire.questions.every(question => 
+      answers.hasOwnProperty(question.id)
+    );
+  };
+  
+  // Enviar respuestas - EXACTA lógica que tenías pero con endpoint nuevo
   const handleSubmit = async () => {
-    if (!validateForm()) {
+    if (!questionnaire || !canProceed()) {
+      const unansweredCount = questionnaire ? questionnaire.questions.length - Object.keys(answers).length : 0;
+      setError(`Por favor responde todas las preguntas antes de continuar. Faltan ${unansweredCount} respuesta(s).`);
       return;
     }
-  
+
     setIsSubmitting(true);
     setError(null);
-  
+
     try {
-      // Preparar los datos para enviar
-      const clinicalFactorsData: ClinicalFactorsData = {
-        has_hernia: hasHernia!,
-        has_altered_motility: alteredMotility!,
-        has_slow_emptying: slowEmptying!,
-        has_dry_mouth: dryMouth!,
-        has_constipation: constipation!,
-        stress_affects: stressAffects!
+      // Preparar las respuestas en el formato esperado por el backend
+      const formattedAnswers: UserAnswer[] = questionnaire.questions.map(question => ({
+        question_id: question.id,
+        selected_option_id: answers[question.id]
+      }));
+
+      const payload = {
+        answers: formattedAnswers
       };
-  
-      console.log("Enviando datos de factores clínicos:", clinicalFactorsData);
-  
-      // Intentar hasta 3 veces si es necesario
+
+      console.log("Enviando datos de factores clínicos:", payload);
+
+      // Intentar hasta 3 veces si es necesario - COMO TENÍAS
       let success = false;
       let maxRetries = 3;
-      let updatedProfile;
+      let responseData;
       
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          // Añadir timestamp para evitar posible caché
           const timestamp = new Date().getTime();
-          const response = await api.patch(`/api/profiles/me/?t=${timestamp}`, clinicalFactorsData);
+          const response = await api.post(`/api/questionnaires/clinical-factors/submit/?t=${timestamp}`, payload);
           
-          updatedProfile = response.data;
-          console.log(`Intento ${attempt} - Respuesta:`, updatedProfile);
+          responseData = response.data;
+          console.log(`Intento ${attempt} - Respuesta:`, responseData);
           
-          // Verificar que todos los datos se guardaron correctamente
-          const allFactorsSaved = 
-            updatedProfile.has_hernia === hasHernia &&
-            updatedProfile.has_altered_motility === alteredMotility &&
-            updatedProfile.has_slow_emptying === slowEmptying &&
-            updatedProfile.has_dry_mouth === dryMouth &&
-            updatedProfile.has_constipation === constipation &&
-            updatedProfile.stress_affects === stressAffects;
-            
-          if (allFactorsSaved) {
-            success = true;
-            break;
-          } else {
-            console.warn(`⚠️ Intento ${attempt}: No todos los factores clínicos se guardaron correctamente`);
-            console.warn("Enviados:", clinicalFactorsData);
-            console.warn("Recibidos:", updatedProfile);
-            
-            // Esperar un poco antes del siguiente intento
-            if (attempt < maxRetries) {
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          }
+          success = true;
+          break;
         } catch (err) {
           console.error(`Error en intento ${attempt}:`, err);
           if (attempt < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, 500));
           } else {
-            throw err; // Relanzar el último error
+            throw err;
           }
         }
       }
       
       if (!success) {
-        // Si después de todos los intentos no se guardaron bien, mostrar un error
         setError('No se pudieron guardar todos los datos correctamente. Por favor, inténtalo de nuevo.');
         console.error("No se pudieron guardar los datos después de múltiples intentos");
-        
-        // Pero intentamos continuar de todos modos
-        if (updatedProfile) {
-          console.log("Continuando con datos parciales");
-        } else {
-          throw new Error("No se pudieron guardar los datos");
-        }
+        return;
       }
-  
+
       // Guardar el progreso antes de navegar
       await saveOnboardingProgress('OnboardingDiagnosticTests');
       
-      // Navegar a la siguiente pantalla del onboarding
-      console.log("Navegando a OnboardingDiagnosticTests...");
-      navigation.navigate('OnboardingDiagnosticTests');
-  
+      // Verificar si el onboarding está completo
+      if (responseData?.onboarding_complete) {
+        console.log("Onboarding completado!");
+        Alert.alert(
+          'Onboarding Completado',
+          'Has completado todos los pasos del registro. Tu programa personalizado está listo.',
+          [
+            {
+              text: 'Ver Mi Programa',
+              onPress: () => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                });
+              }
+            }
+          ]
+        );
+      } else {
+        // Navegar a la siguiente pantalla del onboarding - EXACTO como tenías
+        console.log("Navegando a OnboardingDiagnosticTests...");
+        navigation.navigate('OnboardingDiagnosticTests');
+      }
+
     } catch (err: any) {
       console.error("Error al enviar datos de factores clínicos:", err);
       let message = "Error al guardar los datos de factores clínicos";
@@ -206,6 +271,8 @@ export default function OnboardingClinicalFactorsScreen() {
         } else if (err.response.data && err.response.data.detail) {
           message = err.response.data.detail;
           Alert.alert("Error", message);
+        } else if (err.response.data?.error) {
+          message = err.response.data.error;
         }
       } else {
         setError(message);
@@ -215,79 +282,167 @@ export default function OnboardingClinicalFactorsScreen() {
     }
   };
   
-  // Renderizar opciones para cada pregunta (sí/no/no lo sé)
+  // Renderizar opciones para cada pregunta - EXACTO como tenías pero dinámico
   const renderOptions = (
-    question: string, 
-    value: string | null, 
-    setValue: (value: string) => void, 
-    options: Array<{id: string, label: string, icon?: string, color?: string}>
+    question: Question, 
+    questionIndex: number
   ) => {
+    // Verificar si necesita dos filas (más de 3 opciones)
+    const needsTwoRows = question.options.length > 3;
+    
+    // Verificar si es la pregunta larga (pregunta 9 - alteraciones intestinales)
+    const isLongQuestion = question.order === 9;
+    
     return (
-      <View style={styles.questionCard}>
-        <Text style={styles.questionText}>{question}</Text>
-        <View style={styles.optionsRowContainer}>
-          {options.map(option => {
-            const isSelected = value === option.id;
-            const backgroundColor = isSelected && option.color ? option.color : 
-                                  isSelected ? theme.colors.primary : 
-                                  theme.colors.background;
-            
-            return (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.optionButton,
-                  isSelected && styles.selectedOption,
-                  { 
-                    width: (100 / options.length - 2) + '%',
-                    backgroundColor: backgroundColor,
-                    borderColor: isSelected ? (option.color || theme.colors.primary) : theme.colors.border.light
-                  }
-                ]}
-                onPress={() => setValue(option.id)}
-                disabled={isSubmitting}
-              >
-                {option.icon && (
-                  <Icon 
-                    name={option.icon} 
-                    size={20} 
-                    color={isSelected ? theme.colors.surface : theme.colors.text.secondary} 
-                    style={styles.optionIcon}
-                  />
-                )}
-                <Text style={[
-                  styles.optionText,
-                  isSelected && styles.selectedOptionText
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+      <View style={isLongQuestion ? styles.questionCardLong : styles.questionCard}>
+        <Text style={isLongQuestion ? styles.questionTextLong : styles.questionText}>
+          {question.text}
+        </Text>
+        
+        {needsTwoRows ? (
+          // Layout de dos filas para preguntas con 4 opciones
+          <View style={styles.optionsTwoRowsContainer}>
+            <View style={styles.optionsRow}>
+              {question.options.slice(0, 2).map((option) => renderSingleOption(question, option, needsTwoRows))}
+            </View>
+            <View style={styles.optionsRow}>
+              {question.options.slice(2).map((option) => renderSingleOption(question, option, needsTwoRows))}
+            </View>
+          </View>
+        ) : (
+          // Layout normal de una fila
+          <View style={styles.optionsRowContainer}>
+            {question.options.map((option) => renderSingleOption(question, option, needsTwoRows))}
+          </View>
+        )}
       </View>
     );
   };
   
-  // Opciones estándar para preguntas de sí/no/no lo sé
-  const yesNoUnknownOptions = [
-    { id: 'YES', label: 'Sí', icon: 'checkmark-circle-outline', color: theme.colors.success.main },
-    { id: 'NO', label: 'No', icon: 'close-circle-outline', color: theme.colors.error.main },
-    { id: 'UNKNOWN', label: 'No sé', icon: 'help-circle-outline', color: theme.colors.warning.main }
-  ];
+  // Renderizar una opción individual
+  const renderSingleOption = (question: Question, option: AnswerOption, needsTwoRows: boolean) => {
+    const isSelected = answers[question.id] === option.id;
+    const optionStyle = getOptionStyle(question, option);
+    const backgroundColor = isSelected ? optionStyle.color : theme.colors.background;
+    const optionWidth = needsTwoRows ? '48%' : (100 / question.options.length - 2) + '%';
+    
+    return (
+      <TouchableOpacity
+        key={option.id}
+        style={[
+          styles.optionButton,
+          isSelected && styles.selectedOption,
+          { 
+            width: optionWidth,
+            backgroundColor: backgroundColor,
+            borderColor: isSelected ? optionStyle.color : theme.colors.border.light
+          }
+        ]}
+        onPress={() => handleAnswerSelect(question.id, option.id)}
+        disabled={isSubmitting}
+      >
+        <Icon 
+          name={optionStyle.icon} 
+          size={20} 
+          color={isSelected ? theme.colors.surface : theme.colors.text.secondary} 
+          style={styles.optionIcon}
+        />
+        <Text style={[
+          styles.optionText,
+          isSelected && styles.selectedOptionText
+        ]}>
+          {option.text}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
   
-  // Opciones para preguntas de sí/no
-  const yesNoOptions = [
-    { id: 'YES', label: 'Sí', icon: 'checkmark-circle-outline', color: theme.colors.success.main },
-    { id: 'NO', label: 'No', icon: 'close-circle-outline', color: theme.colors.error.main }
-  ];
+  // Obtener estilo de opción según la pregunta
+  const getOptionStyle = (question: Question, option: AnswerOption) => {
+    const questionOrder = question.order;
+    
+    // Configurar colores e iconos según el tipo de pregunta
+    if (questionOrder === 3) { // Helicobacter pylori
+      switch (option.value) {
+        case 3: return { icon: 'warning-outline', color: theme.colors.error.main }; // Activa
+        case 2: return { icon: 'checkmark-circle-outline', color: theme.colors.warning.main }; // Tratada
+        case 0: return { icon: 'close-circle-outline', color: theme.colors.success.main }; // No
+        case 1: return { icon: 'help-circle-outline', color: theme.colors.warning.main }; // No sé
+      }
+    } else if (questionOrder === 8) { // Estrés
+      switch (option.value) {
+        case 2: return { icon: 'checkmark-circle-outline', color: theme.colors.error.main }; // Sí claramente
+        case 1: return { icon: 'time-outline', color: theme.colors.warning.main }; // A veces
+        case 0: return { icon: 'close-circle-outline', color: theme.colors.success.main }; // No
+      }
+    } else if (questionOrder === 7) { // Estreñimiento (3 opciones)
+      switch (option.value) {
+        case 1: return { icon: 'checkmark-circle-outline', color: theme.colors.error.main }; // Sí
+        case 2: return { icon: 'time-outline', color: theme.colors.warning.main }; // A veces
+        case 0: return { icon: 'close-circle-outline', color: theme.colors.success.main }; // No
+      }
+    } else if (questionOrder === 10) { // Tabaquismo (2 opciones)
+      switch (option.value) {
+        case 1: return { icon: 'checkmark-circle-outline', color: theme.colors.error.main }; // Sí
+        case 0: return { icon: 'close-circle-outline', color: theme.colors.success.main }; // No
+      }
+    } else if (questionOrder === 11) { // Alcohol
+      switch (option.value) {
+        case 2: return { icon: 'wine-outline', color: theme.colors.error.main }; // Sí
+        case 1: return { icon: 'time-outline', color: theme.colors.warning.main }; // A veces
+        case 0: return { icon: 'close-circle-outline', color: theme.colors.success.main }; // No
+      }
+    } else { // Resto de preguntas (sí/no/no sé)
+      switch (option.value) {
+        case 1: return { icon: 'checkmark-circle-outline', color: theme.colors.error.main }; // Sí
+        case 0: return { icon: 'close-circle-outline', color: theme.colors.success.main }; // No
+        case 2: return { icon: 'help-circle-outline', color: theme.colors.warning.main }; // No sé
+      }
+    }
+    
+    return { icon: 'help-circle-outline', color: theme.colors.primary };
+  };
   
-  // Opciones para la pregunta de estrés/ansiedad
-  const stressOptions = [
-    { id: 'YES', label: 'Sí, claramente', icon: 'checkmark-circle-outline', color: theme.colors.success.main },
-    { id: 'SOMETIMES', label: 'A veces', icon: 'time-outline', color: theme.colors.warning.main },
-    { id: 'NO', label: 'No', icon: 'close-circle-outline', color: theme.colors.error.main }
-  ];
+  // Si está cargando
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <HeaderComponent showBackButton={true} onBackPress={() => navigation.goBack()} />
+        <ProgressBar 
+          currentStep={ONBOARDING_STEPS.CLINICAL_FACTORS} 
+          totalSteps={ONBOARDING_STEPS.TOTAL_STEPS} 
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Cargando cuestionario...</Text>
+        </View>
+      </View>
+    );
+  }
+  
+  // Si hay error y no se cargó el cuestionario
+  if (!questionnaire) {
+    return (
+      <View style={styles.container}>
+        <HeaderComponent showBackButton={true} onBackPress={() => navigation.goBack()} />
+        <ProgressBar 
+          currentStep={ONBOARDING_STEPS.CLINICAL_FACTORS} 
+          totalSteps={ONBOARDING_STEPS.TOTAL_STEPS} 
+        />
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={60} color={theme.colors.error.main} />
+          <Text style={styles.errorTitle}>Error al cargar</Text>
+          <Text style={styles.errorDescription}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={loadClinicalFactorsQuestionnaire}
+          >
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
   
   return (
     <View style={styles.container}>
@@ -308,68 +463,24 @@ export default function OnboardingClinicalFactorsScreen() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.content}>
             <View style={styles.headerSection}>
-              <Icon name="fitness" size={40} color={theme.colors.primary} />
-              <Text style={styles.title}>Factores Clínicos</Text>
+              <Icon name="clipboard-outline" size={40} color={theme.colors.primary} />
+              <Text style={styles.title}>Factores de Riesgo</Text>
             </View>
             
             <Text style={styles.description}>
-              Por favor, responde a estas preguntas sobre factores que pueden influir en tu reflujo.
-              Esta información nos ayudará a personalizar tus recomendaciones.
+              Queremos saber si existen factores médicos que puedan estar influyendo en tus síntomas. Esta información nos ayudará a personalizar tus recomendaciones.
             </Text>
             
             <View style={styles.infoCard}>
               <Icon name="information-circle" size={20} color={theme.colors.info.main} />
               <Text style={styles.infoText}>
-                Responde con sinceridad basándote en tu historial médico
+                Responde basándote en tu historial médico. Si no estás seguro, selecciona "No sé".
               </Text>
             </View>
             
-            {/* Factor 1: Hernia de hiato */}
-            {renderOptions(
-              '¿Te han diagnosticado hernia de hiato o una válvula de cierre del estómago débil (cardias incompetente)?',
-              hasHernia,
-              setHasHernia,
-              yesNoUnknownOptions
-            )}
-            
-            {/* Factor 2: Motilidad esofágica alterada */}
-            {renderOptions(
-              '¿Te han detectado alguna alteración en el movimiento del esófago (por ejemplo, en una manometría o prueba funcional)?',
-              alteredMotility,
-              setAlteredMotility,
-              yesNoUnknownOptions
-            )}
-            
-            {/* Factor 3: Vaciamiento gástrico lento */}
-            {renderOptions(
-              '¿Te han dicho que tu estómago vacía más lento de lo normal (gastroparesia)?',
-              slowEmptying,
-              setSlowEmptying,
-              yesNoUnknownOptions
-            )}
-            
-            {/* Factor 4: Salivación reducida */}
-            {renderOptions(
-              '¿Tienes sequedad de boca frecuente o te han comentado que produces poca saliva?',
-              dryMouth,
-              setDryMouth,
-              yesNoUnknownOptions
-            )}
-            
-            {/* Factor 5: Estreñimiento */}
-            {renderOptions(
-              '¿Sueles tener estreñimiento o necesitas hacer mucho esfuerzo al ir al baño?',
-              constipation,
-              setConstipation,
-              yesNoOptions
-            )}
-            
-            {/* Factor 6: Estrés/ansiedad */}
-            {renderOptions(
-              '¿Sientes que el estrés o la ansiedad empeoran claramente tus síntomas digestivos?',
-              stressAffects,
-              setStressAffects,
-              stressOptions
+            {/* Renderizar todas las preguntas dinámicamente */}
+            {questionnaire.questions.map((question, index) => 
+              renderOptions(question, index)
             )}
             
             {/* Mensaje de error */}
@@ -419,6 +530,55 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing.md,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: theme.spacing.md,
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.error.light,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    marginVertical: theme.spacing.md,
+  },
+  errorTitle: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: 'bold',
+    color: theme.colors.error.main,
+    marginTop: theme.spacing.md,
+    textAlign: 'center',
+  },
+  errorDescription: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
+  },
+  errorText: {
+    color: theme.colors.error.dark,
+    marginLeft: theme.spacing.sm,
+    flex: 1,
+    fontSize: theme.fontSize.sm,
+  },
+  retryButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  retryButtonText: {
+    color: theme.colors.surface,
+    fontSize: theme.fontSize.base,
+    fontWeight: '600',
+  },
   headerSection: {
     alignItems: 'center',
     marginBottom: theme.spacing.md,
@@ -458,6 +618,14 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
     ...theme.shadows.sm,
   },
+  questionCardLong: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    minHeight: 120, // Altura mínima mayor para pregunta larga
+    ...theme.shadows.sm,
+  },
   questionText: {
     fontSize: theme.fontSize.base,
     fontWeight: '600',
@@ -465,7 +633,26 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     lineHeight: 22,
   },
+  questionTextLong: {
+    fontSize: theme.fontSize.xs, // Más pequeño aún
+    fontWeight: '500', // Menos bold
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.md,
+    lineHeight: 18, // Más compacto
+    flexWrap: 'wrap',
+    flexShrink: 1,
+    width: '100%', // Asegurar que ocupe todo el ancho
+  },
   optionsRowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    marginHorizontal: -3,
+  },
+  optionsTwoRowsContainer: {
+    gap: theme.spacing.sm,
+  },
+  optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'stretch',
@@ -500,20 +687,6 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     color: theme.colors.surface,
     fontWeight: '500',
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.error.light,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
-    marginVertical: theme.spacing.md,
-  },
-  errorText: {
-    color: theme.colors.error.dark,
-    marginLeft: theme.spacing.sm,
-    flex: 1,
-    fontSize: theme.fontSize.sm,
   },
   buttonContainer: {
     marginVertical: theme.spacing.xl,

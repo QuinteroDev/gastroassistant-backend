@@ -9,7 +9,8 @@ class Questionnaire(models.Model):
         ('GERDQ', 'Cuestionario GerdQ'),
         ('RSI', 'Índice de Síntomas de Reflujo (RSI)'),
         ('HABITS', 'Cuestionario de Hábitos'),
-        ('GENERAL', 'Datos Generales Onboarding'), # Podríamos tratarlo como un cuestionario más
+        ('CLINICAL', 'Factores Clínicos'),
+        ('GENERAL', 'Datos Generales Onboarding'), 
     ]
     name = models.CharField(max_length=100, unique=True) # Ej: "GerdQ_v1", "RSI_v1"
     title = models.CharField(max_length=200) # Ej: "Cuestionario GerdQ"

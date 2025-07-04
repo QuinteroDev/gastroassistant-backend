@@ -4,6 +4,9 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, MaxValueValidator
+import uuid
+from datetime import timedelta
+from django.utils import timezone
 
 class UserProfile(models.Model):
     # Fenotipos ERGE según la Guía 2019
@@ -50,6 +53,53 @@ class UserProfile(models.Model):
         ('NO', 'No')
     ]
     
+    # Opciones para estreñimiento (nueva)
+    CONSTIPATION_CHOICES = [
+        ('YES', 'Sí'),
+        ('SOMETIMES', 'A veces'),
+        ('NO', 'No')
+    ]
+    
+    # NUEVAS OPCIONES PARA LOS 5 CAMPOS FALTANTES
+    
+    # Para Helicobacter pylori (4 opciones)
+    H_PYLORI_CHOICES = [
+        ('ACTIVE', 'Sí, actualmente activa'),
+        ('TREATED', 'Sí, pero ya tratada'),
+        ('NO', 'No'),
+        ('UNKNOWN', 'No lo sé')
+    ]
+    
+    # Para tabaquismo (2 opciones)
+    SMOKING_CHOICES = [
+        ('YES', 'Sí'),
+        ('NO', 'No')
+    ]
+    
+    # Para alcohol (3 opciones)
+    ALCOHOL_CHOICES = [
+        ('YES', 'Sí'),
+        ('OCCASIONALLY', 'Ocasionalmente'),
+        ('NO', 'No')
+    ]
+
+    AVATAR_CHOICES = [
+        ('default', 'Sin avatar'),
+        ('avatar1', 'Avatar 1'),
+        ('avatar2', 'Avatar 2'), 
+        ('avatar3', 'Avatar 3'),
+        ('avatar4', 'Avatar 4'),
+        ('avatar5', 'Avatar 5'),
+    ]
+    
+    # 🆕 Campo avatar
+    avatar = models.CharField(
+        max_length=20,
+        choices=AVATAR_CHOICES,
+        default='default',
+        verbose_name="Avatar del usuario"
+    )
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     
     # Datos básicos y cálculo de IMC
@@ -76,7 +126,7 @@ class UserProfile(models.Model):
         verbose_name="Tiene exceso de peso (IMC ≥ 25)"
     )
     
-    # Factores clínicos asociados al reflujo
+    # Factores clínicos asociados al reflujo (CAMPOS EXISTENTES)
     has_hernia = models.CharField(
         max_length=10,
         choices=YES_NO_UNKNOWN_CHOICES,
@@ -103,8 +153,8 @@ class UserProfile(models.Model):
     )
     has_constipation = models.CharField(
         max_length=10,
-        choices=YES_NO_UNKNOWN_CHOICES,
-        default='UNKNOWN',
+        choices=CONSTIPATION_CHOICES,
+        default='NO',
         verbose_name="Estreñimiento o esfuerzo al defecar"
     )
     stress_affects = models.CharField(
@@ -112,6 +162,48 @@ class UserProfile(models.Model):
         choices=STRESS_ANXIETY_CHOICES,
         default='UNKNOWN',
         verbose_name="Estrés o ansiedad como agravantes"
+    )
+    
+    # NUEVOS CAMPOS PARA LAS 5 PREGUNTAS FALTANTES
+    
+    # Pregunta 2: Gastritis
+    has_gastritis = models.CharField(
+        max_length=10,
+        choices=YES_NO_UNKNOWN_CHOICES,
+        default='UNKNOWN',
+        verbose_name="Gastritis o inflamación gástrica diagnosticada"
+    )
+    
+    # Pregunta 3: Helicobacter pylori  
+    h_pylori_status = models.CharField(
+        max_length=10,
+        choices=H_PYLORI_CHOICES,
+        default='UNKNOWN',
+        verbose_name="Infección por Helicobacter pylori"
+    )
+    
+    # Pregunta 9: Alteraciones intestinales
+    has_intestinal_disorders = models.CharField(
+        max_length=10,
+        choices=YES_NO_UNKNOWN_CHOICES,
+        default='UNKNOWN',
+        verbose_name="Alteraciones intestinales (SIBO, disbiosis, SII, gases)"
+    )
+    
+    # Pregunta 10: Tabaquismo
+    is_smoker = models.CharField(
+        max_length=10,
+        choices=SMOKING_CHOICES,
+        default='NO',
+        verbose_name="Tabaquismo activo"
+    )
+    
+    # Pregunta 11: Alcohol
+    alcohol_consumption = models.CharField(
+        max_length=15,
+        choices=ALCOHOL_CHOICES,
+        default='NO',
+        verbose_name="Consumo habitual de alcohol"
     )
     
     # Campos para pruebas diagnósticas

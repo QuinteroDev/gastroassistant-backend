@@ -1,4 +1,4 @@
-# recommendations/services.py - Versión corregida
+# recommendations/services.py - VERSIÓN CORREGIDA
 
 from django.db.models import Avg
 from django.utils import timezone
@@ -9,14 +9,14 @@ from habits.models import HabitTracker
 class RecommendationService:
     """
     Servicio para gestionar las recomendaciones de los usuarios
-    basadas únicamente en IMC y factores clínicos.
+    basadas en IMC, factores clínicos y hábitos específicos (SMOKING y ALCOHOL).
     """
     
     @staticmethod
     def generate_recommendations_for_user(user):
         """
         Genera recomendaciones aplicables para un usuario,
-        basado SOLO en IMC y factores clínicos.
+        basado en IMC, factores clínicos y hábitos específicos.
         """
         # Limpiar recomendaciones anteriores
         UserRecommendation.objects.filter(user=user).delete()
@@ -33,8 +33,10 @@ class RecommendationService:
             RecommendationService._get_clinical_factor_recommendations(user)
         )
         
-        # ❌ ELIMINADO: Recomendaciones basadas en fenotipo
-        # ❌ ELIMINADO: Recomendaciones basadas en hábitos
+        # 3. 🔥 NUEVO: Recomendaciones basadas en hábitos específicos (SMOKING y ALCOHOL)
+        recommendations.extend(
+            RecommendationService._get_habit_recommendations(user)
+        )
         
         # Crear registros de UserRecommendation
         user_recommendations = []
@@ -60,7 +62,6 @@ class RecommendationService:
         
         # Solo si el usuario tiene IMC elevado
         if getattr(profile, 'has_excess_weight', False):
-            # Buscar recomendaciones específicas para IMC alto
             bmi_recs = ConditionalRecommendation.objects.filter(
                 recommendation_type__type='BMI',
                 condition_value='BMI_OVER_25',
@@ -78,70 +79,149 @@ class RecommendationService:
         profile = user.profile
         recommendations = []
 
-        # Mapeo de campos del perfil a tipos de recomendación
-        factor_mapping = {
-            'has_hernia': ('HERNIA', 'YES'),
-            'has_altered_motility': ('MOTILITY', 'YES'),
-            'has_slow_emptying': ('EMPTYING', 'YES'),
-            'has_dry_mouth': ('SALIVA', 'YES'),
-            'has_constipation': ('CONSTIPATION', 'YES')
+        # 1. Factores que se activan solo con 'YES'
+        yes_only_factors = {
+            'has_hernia': 'HERNIA',
+            'has_gastritis': 'GASTRITIS', 
+            'has_altered_motility': 'MOTILITY',
+            'has_slow_emptying': 'EMPTYING',
+            'has_dry_mouth': 'SALIVA',
+            'has_intestinal_disorders': 'INTESTINAL'
         }
 
-        # Revisar cada factor
-        for profile_field, (rec_type, condition) in factor_mapping.items():
+        for profile_field, rec_type in yes_only_factors.items():
             field_value = getattr(profile, profile_field, 'NO')
             if field_value == 'YES':
                 factor_recs = ConditionalRecommendation.objects.filter(
                     recommendation_type__type=rec_type,
-                    condition_value=condition,
+                    condition_value='YES',
                     is_active=True
                 )
                 recommendations.extend(factor_recs)
-                
-                print(f"🏥 Factor clínico {profile_field} detectado para {user.username}: {len(factor_recs)} recomendaciones")
+                print(f"🏥 {profile_field}=YES detectado para {user.username}: {len(factor_recs)} recomendaciones")
 
-        # Estrés/ansiedad como caso especial
+        # 2. Helicobacter pylori (casos especiales)
+        h_pylori_status = getattr(profile, 'h_pylori_status', 'NO')
+        if h_pylori_status == 'ACTIVE':
+            h_pylori_recs = ConditionalRecommendation.objects.filter(
+                recommendation_type__type='H_PYLORI',
+                condition_value='ACTIVE',
+                is_active=True
+            )
+            recommendations.extend(h_pylori_recs)
+            print(f"🦠 H.pylori ACTIVE detectado para {user.username}: {len(h_pylori_recs)} recomendaciones")
+        elif h_pylori_status == 'TREATED':
+            h_pylori_treated_recs = ConditionalRecommendation.objects.filter(
+                recommendation_type__type='H_PYLORI',
+                condition_value='TREATED',
+                is_active=True
+            )
+            recommendations.extend(h_pylori_treated_recs)
+            print(f"🦠 H.pylori TREATED detectado para {user.username}: {len(h_pylori_treated_recs)} recomendaciones")
+
+        # 3. Estreñimiento (YES o SOMETIMES activan recomendaciones)
+        constipation_level = getattr(profile, 'has_constipation', 'NO')
+        if constipation_level in ['YES', 'SOMETIMES']:
+            constipation_recs = ConditionalRecommendation.objects.filter(
+                recommendation_type__type='CONSTIPATION',
+                condition_value__in=['YES', 'SOMETIMES'],
+                is_active=True
+            )
+            recommendations.extend(constipation_recs)
+            print(f"💩 Estreñimiento {constipation_level} detectado para {user.username}: {len(constipation_recs)} recomendaciones")
+
+        # 4. Estrés/ansiedad (YES o SOMETIMES)
         stress_level = getattr(profile, 'stress_affects', 'NO')
         if stress_level in ['YES', 'SOMETIMES']:
             stress_recs = ConditionalRecommendation.objects.filter(
                 recommendation_type__type='STRESS',
-                condition_value=stress_level,
+                condition_value__in=['YES', 'SOMETIMES'],
                 is_active=True
             )
             recommendations.extend(stress_recs)
-            
-            print(f"😰 Estrés nivel {stress_level} detectado para {user.username}: {len(stress_recs)} recomendaciones")
+            print(f"😰 Estrés {stress_level} detectado para {user.username}: {len(stress_recs)} recomendaciones")
 
+        return recommendations
+    
+    @staticmethod
+    def _get_habit_recommendations(user):
+        """🔥 NUEVO: Obtiene recomendaciones basadas en respuestas de hábitos específicos."""
+        recommendations = []
+        
+        try:
+            # 1. 🚬 SMOKING - Pregunta 4
+            smoking_answer = UserHabitAnswer.objects.filter(
+                user=user,
+                question__habit_type='SMOKING',
+                is_onboarding=True
+            ).first()
+            
+            if smoking_answer:
+                smoking_value = smoking_answer.selected_option.value
+                # Si fuma (valores 0 o 1 = "Sí, todos los días" o "Sí, ocasionalmente")
+                if smoking_value in [0, 1]:
+                    smoking_recs = ConditionalRecommendation.objects.filter(
+                        recommendation_type__type='SMOKING',
+                        condition_value='YES',
+                        is_active=True
+                    )
+                    recommendations.extend(smoking_recs)
+                    print(f"🚬 SMOKING={smoking_value} detectado para {user.username}: {len(smoking_recs)} recomendaciones")
+            
+            # 2. 🍷 ALCOHOL - Pregunta 5
+            alcohol_answer = UserHabitAnswer.objects.filter(
+                user=user,
+                question__habit_type='ALCOHOL',
+                is_onboarding=True
+            ).first()
+            
+            if alcohol_answer:
+                alcohol_value = alcohol_answer.selected_option.value
+                # Si bebe alcohol (valores 0, 1, 2 = "Sí, frecuentemente", "Sí, a veces", "Muy ocasionalmente")
+                if alcohol_value in [0, 1, 2]:
+                    alcohol_recs = ConditionalRecommendation.objects.filter(
+                        recommendation_type__type='ALCOHOL',
+                        condition_value='YES',
+                        is_active=True
+                    )
+                    recommendations.extend(alcohol_recs)
+                    print(f"🍷 ALCOHOL={alcohol_value} detectado para {user.username}: {len(alcohol_recs)} recomendaciones")
+            
+        except Exception as e:
+            print(f"❌ Error al procesar recomendaciones de hábitos para {user.username}: {str(e)}")
+        
         return recommendations
     
     @staticmethod
     def prioritize_recommendations(user, max_recommendations=5):
         """
         Prioriza las recomendaciones del usuario, marcando las más importantes.
-        Orden de prioridad ajustado para solo IMC y factores clínicos.
         """
-        # Obtener todas las recomendaciones del usuario
         user_recommendations = UserRecommendation.objects.filter(
             user=user,
             is_read=False
         ).select_related('recommendation__recommendation_type')
         
-        # Si no hay suficientes recomendaciones, marcar todas como prioritarias
         if len(user_recommendations) <= max_recommendations:
             for rec in user_recommendations:
                 rec.is_prioritized = True
                 rec.save()
             return user_recommendations
         
-        # Definir prioridades SOLO para IMC y factores clínicos
+        # Definir prioridades expandidas
         priority_order = {
-            'BMI': 1,           # IMC - Más importante
-            'HERNIA': 2,        # Factores clínicos estructurales
-            'MOTILITY': 2,
-            'EMPTYING': 2,
-            'SALIVA': 3,        # Factores clínicos funcionales
-            'CONSTIPATION': 3,
-            'STRESS': 4         # Factores psicosomáticos
+            'BMI': 1,               # IMC - Más importante
+            'H_PYLORI': 2,          # H. pylori activo - Crítico
+            'HERNIA': 3,            # Factores estructurales
+            'MOTILITY': 3,
+            'EMPTYING': 3,
+            'GASTRITIS': 4,         # Inflamación activa
+            'SALIVA': 5,            # Factores funcionales
+            'CONSTIPATION': 5,
+            'INTESTINAL': 5,
+            'STRESS': 6,            # Factores psicosomáticos
+            'SMOKING': 7,           # Hábitos nocivos
+            'ALCOHOL': 7
         }
         
         # Ordenar recomendaciones por prioridad
@@ -164,36 +244,19 @@ class RecommendationService:
         
         return top_recommendations
 
-# MANTENER: HabitTrackingService sin cambios (es independiente del sistema de recomendaciones)
-
+# HabitTrackingService sin cambios
 class HabitTrackingService:
-    """
-    Servicio para gestionar el seguimiento de hábitos para los usuarios.
-    Este servicio es independiente del sistema de recomendaciones.
-    """
-    
     @staticmethod
     def setup_habit_tracking(user, num_habits=5):
-        """
-        Configura el seguimiento de hábitos para un usuario basado en sus
-        respuestas al cuestionario de hábitos. Se priorizan los hábitos
-        con peores puntuaciones, excluyendo fumar y beber.
-        
-        El hábito con PEOR puntuación se marca como PROMOCIONADO.
-        """
-        # Eliminar trackers existentes
         HabitTracker.objects.filter(user=user).delete()
         
-        # Tipos de hábitos a excluir (fumar y beber)
         EXCLUDED_HABIT_TYPES = ['SMOKING', 'ALCOHOL']
         
-        # Obtener respuestas de hábitos del usuario
         habit_answers = UserHabitAnswer.objects.filter(
             user=user,
             is_onboarding=True
         ).select_related('question', 'selected_option')
         
-        # Filtrar respuestas excluyendo fumar y beber
         filtered_answers = [
             answer for answer in habit_answers 
             if answer.question.habit_type not in EXCLUDED_HABIT_TYPES
@@ -203,21 +266,17 @@ class HabitTrackingService:
             print(f"Usuario {user.username}: No hay hábitos válidos para configurar")
             return []
         
-        # Ordenar por puntuación (peor a mejor)
         sorted_answers = sorted(
             filtered_answers,
             key=lambda x: x.selected_option.value
         )
         
-        # Tomar los N peores hábitos
         worst_habits = sorted_answers[:num_habits]
         
-        # Crear trackers
         trackers = []
         promoted_habit = None
         
         for i, answer in enumerate(worst_habits):
-            # EL PRIMER HÁBITO (peor puntuación) será el PROMOCIONADO
             is_promoted = (i == 0)
             
             tracker = HabitTracker.objects.create(
@@ -229,18 +288,9 @@ class HabitTrackingService:
             )
             trackers.append(tracker)
             
-            # Guardar referencia del hábito promocionado
             if is_promoted:
                 promoted_habit = tracker
         
-        # Log para debugging
         print(f"Usuario {user.username}: {len(trackers)} hábitos configurados para tracking")
-        for tracker in trackers:
-            print(f"  - {tracker.habit.habit_type}: Score {tracker.current_score}, Promovido: {tracker.is_promoted}")
-        
-        if promoted_habit:
-            print(f"  ✅ HÁBITO PROMOCIONADO: {promoted_habit.habit.habit_type} (Score: {promoted_habit.current_score})")
         
         return trackers, promoted_habit
-
-    # ... resto de métodos de HabitTrackingService sin cambios ...

@@ -67,8 +67,14 @@ interface UserProfile {
   avatar?: string;
 }
 
-// Lista de avatares disponibles (tendrás que añadir las imágenes reales)
+// 🆕 Lista de avatares disponibles CON avatar por defecto
 const AVAILABLE_AVATARS = [
+  { 
+    id: 'default', 
+    source: null, // Sin imagen - usará icono
+    name: 'Sin avatar',
+    isDefault: true 
+  },
   { id: 'avatar1', source: require('../assets/images/avatars/avatar1.png'), name: 'Avatar 1' },
   { id: 'avatar2', source: require('../assets/images/avatars/avatar2.png'), name: 'Avatar 2' },
   { id: 'avatar3', source: require('../assets/images/avatars/avatar3.png'), name: 'Avatar 3' },
@@ -92,7 +98,7 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] = useState<string>('');
+  const [selectedAvatar, setSelectedAvatar] = useState<string>('default'); // 🆕 Por defecto 'default'
   const [userProfile, setUserProfile] = useState<UserProfile>({
     username: "",
     email: "",
@@ -122,6 +128,7 @@ export default function ProfileScreen() {
       setIsLoading(true);
       try {
         const response = await api.get('/api/profiles/me/');
+        console.log('🔍 Respuesta completa del perfil:', response.data);
         
         if (response.data) {
           let bmi = 0;
@@ -135,11 +142,19 @@ export default function ProfileScreen() {
             bmi: bmi || 0
           });
           
-          // Cargar avatar guardado
-          if (response.data.avatar) {
+          // 🆕 DEBUGGING: Cargar avatar guardado con logs detallados
+          console.log('🖼️ Avatar desde backend:', response.data.avatar);
+          console.log('🖼️ Tipo de avatar:', typeof response.data.avatar);
+          console.log('🖼️ Avatar es null?:', response.data.avatar === null);
+          console.log('🖼️ Avatar es undefined?:', response.data.avatar === undefined);
+          console.log('🖼️ Avatar es string vacío?:', response.data.avatar === '');
+          
+          if (response.data.avatar && response.data.avatar !== '' && response.data.avatar !== null) {
+            console.log('✅ Usando avatar guardado:', response.data.avatar);
             setSelectedAvatar(response.data.avatar);
           } else {
-            setSelectedAvatar('avatar1'); // Avatar por defecto
+            console.log('⚠️ Sin avatar guardado, usando default');
+            setSelectedAvatar('default'); // Por defecto
           }
         }
         
@@ -238,11 +253,24 @@ export default function ProfileScreen() {
     }
   }, [showAvatarModal]);
   
-  // Función para guardar avatar seleccionado
+  // 🆕 Función mejorada para guardar avatar
   const saveAvatar = async (avatarId: string) => {
     try {
-      await api.patch('/api/profiles/me/', { avatar: avatarId });
+      console.log('💾 Guardando avatar:', avatarId);
+      
+      // Actualizar el estado local inmediatamente
       setSelectedAvatar(avatarId);
+      
+      // Guardar en el backend
+      const response = await api.patch('/api/profiles/me/', { avatar: avatarId });
+      console.log('✅ Avatar guardado exitosamente:', response.data);
+      
+      // Actualizar el perfil local también
+      setUserProfile(prev => ({
+        ...prev,
+        avatar: avatarId
+      }));
+      
       setShowAvatarModal(false);
       
       // Pequeña animación de confirmación
@@ -260,15 +288,26 @@ export default function ProfileScreen() {
       ]).start();
       
     } catch (error) {
-      console.error("Error al guardar avatar:", error);
+      console.error("❌ Error al guardar avatar:", error);
+      console.error("Detalles del error:", error.response?.data);
+      
+      // Revertir el estado si hay error
+      const previousAvatar = userProfile.avatar || 'default';
+      setSelectedAvatar(previousAvatar);
+      
       Alert.alert("Error", "No se pudo actualizar el avatar. Intenta de nuevo.");
     }
   };
   
-  // Función para obtener la imagen del avatar
+  // 🆕 Función mejorada para obtener la imagen del avatar
   const getAvatarImage = () => {
     const avatar = AVAILABLE_AVATARS.find(a => a.id === selectedAvatar);
-    return avatar ? avatar.source : AVAILABLE_AVATARS[0].source;
+    return avatar?.source || null;
+  };
+  
+  // 🆕 Función para verificar si es avatar por defecto
+  const isDefaultAvatar = () => {
+    return selectedAvatar === 'default' || !selectedAvatar;
   };
   
   // Función para cerrar sesión
@@ -305,8 +344,10 @@ export default function ProfileScreen() {
     );
   };
   
-  // Renderizar avatar con imagen
+  // 🆕 Renderizar avatar mejorado con soporte para avatar por defecto
   const renderAvatar = () => {
+    const avatarImage = getAvatarImage();
+    
     return (
       <Animated.View 
         style={[
@@ -321,11 +362,18 @@ export default function ProfileScreen() {
           onPress={() => setShowAvatarModal(true)}
           activeOpacity={0.8}
         >
-          <Image 
-            source={getAvatarImage()}
-            style={styles.avatarImage}
-            resizeMode="cover"
-          />
+          {avatarImage ? (
+            <Image 
+              source={avatarImage}
+              style={styles.avatarImage}
+              resizeMode="cover"
+            />
+          ) : (
+            // 🆕 Avatar por defecto con icono
+            <View style={styles.defaultAvatarContainer}>
+              <Icon name="person" size={48} color={theme.colors.white} />
+            </View>
+          )}
           
           {/* Indicador de que es clickeable */}
           <View style={styles.avatarEditIndicator}>
@@ -336,7 +384,7 @@ export default function ProfileScreen() {
     );
   };
   
-  // Renderizar modal de selección de avatar
+  // 🆕 Renderizar modal de selección de avatar mejorado
   const renderAvatarModal = () => {
     return (
       <Modal
@@ -372,11 +420,19 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => saveAvatar(avatar.id)}
                 >
-                  <Image 
-                    source={avatar.source}
-                    style={styles.avatarOptionImage}
-                    resizeMode="cover"
-                  />
+                  {avatar.source ? (
+                    <Image 
+                      source={avatar.source}
+                      style={styles.avatarOptionImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    // 🆕 Opción por defecto
+                    <View style={styles.defaultAvatarOption}>
+                      <Icon name="person" size={28} color={theme.colors.text.secondary} />
+                    </View>
+                  )}
+                  
                   {selectedAvatar === avatar.id && (
                     <View style={styles.avatarSelectedIndicator}>
                       <Icon name="checkmark" size={16} color={theme.colors.white} />
@@ -831,6 +887,14 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 46,
   },
+  // 🆕 Estilos para avatar por defecto
+  defaultAvatarContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.secondary,
+  },
   avatarEditIndicator: {
     position: 'absolute',
     bottom: 2,
@@ -991,13 +1055,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   
-  // Modal de avatar
+  // 🆕 Modal de avatar mejorado
   avatarModalContainer: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.xl,
     padding: theme.spacing.xl,
     width: '90%',
-    maxWidth: 350,
+    maxWidth: 380, // Un poco más ancho para acomodar 6 avatares
     ...theme.shadows.lg,
   },
   avatarGrid: {
@@ -1026,6 +1090,15 @@ const styles = StyleSheet.create({
   avatarOptionImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 27,
+  },
+  // 🆕 Estilos para opción de avatar por defecto
+  defaultAvatarOption: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
     borderRadius: 27,
   },
   avatarSelectedIndicator: {

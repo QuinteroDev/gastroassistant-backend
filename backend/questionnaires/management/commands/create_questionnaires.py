@@ -146,12 +146,11 @@ class Command(BaseCommand):
                     }
                 )
         
-        # Pregunta 5
         q5, q5_created = Question.objects.get_or_create(
-            pk=5,
+            pk=5,  # ← CAMBIAR DE VUELTA A 5
             defaults={
                 'questionnaire': gerdq,
-                'text': '¿Con qué frecuencia ha tenido dificultad para dormir por la acidez y/o regurgitación?',
+                'text': '¿Con qué frecuencia ha tenido dificultad para dormir por la acidez o regurgitación?',
                 'order': 5
             }
         )
@@ -167,7 +166,7 @@ class Command(BaseCommand):
                 AnswerOption.objects.get_or_create(
                     pk=opt['id'],
                     defaults={
-                        'question': q5,
+                        'question': q5,  # ← CAMBIAR REFERENCIA A q5
                         'text': opt['text'],
                         'value': opt['value'],
                         'order': opt['order']
@@ -225,7 +224,7 @@ class Command(BaseCommand):
             pk=7,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Ronquera o problemas con su voz',
+                'text': 'Afonía u otros cambios de la voz',
                 'order': 1
             }
         )
@@ -255,7 +254,7 @@ class Command(BaseCommand):
             pk=8,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Necesidad de aclararse la garganta frecuentemente',
+                'text': 'Carraspeo o necesidad de aclarar la garganta',
                 'order': 2
             }
         )
@@ -285,7 +284,7 @@ class Command(BaseCommand):
             pk=9,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Exceso de moco en la garganta o goteo nasal posterior',
+                'text': 'Sensación de tragar moco que cae por detrás de la nariz.',
                 'order': 3
             }
         )
@@ -315,7 +314,7 @@ class Command(BaseCommand):
             pk=10,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Dificultad para tragar alimentos, líquidos o pastillas',
+                'text': 'Dificultad para tragar comida, líquidos o pastillas',
                 'order': 4
             }
         )
@@ -345,7 +344,7 @@ class Command(BaseCommand):
             pk=11,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Tos después de comer o al acostarse',
+                'text': 'Tos después de comer o tras estar tumbado',
                 'order': 5
             }
         )
@@ -375,7 +374,7 @@ class Command(BaseCommand):
             pk=12,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Dificultad respiratoria o episodios de asfixia',
+                'text': 'Dificultad para respirar o episodios de atragantamiento/ahogo',
                 'order': 6
             }
         )
@@ -405,7 +404,7 @@ class Command(BaseCommand):
             pk=13,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Tos molesta o irritante',
+                'text': 'Ataques de tos',
                 'order': 7
             }
         )
@@ -435,7 +434,7 @@ class Command(BaseCommand):
             pk=14,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Sensación de algo pegado en la garganta',
+                'text': 'Sensación de bulto o de tener algo pegado en la garganta. Sensación de tener algo a medio tragar',
                 'order': 8
             }
         )
@@ -465,7 +464,7 @@ class Command(BaseCommand):
             pk=15,
             defaults={
                 'questionnaire': rsi,
-                'text': 'Acidez, dolor de pecho, indigestión o regurgitación de ácido estomacal',
+                'text': 'Sensación de que el ácido del estómago sube a la garganta. Quemazón u opresión en el pecho.',
                 'order': 9
             }
         )

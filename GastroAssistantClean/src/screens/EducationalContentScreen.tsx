@@ -73,25 +73,155 @@ interface LearnDashboardData {
 }
 
 const { width } = Dimensions.get('window');
-// Función para parsear texto con markdown básico (negrita)
-const parseMarkdownText = (text: string) => {
-  const parts = text.split(/(\*\*.*?\*\*)/);
+
+// ========================================
+// 🎨 FUNCIÓN MEJORADA PARA PARSEAR MARKDOWN
+// ========================================
+
+// Función para parsear markdown inline (negrita, cursiva, etc.)
+const parseInlineMarkdown = (text: string) => {
+  if (!text) return '';
+  
+  // Dividir por diferentes tipos de markdown
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/);
   
   return parts.map((part, index) => {
+    // Texto en negrita (**texto**)
     if (part.startsWith('**') && part.endsWith('**')) {
-      // Texto en negrita
       const boldText = part.slice(2, -2);
       return (
-        <Text key={index} style={styles.boldText}>
+        <Text key={`bold-${index}`} style={styles.boldText}>
           {boldText}
         </Text>
       );
     }
+    
+    // Texto en cursiva (*texto*)
+    if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+      const italicText = part.slice(1, -1);
+      return (
+        <Text key={`italic-${index}`} style={styles.italicText}>
+          {italicText}
+        </Text>
+      );
+    }
+    
+    // Código inline (`código`)
+    if (part.startsWith('`') && part.endsWith('`')) {
+      const codeText = part.slice(1, -1);
+      return (
+        <Text key={`code-${index}`} style={styles.inlineCodeText}>
+          {codeText}
+        </Text>
+      );
+    }
+    
     return part;
   });
 };
 
+// Función mejorada para parsear texto con markdown completo
+const parseMarkdownText = (text: string) => {
+  if (!text) return '';
+  
+  // Dividir por párrafos primero
+  const paragraphs = text.split('\n\n');
+  
+  return paragraphs.map((paragraph, paragraphIndex) => {
+    if (!paragraph.trim()) return null;
+    
+    // Detectar títulos principales (##)
+    if (paragraph.startsWith('## ')) {
+      const titleText = paragraph.replace('## ', '');
+      return (
+        <Text key={`h2-${paragraphIndex}`} style={styles.mainHeadingText}>
+          {parseInlineMarkdown(titleText)}
+        </Text>
+      );
+    }
+    
+    // Detectar subtítulos (###)
+    if (paragraph.startsWith('### ')) {
+      const titleText = paragraph.replace('### ', '');
+      return (
+        <Text key={`h3-${paragraphIndex}`} style={styles.headingText}>
+          {parseInlineMarkdown(titleText)}
+        </Text>
+      );
+    }
+    
+    // Detectar listas con viñetas
+    if (paragraph.includes('\n-') || paragraph.startsWith('-')) {
+      const listItems = paragraph.split('\n').filter(line => line.trim().startsWith('-'));
+      return (
+        <View key={`list-${paragraphIndex}`} style={styles.listContainer}>
+          {listItems.map((item, itemIndex) => {
+            const itemText = item.replace(/^-\s*/, '');
+            return (
+              <View key={`item-${itemIndex}`} style={styles.listItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.listItemText}>
+                  {parseInlineMarkdown(itemText)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      );
+    }
+    
+    // Detectar listas numeradas
+    if (/^\d+\./.test(paragraph.trim())) {
+      const listItems = paragraph.split('\n').filter(line => /^\d+\./.test(line.trim()));
+      return (
+        <View key={`numbered-list-${paragraphIndex}`} style={styles.listContainer}>
+          {listItems.map((item, itemIndex) => {
+            const match = item.match(/^(\d+)\.\s*(.+)$/);
+            if (match) {
+              const [, number, text] = match;
+              return (
+                <View key={`numbered-item-${itemIndex}`} style={styles.listItem}>
+                  <Text style={styles.numberPoint}>{number}.</Text>
+                  <Text style={styles.listItemText}>
+                    {parseInlineMarkdown(text)}
+                  </Text>
+                </View>
+              );
+            }
+            return null;
+          })}
+        </View>
+      );
+    }
+    
+    // Detectar citas (texto que empieza con >)
+    if (paragraph.startsWith('>')) {
+      const quoteText = paragraph.replace(/^>\s*/, '');
+      return (
+        <View key={`quote-${paragraphIndex}`} style={styles.quoteContainer}>
+          <View style={styles.quoteLine} />
+          <Text style={styles.quoteText}>
+            {parseInlineMarkdown(quoteText)}
+          </Text>
+        </View>
+      );
+    }
+    
+    // Párrafo normal
+    return (
+      <Text key={`para-${paragraphIndex}`} style={styles.contentText}>
+        {parseInlineMarkdown(paragraph)}
+      </Text>
+    );
+  }).filter(Boolean);
+};
+
+// ========================================
+// RESTO DEL CÓDIGO
+// ========================================
+
 const ITEMS_PER_PAGE = 6; // Configuración de paginación
+
 const getCategoryIcon = (categoryType: string) => {
   const iconProps = { size: 20, color: "#fff" };
   
@@ -372,6 +502,15 @@ export default function EducationalContentScreen() {
                     <Text style={styles.readTimeText}>{content.estimated_read_time} min</Text>
                   </View>
                 )}
+                {/* Mostrar info de desbloqueo si es contenido premium */}
+                {access.content_type === 'unlocked' && content.unlock_info && (
+                  <View style={styles.unlockBadge}>
+                    <Icon name="star" size={12} color="#f59e0b" />
+                    <Text style={styles.unlockRequirement}>
+                      {content.unlock_info}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
             <View style={styles.expandIcon}>
@@ -385,9 +524,9 @@ export default function EducationalContentScreen() {
           
           {isExpanded && (
             <Animated.View style={[styles.articleContent, { opacity: fadeAnim }]}>
-              <Text style={styles.contentText}>
+              <View style={styles.markdownContainer}>
                 {parseMarkdownText(content.content)}
-              </Text>
+              </View>
               
               {/* Botón de marcar como leído */}
               {!isRead && (
@@ -735,7 +874,10 @@ export default function EducationalContentScreen() {
   );
 }
 
-// Estilos embellecidos pero profesionales
+// ========================================
+// ESTILOS COMPLETOS CON MARKDOWN
+// ========================================
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1121,21 +1263,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
   },
-  categoryBadge: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: theme.borderRadius.md,
-    marginRight: theme.spacing.sm,
-  },
-  categoryText: {
-    fontSize: theme.fontSize.xs,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   readTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: theme.spacing.md,
   },
   readTimeText: {
     fontSize: theme.fontSize.xs,
@@ -1165,17 +1296,142 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
   },
+  
+  // ========================================
+  // 🎨 ESTILOS MARKDOWN MEJORADOS
+  // ========================================
+  
+  markdownContainer: {
+    marginBottom: theme.spacing.lg,
+  },
+  
+  // Texto base
   contentText: {
     fontSize: theme.fontSize.base,
     lineHeight: 26,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
     fontWeight: '400',
   },
+  
+  // Texto en negrita
   boldText: {
     fontWeight: '700',
     color: theme.colors.text.primary,
   },
+  
+  // Texto en cursiva
+  italicText: {
+    fontStyle: 'italic',
+    color: theme.colors.text.secondary,
+  },
+  
+  // Código inline
+  inlineCodeText: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    backgroundColor: '#f1f5f9',
+    color: '#e11d48',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+  },
+  
+  // Títulos principales
+  mainHeadingText: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: '800',
+    color: theme.colors.primary,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    lineHeight: 32,
+  },
+  
+  // Subtítulos
+  headingText: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    lineHeight: 28,
+  },
+  
+  // Contenedor de listas
+  listContainer: {
+    marginVertical: theme.spacing.sm,
+    paddingLeft: theme.spacing.md,
+  },
+  
+  // Items de lista
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: theme.spacing.xs,
+  },
+  
+  // Puntos de lista
+  bulletPoint: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.primary,
+    fontWeight: 'bold',
+    marginRight: theme.spacing.sm,
+    marginTop: 2,
+  },
+  
+  // Números de lista
+  numberPoint: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.primary,
+    fontWeight: '700',
+    marginRight: theme.spacing.sm,
+    marginTop: 2,
+    minWidth: 20,
+  },
+  
+  // Texto de items de lista
+  listItemText: {
+    flex: 1,
+    fontSize: theme.fontSize.base,
+    lineHeight: 24,
+    color: theme.colors.text.primary,
+    fontWeight: '400',
+  },
+  
+  // Contenedor de citas
+  quoteContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f8faff',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginVertical: theme.spacing.sm,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.primary,
+  },
+  
+  // Línea de cita
+  quoteLine: {
+    width: 4,
+    backgroundColor: theme.colors.primary,
+    marginRight: theme.spacing.md,
+    borderRadius: 2,
+  },
+  
+  // Texto de cita
+  quoteText: {
+    flex: 1,
+    fontSize: theme.fontSize.base,
+    lineHeight: 24,
+    color: theme.colors.text.secondary,
+    fontStyle: 'italic',
+    fontWeight: '500',
+  },
+  
+  // ========================================
+  // RESTO DE ESTILOS
+  // ========================================
+  
   lockedSummary: {
     fontSize: theme.fontSize.sm,
     color: '#999',

@@ -173,7 +173,6 @@ export default function RegisterScreen() {
           
           <View style={styles.formCard}>
             <Text style={styles.title}>Crear Cuenta</Text>
-            <Text style={styles.subtitle}>Únete a nuestra comunidad de bienestar</Text>
 
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
@@ -289,7 +288,6 @@ export default function RegisterScreen() {
             </TouchableOpacity>
 
             <View style={styles.termsContainer}>
-              <Icon name="shield-checkmark" size={16} color={theme.colors.text.secondary} />
               <Text style={styles.termsText}>
                 Al registrarte, aceptas nuestros{' '}
                 <Text
@@ -389,7 +387,9 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
     textAlign: 'center',
-  },
+    paddingEnd: theme.spacing.sm,
+    paddingBottom: 10,
+   },
   subtitle: {
     fontSize: theme.fontSize.base,
     color: theme.colors.text.secondary,

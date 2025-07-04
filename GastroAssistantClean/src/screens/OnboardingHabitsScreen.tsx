@@ -320,12 +320,11 @@ export default function OnboardingHabitsScreen() {
             <View style={styles.content}>
               <View style={styles.headerSection}>
                 <Icon name="restaurant" size={40} color={theme.colors.primary} />
-                <Text style={styles.title}>Hábitos Digestivos</Text>
+                <Text style={styles.title}>Hábitos y Rutinas</Text>
               </View>
               
               <Text style={styles.description}>
-                Por favor, responde a estas preguntas sobre tus hábitos relacionados con la digestión.
-                Esta información nos ayudará a personalizar tus recomendaciones.
+              Por favor, responde a estas preguntas sobre tus rutinas diarias y estilo de vida. Esta información nos ayudará a identificar factores que pueden estar influyendo en tus síntomas digestivos y a personalizar tus recomendaciones.
               </Text>
               
               <View style={styles.infoCard}>

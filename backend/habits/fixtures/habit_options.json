@@ -1,4 +1,3 @@
-
 [
   {
     "model": "questionnaires.habitoption",
@@ -125,7 +124,7 @@
     "pk": 13,
     "fields": {
       "question": 4,
-      "text": "Sí, con frecuencia",
+      "text": "Sí, todos los días",
       "value": 0,
       "order": 1
     }
@@ -135,7 +134,7 @@
     "pk": 14,
     "fields": {
       "question": 4,
-      "text": "A veces",
+      "text": "Sí, ocasionalmente",
       "value": 1,
       "order": 2
     }
@@ -145,7 +144,7 @@
     "pk": 15,
     "fields": {
       "question": 4,
-      "text": "Rara vez",
+      "text": "Lo he dejado",
       "value": 2,
       "order": 3
     }
@@ -155,7 +154,7 @@
     "pk": 16,
     "fields": {
       "question": 4,
-      "text": "No, nunca tengo síntomas nocturnos",
+      "text": "Nunca he fumado",
       "value": 3,
       "order": 4
     }
@@ -165,7 +164,7 @@
     "pk": 17,
     "fields": {
       "question": 5,
-      "text": "Sí, todos los días",
+      "text": "Sí, frecuentemente",
       "value": 0,
       "order": 1
     }
@@ -175,7 +174,7 @@
     "pk": 18,
     "fields": {
       "question": 5,
-      "text": "Sí, ocasionalmente",
+      "text": "Sí, a veces",
       "value": 1,
       "order": 2
     }
@@ -185,7 +184,7 @@
     "pk": 19,
     "fields": {
       "question": 5,
-      "text": "Lo he dejado",
+      "text": "Muy ocasionalmente",
       "value": 2,
       "order": 3
     }
@@ -195,7 +194,7 @@
     "pk": 20,
     "fields": {
       "question": 5,
-      "text": "Nunca he fumado",
+      "text": "Nunca",
       "value": 3,
       "order": 4
     }
@@ -205,7 +204,7 @@
     "pk": 21,
     "fields": {
       "question": 6,
-      "text": "Sí, frecuentemente",
+      "text": "No suelo moverme mucho",
       "value": 0,
       "order": 1
     }
@@ -215,7 +214,7 @@
     "pk": 22,
     "fields": {
       "question": 6,
-      "text": "Sí, a veces",
+      "text": "Solo algunos días concretos",
       "value": 1,
       "order": 2
     }
@@ -225,7 +224,7 @@
     "pk": 23,
     "fields": {
       "question": 6,
-      "text": "Muy ocasionalmente",
+      "text": "Me mantengo activo/a varios días por semana",
       "value": 2,
       "order": 3
     }
@@ -235,7 +234,7 @@
     "pk": 24,
     "fields": {
       "question": 6,
-      "text": "Nunca",
+      "text": "Sí, camino o me muevo todos los días",
       "value": 3,
       "order": 4
     }
@@ -245,7 +244,7 @@
     "pk": 25,
     "fields": {
       "question": 7,
-      "text": "No, nada de ejercicio",
+      "text": "No los evito aunque me sienten mal",
       "value": 0,
       "order": 1
     }
@@ -255,7 +254,7 @@
     "pk": 26,
     "fields": {
       "question": 7,
-      "text": "Muy poco / esporádico",
+      "text": "A veces los evito",
       "value": 1,
       "order": 2
     }
@@ -265,7 +264,7 @@
     "pk": 27,
     "fields": {
       "question": 7,
-      "text": "Algunas veces pero sin regularidad",
+      "text": "Suelo evitarlos",
       "value": 2,
       "order": 3
     }
@@ -275,7 +274,7 @@
     "pk": 28,
     "fields": {
       "question": 7,
-      "text": "Sí, con frecuencia",
+      "text": "Los tengo totalmente identificados y evitados",
       "value": 3,
       "order": 4
     }
@@ -285,7 +284,7 @@
     "pk": 29,
     "fields": {
       "question": 8,
-      "text": "No los evito aunque me sienten mal",
+      "text": "Sí, y no hago nada al respecto",
       "value": 0,
       "order": 1
     }
@@ -295,7 +294,7 @@
     "pk": 30,
     "fields": {
       "question": 8,
-      "text": "A veces los evito",
+      "text": "Sí, y lo intento manejar sin éxito",
       "value": 1,
       "order": 2
     }
@@ -305,7 +304,7 @@
     "pk": 31,
     "fields": {
       "question": 8,
-      "text": "Suelo evitarlos",
+      "text": "Lo manejo con herramientas o apoyo ocasional",
       "value": 2,
       "order": 3
     }
@@ -315,7 +314,7 @@
     "pk": 32,
     "fields": {
       "question": 8,
-      "text": "Los tengo totalmente identificados y evitados",
+      "text": "Estoy trabajando activamente en ello (relajación, terapia, etc.)",
       "value": 3,
       "order": 4
     }
@@ -325,7 +324,7 @@
     "pk": 33,
     "fields": {
       "question": 9,
-      "text": "Sí, y no hago nada al respecto",
+      "text": "Siempre",
       "value": 0,
       "order": 1
     }
@@ -335,7 +334,7 @@
     "pk": 34,
     "fields": {
       "question": 9,
-      "text": "Sí, y lo intento manejar sin éxito",
+      "text": "A menudo",
       "value": 1,
       "order": 2
     }
@@ -345,7 +344,7 @@
     "pk": 35,
     "fields": {
       "question": 9,
-      "text": "Lo manejo con herramientas o apoyo ocasional",
+      "text": "A veces",
       "value": 2,
       "order": 3
     }
@@ -355,7 +354,7 @@
     "pk": 36,
     "fields": {
       "question": 9,
-      "text": "Estoy trabajando activamente en ello (relajación, terapia, etc.)",
+      "text": "Rara vez o nunca",
       "value": 3,
       "order": 4
     }
@@ -365,7 +364,7 @@
     "pk": 37,
     "fields": {
       "question": 10,
-      "text": "Siempre",
+      "text": "Muy poca, menos de 1 litro diario",
       "value": 0,
       "order": 1
     }
@@ -375,7 +374,7 @@
     "pk": 38,
     "fields": {
       "question": 10,
-      "text": "A menudo",
+      "text": "Aproximadamente 1 litro",
       "value": 1,
       "order": 2
     }
@@ -385,7 +384,7 @@
     "pk": 39,
     "fields": {
       "question": 10,
-      "text": "A veces",
+      "text": "Entre 1,5 y 2 litros",
       "value": 2,
       "order": 3
     }
@@ -395,7 +394,7 @@
     "pk": 40,
     "fields": {
       "question": 10,
-      "text": "Rara vez o nunca",
+      "text": "Más de 2 litros y de forma repartida",
       "value": 3,
       "order": 4
     }
@@ -405,7 +404,7 @@
     "pk": 41,
     "fields": {
       "question": 11,
-      "text": "Muy poca, menos de 1 litro diario",
+      "text": "No, como muy rápido y apenas mastico",
       "value": 0,
       "order": 1
     }
@@ -415,7 +414,7 @@
     "pk": 42,
     "fields": {
       "question": 11,
-      "text": "Aproximadamente 1 litro",
+      "text": "Lo intento, pero me cuesta",
       "value": 1,
       "order": 2
     }
@@ -425,7 +424,7 @@
     "pk": 43,
     "fields": {
       "question": 11,
-      "text": "Entre 1,5 y 2 litros",
+      "text": "Suelo masticar bien la mayor parte del tiempo",
       "value": 2,
       "order": 3
     }
@@ -435,7 +434,7 @@
     "pk": 44,
     "fields": {
       "question": 11,
-      "text": "Más de 2 litros y de forma repartida",
+      "text": "Siempre mastico despacio y con calma",
       "value": 3,
       "order": 4
     }
@@ -445,8 +444,8 @@
     "pk": 45,
     "fields": {
       "question": 12,
-      "text": "No, como muy rápido y apenas mastico",
-      "value": 0,
+      "text": "Rara vez o nunca",
+      "value": 3,
       "order": 1
     }
   },
@@ -455,8 +454,8 @@
     "pk": 46,
     "fields": {
       "question": 12,
-      "text": "Lo intento, pero me cuesta",
-      "value": 1,
+      "text": "Ocasionalmente",
+      "value": 2,
       "order": 2
     }
   },
@@ -465,8 +464,8 @@
     "pk": 47,
     "fields": {
       "question": 12,
-      "text": "Suelo masticar bien la mayor parte del tiempo",
-      "value": 2,
+      "text": "Varias veces a la semana",
+      "value": 1,
       "order": 3
     }
   },
@@ -475,7 +474,47 @@
     "pk": 48,
     "fields": {
       "question": 12,
-      "text": "Siempre mastico despacio y con calma",
+      "text": "Sí, a diario",
+      "value": 0,
+      "order": 4
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 49,
+    "fields": {
+      "question": 13,
+      "text": "Siempre como distraído",
+      "value": 0,
+      "order": 1
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 50,
+    "fields": {
+      "question": 13,
+      "text": "A menudo",
+      "value": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 51,
+    "fields": {
+      "question": 13,
+      "text": "A veces",
+      "value": 2,
+      "order": 3
+    }
+  },
+  {
+    "model": "questionnaires.habitoption",
+    "pk": 52,
+    "fields": {
+      "question": 13,
+      "text": "No, como de forma presente y consciente",
       "value": 3,
       "order": 4
     }

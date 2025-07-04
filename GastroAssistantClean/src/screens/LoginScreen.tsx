@@ -26,18 +26,20 @@ const { width } = Dimensions.get('window');
 
 // Tipos de navegación
 type RootStackParamList = {
-    Login: undefined;
-    Register: undefined;
-    ProgramDetails: undefined;  
-    OnboardingWelcome: undefined;
-    OnboardingGeneral: undefined;
-    OnboardingGerdQ: undefined;
-    OnboardingRsi: undefined;
-    OnboardingClinicalFactors: undefined;
-    OnboardingDiagnosticTests: undefined;
-    OnboardingHabits: undefined;
-    GeneratingProgram: undefined;
-  };
+  Login: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;  // ← AÑADIR
+  ResetPassword: { token: string };  // ← AÑADIR
+  ProgramDetails: undefined;  
+  OnboardingWelcome: undefined;
+  OnboardingGeneral: undefined;
+  OnboardingGerdQ: undefined;
+  OnboardingRsi: undefined;
+  OnboardingClinicalFactors: undefined;
+  OnboardingDiagnosticTests: undefined;
+  OnboardingHabits: undefined;
+  GeneratingProgram: undefined;
+};
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -242,7 +244,7 @@ export default function LoginScreen() {
 
             <TouchableOpacity 
               style={styles.forgotPassword}
-              onPress={() => console.log("Olvidé mi contraseña")}
+              onPress={() => navigation.navigate('ForgotPassword')}
             >
               <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
             </TouchableOpacity>
@@ -280,14 +282,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Al iniciar sesión, aceptas nuestros{' '}
-              <Text style={styles.footerLink}>Términos de Servicio</Text>
-              {' '}y{' '}
-              <Text style={styles.footerLink}>Política de Privacidad</Text>
-            </Text>
-          </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
