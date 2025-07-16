@@ -25,11 +25,11 @@ class GamificationService:
     # Umbrales para cambio de nivel por ciclo (mantener igual)
     LEVEL_THRESHOLDS = {
         1: {'points': 1600, 'level': 'NOVATO'},    
-        2: {'points': 2400, 'level': 'BRONCE'},   
-        3: {'points': 3200, 'level': 'PLATA'},     
-        4: {'points': 4000, 'level': 'ORO'},       
-        5: {'points': 4800, 'level': 'PLATINO'},   
-        6: {'points': 5500, 'level': 'MAESTRO'},  
+        2: {'points': 1600, 'level': 'BRONCE'},   
+        3: {'points': 1600, 'level': 'PLATA'},     
+        4: {'points': 1600, 'level': 'ORO'},       
+        5: {'points': 1600, 'level': 'PLATINO'},   
+        6: {'points': 1600, 'level': 'MAESTRO'},  
     }
     
     @staticmethod

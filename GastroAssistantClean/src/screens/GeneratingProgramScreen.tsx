@@ -72,10 +72,6 @@ export default function GeneratingProgramScreen() {
   const [showRecovery, setShowRecovery] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1); // Empezar en -1
   
-  // MODO DESARROLLO - Cambiar a false en producción
-  const DEV_MODE = false;
-  const [animationKey, setAnimationKey] = useState(0); // Para reiniciar animaciones
-  
   // Animaciones
   const progressValue = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -85,30 +81,8 @@ export default function GeneratingProgramScreen() {
   const logoGlow = useRef(new Animated.Value(0)).current;
   const sectionAnimations = useRef(appSections.map(() => new Animated.Value(0))).current;
   const pathAnimation = useRef(new Animated.Value(0)).current;
-  
-  // Función para reiniciar todas las animaciones
-  const resetAnimations = () => {
-    // Incrementar key para forzar re-render
-    setAnimationKey(prev => prev + 1);
-    
-    // Resetear estados
-    setCurrentPhraseIndex(0);
-    setCurrentStep(-1); // Empezar en -1 para que ninguno esté activo
-    setShowRecovery(false);
-    
-    // Resetear valores animados
-    progressValue.setValue(0);
-    fadeAnim.setValue(1);
-    logoScale.setValue(0.8);
-    logoRotate.setValue(0);
-    logoPulse.setValue(1);
-    logoGlow.setValue(0);
-    sectionAnimations.forEach(anim => anim.setValue(0));
-    pathAnimation.setValue(0);
-    
-    // Reiniciar todas las animaciones
-    startAllAnimations();
-  };
+
+
   
   // Función para iniciar todas las animaciones
   const startAllAnimations = () => {
@@ -219,16 +193,14 @@ export default function GeneratingProgramScreen() {
   
   // Deshabilitar el botón de retroceso
   useEffect(() => {
-    if (!DEV_MODE) {
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-      return () => backHandler.remove();
-    }
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => backHandler.remove();
   }, []);
   
   // Animación del logo e inicialización
   useEffect(() => {
     startAllAnimations();
-  }, [animationKey]); // Se ejecuta cuando cambia animationKey
+  }, []);
   
   // Cambiar la frase mostrada cada cierto tiempo
   useEffect(() => {
@@ -254,7 +226,7 @@ export default function GeneratingProgramScreen() {
     }, 2500); // Cambiar frase cada 2.5 segundos
     
     return () => clearInterval(interval);
-  }, [animationKey]); // Se reinicia con animationKey
+  }, []);
   
   // Mostrar el botón de recuperación después de 30 segundos
   useEffect(() => {
@@ -263,16 +235,10 @@ export default function GeneratingProgramScreen() {
     }, 30000);
     
     return () => clearTimeout(timer);
-  }, [animationKey]); // Se reinicia con animationKey
+  }, []);
   
   // Intentar obtener o generar el programa
   useEffect(() => {
-    if (DEV_MODE) {
-      // En modo desarrollo, no hacer llamadas a la API
-      console.log("🔧 MODO DESARROLLO: No se ejecutan llamadas a la API");
-      return;
-    }
-    
     const generateUserProgram = async () => {
       const token = await getData('authToken');
       if (!token) {
@@ -428,7 +394,7 @@ export default function GeneratingProgramScreen() {
   
   // Cuando termina la carga, navegar a la pantalla correspondiente
   useEffect(() => {
-    if (!DEV_MODE && !isLoading) {
+    if (!isLoading) {
       if (error || !userProgram) {
         // Si hay error o no se pudo generar un programa, ir a ProgramDetails
         navigation.replace('ProgramDetails');
@@ -544,64 +510,54 @@ export default function GeneratingProgramScreen() {
         
         <Text style={styles.title}>Generando tu Plan Digestivo</Text>
         
-        {/* Path de secciones de la app */}
+        {/* Path de secciones de la app - OPTIMIZADO */}
         <View style={styles.sectionsContainer}>
           {appSections.map((section, index) => (
-            <View key={index} style={styles.sectionWrapper}>
-              <Animated.View
-                style={[
-                  styles.sectionItem,
-                  {
-                    opacity: sectionAnimations[index],
-                    transform: [{
-                      scale: sectionAnimations[index].interpolate({
-                        inputRange: [0, 0.8, 1],
-                        outputRange: [0.5, 1.2, 1],
-                      })
-                    }]
-                  }
-                ]}
-              >
-                <View style={[
-                  styles.sectionIcon,
-                  { backgroundColor: section.color },
-                  currentStep >= index && styles.sectionIconActive
-                ]}>
-                  <Icon 
-                    name={section.icon} 
-                    size={26} 
-                    color={theme.colors.surface} 
-                  />
-                </View>
-                <Text style={[
-                  styles.sectionLabel,
-                  currentStep >= index && styles.sectionLabelActive
-                ]}>
-                  {section.label}
-                </Text>
-              </Animated.View>
-              
-              {/* Flecha conectora */}
-              {index < appSections.length - 1 && (
-                <Animated.View 
-                  style={[
-                    styles.arrow,
-                    {
-                      opacity: sectionAnimations[index]
-                    }
-                  ]}
-                >
-                  <Icon name="arrow-forward" size={20} color={theme.colors.secondary} />
-                </Animated.View>
-              )}
-            </View>
+            <Animated.View
+              key={`section-${index}`}
+              style={[
+                styles.sectionItem,
+                {
+                  opacity: sectionAnimations[index],
+                  transform: [{
+                    scale: sectionAnimations[index].interpolate({
+                      inputRange: [0, 0.8, 1],
+                      outputRange: [0.3, 1.15, 1],
+                    })
+                  }]
+                }
+              ]}
+            >
+              <View style={[
+                styles.sectionIcon,
+                { 
+                  backgroundColor: currentStep >= index ? section.color : 'rgba(255, 255, 255, 0.1)',
+                  borderColor: currentStep >= index ? theme.colors.surface : 'transparent',
+                },
+                currentStep === index && styles.sectionIconActive
+              ]}>
+                <Icon 
+                  name={section.icon} 
+                  size={28} 
+                  color={theme.colors.surface} 
+                />
+              </View>
+              <Text style={[
+                styles.sectionLabel,
+                currentStep >= index && styles.sectionLabelActive
+              ]}>
+                {section.label}
+              </Text>
+            </Animated.View>
           ))}
         </View>
         
         {/* Frase animada */}
-        <Animated.Text style={[styles.generatingText, { opacity: fadeAnim }]}>
-          {generatingPhrases[currentPhraseIndex]}
-        </Animated.Text>
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text style={styles.generatingText}>
+            {generatingPhrases[currentPhraseIndex]}
+          </Text>
+        </Animated.View>
         
         {/* Barra de progreso */}
         <View style={styles.progressBarContainer}>
@@ -690,33 +646,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  // ESTILOS OPTIMIZADOS PARA LAS SECCIONES
   sectionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xs,
-    flexWrap: 'wrap',
-  },
-  sectionWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   sectionItem: {
     alignItems: 'center',
     marginHorizontal: 2,
   },
   sectionIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: theme.spacing.xs,
-    ...theme.shadows.sm,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    ...theme.shadows.md,
   },
   sectionIconActive: {
-    transform: [{ scale: 1.1 }],
+    borderColor: theme.colors.surface,
+    shadowColor: theme.colors.secondary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 8,
   },
   sectionLabel: {
     fontSize: theme.fontSize.xs,
@@ -727,10 +687,6 @@ const styles = StyleSheet.create({
   sectionLabelActive: {
     color: theme.colors.surface,
     fontWeight: '700',
-  },
-  arrow: {
-    marginHorizontal: -8,
-    marginBottom: 20,
   },
 
   generatingText: {

@@ -24,6 +24,8 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import HelpCenterScreen from './src/screens/HelpCenterScreen';
 import ProfileUpdateScreen from './src/screens/ProfileUpdateScreen';
+import HabitNotesScreen from './src/screens/HabitNotesScreen';
+
 
 // Habilitar react-native-screens
 enableScreens();
@@ -46,6 +48,7 @@ export type RootStackParamList = {
   Tracker: undefined;
   Education: undefined;
   Stats: undefined;
+  HabitNotes: undefined;
   Profile: undefined;
   ChangePassword: undefined;
   HelpCenter: undefined;
@@ -152,6 +155,10 @@ export default function App() {
         <Stack.Screen
           name="Stats"
           component={StatsScreen}
+        />
+        <Stack.Screen
+          name="HabitNotes"
+          component={HabitNotesScreen}
         />
         <Stack.Screen
           name="Profile"

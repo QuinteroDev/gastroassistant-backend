@@ -1,4 +1,4 @@
-// ProgramDetailsScreen.tsx - VERSIÓN COMPLETA CON SECCIÓN "RECUERDA" Y AVATAR POR DEFECTO
+// ProgramDetailsScreen.tsx - VERSIÓN FINAL COMPLETA
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -53,11 +53,11 @@ type RootStackParamList = {
 
 type ProgramDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProgramDetails'>;
 
-// 🆕 Lista de avatares disponibles CON avatar por defecto (debe coincidir con ProfileScreen)
+// Lista de avatares disponibles CON avatar por defecto
 const AVAILABLE_AVATARS = [
   { 
     id: 'default', 
-    source: null, // Sin imagen - usará icono
+    source: null,
     name: 'Sin avatar',
     isDefault: true 
   },
@@ -100,11 +100,11 @@ export default function ProgramDetailsScreen() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [expandedFactor, setExpandedFactor] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("Usuario");
-  const [userAvatar, setUserAvatar] = useState<string>('default'); // 🆕 Por defecto 'default'
+  const [userAvatar, setUserAvatar] = useState<string>('default');
   const [showCycleInfoModal, setShowCycleInfoModal] = useState(false);
-  const [showClinicalFactorsModal, setShowClinicalFactorsModal] = useState(false);
-  const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [showGuidelinesInfo, setShowGuidelinesInfo] = useState(false);
+  const [showClinicalFactorsInfo, setShowClinicalFactorsInfo] = useState(false); // NUEVO ESTADO
   
   // Añadir el hook de ciclos
   const { 
@@ -121,15 +121,28 @@ export default function ProgramDetailsScreen() {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
   
-  // 🆕 Función mejorada para obtener la imagen del avatar
+  // Función para calcular el tamaño de fuente responsivo
+  const getResponsiveFontSize = (name: string) => {
+    if (name.length > 15) return 22;
+    if (name.length > 12) return 24;
+    if (name.length > 10) return 26;
+    return 28;
+  };
+  
+  // Función mejorada para obtener la imagen del avatar
   const getAvatarImage = () => {
     const avatar = AVAILABLE_AVATARS.find(a => a.id === userAvatar);
     return avatar?.source || null;
   };
   
-  // 🆕 Función para verificar si es avatar por defecto
+  // Función para verificar si es avatar por defecto
   const isDefaultAvatar = () => {
     return userAvatar === 'default' || !userAvatar;
+  };
+  
+  // Nueva función SIMPLE para dividir las herramientas
+  const splitToolsIntelligently = (tools: string): string[] => {
+    return tools.split('|').map(tool => tool.trim()).filter(tool => tool.length > 0);
   };
   
   // Verificar si debe mostrar el modal de renovación
@@ -195,7 +208,7 @@ export default function ProgramDetailsScreen() {
     console.log('Recordatorio pospuesto para mañana');
   };
   
-  // MODAL 1: Información de ciclos
+  // MODAL de información de ciclos (mantener este)
   const CycleInfoModal = () => (
     <Modal
       visible={showCycleInfoModal}
@@ -268,88 +281,6 @@ export default function ProgramDetailsScreen() {
       </View>
     </Modal>
   );
-
-  // MODAL 2: Información de factores clínicos
-  const ClinicalFactorsInfoModal = () => (
-    <Modal
-      visible={showClinicalFactorsModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowClinicalFactorsModal(false)}
-    >
-      <View style={styles.clinicalModalOverlay}>
-        <View style={styles.clinicalModalContent}>
-          <View style={styles.clinicalModalHeader}>
-            <View style={styles.clinicalModalIconContainer}>
-              <Icon name="medical" size={40} color={theme.colors.primary} />
-            </View>
-            <TouchableOpacity
-              style={styles.clinicalModalCloseButton}
-              onPress={() => setShowClinicalFactorsModal(false)}
-            >
-              <Icon name="close" size={24} color={theme.colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.clinicalModalTitle}>¿Por qué se muestran estos factores?</Text>
-          
-          <View style={styles.clinicalModalSimpleContent}>
-            <Text style={styles.clinicalModalSimpleText}>
-              Pueden estar influyendo en tus síntomas digestivos. Tenerlos en cuenta te ayudará a enfocar mejor tu recuperación junto con el seguimiento médico.
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.clinicalModalButton}
-            onPress={() => setShowClinicalFactorsModal(false)}
-          >
-            <Text style={styles.clinicalModalButtonText}>Entendido</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  // MODAL 3: Información de recomendaciones
-  const RecommendationsInfoModal = () => (
-    <Modal
-      visible={showRecommendationsModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowRecommendationsModal(false)}
-    >
-      <View style={styles.recModalOverlay}>
-        <View style={styles.recModalContent}>
-          <View style={styles.recModalHeader}>
-            <View style={styles.recModalIconContainer}>
-              <Icon name="bulb" size={40} color={theme.colors.primary} />
-            </View>
-            <TouchableOpacity
-              style={styles.recModalCloseButton}
-              onPress={() => setShowRecommendationsModal(false)}
-            >
-              <Icon name="close" size={24} color={theme.colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.recModalTitle}>¿Por qué estas recomendaciones?</Text>
-          
-          <View style={styles.recModalSimpleContent}>
-            <Text style={styles.recModalSimpleText}>
-              Estas pautas han sido seleccionadas para ayudarte a mejorar según tu situación actual y los factores que pueden estar influyendo en tus síntomas digestivos. Es un plan personalizado que puedes comenzar a aplicar desde hoy mismo.
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.recModalButton}
-            onPress={() => setShowRecommendationsModal(false)}
-          >
-            <Text style={styles.recModalButtonText}>Entendido</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
   
   // Cargar datos del programa
   useEffect(() => {
@@ -375,7 +306,7 @@ export default function ProgramDetailsScreen() {
             setUserName(profileResponse.data.username);
           }
           
-          // 🆕 Cargar avatar del usuario con mejor lógica
+          // Cargar avatar del usuario con mejor lógica
           console.log('🖼️ Avatar desde backend (ProgramDetails):', profileResponse.data.avatar);
           if (profileResponse.data.avatar && profileResponse.data.avatar !== '' && profileResponse.data.avatar !== null) {
             console.log('✅ Usando avatar guardado:', profileResponse.data.avatar);
@@ -543,6 +474,13 @@ export default function ProgramDetailsScreen() {
         activeOpacity={0.8}
       >
         <View style={styles.recommendationHeader}>
+          <View style={styles.recommendationIconContainer}>
+            <Icon 
+              name="bulb-outline" 
+              size={24} 
+              color={!item.is_read ? theme.colors.primary : theme.colors.text.secondary} 
+            />
+          </View>
           <Text 
             style={[
               styles.recommendationTitle, 
@@ -555,18 +493,20 @@ export default function ProgramDetailsScreen() {
           
           <Icon 
             name={isExpanded ? "chevron-up" : "chevron-down"} 
-            size={20} 
+            size={24} 
             color={theme.colors.primary} 
           />
         </View>
         
-        {isExpanded && item.recommendation.tools && (
-          <View style={styles.forceWhiteBackground}>
+        {/* Solo mostrar herramientas si existen y no están vacías */}
+        {isExpanded && item.recommendation.tools && item.recommendation.tools.trim() !== '' && (
+          <View style={styles.recommendationExpandedContent}>
             <Text style={styles.toolsTitle}>Herramientas sugeridas:</Text>
             <View style={styles.toolsList}>
-              {item.recommendation.tools.split(',').map((tool: string, index: number) => (
-                <View key={index} style={styles.toolItemClean}>
-                  <Text style={styles.forceBlackText}>{tool.trim()}</Text>
+              {splitToolsIntelligently(item.recommendation.tools).map((tool: string, index: number) => (
+                <View key={index} style={styles.toolChip}>
+                  <Icon name="checkmark-circle" size={16} color={theme.colors.success.main} />
+                  <Text style={styles.toolChipText}>{tool}</Text>
                 </View>
               ))}
             </View>
@@ -576,7 +516,7 @@ export default function ProgramDetailsScreen() {
     );
   };
 
-  // 🔥 NUEVA FUNCIÓN: Renderizar sección "Recuerda" como párrafo informativo
+  // Renderizar sección "Recuerda" como párrafo informativo
   const renderRecuerdaSection = () => {
     if (!userProgram || !userProgram.program_content) return null;
     
@@ -604,46 +544,57 @@ export default function ProgramDetailsScreen() {
     );
   };
 
-  // Renderizar sección especial "¿Qué puedes hacer tú para mejorar?"
-  const renderWhatCanYouDoSection = () => {
-    if (!userProgram || !userProgram.program_content) return null;
-    
-    const programContent = userProgram.program_content;
-    const whatCanYouDoSection = programContent.sections.find((section: any) => 
-      section.title.toLowerCase().includes('qué puedes hacer') || 
-      section.title.toLowerCase().includes('que puedes hacer')
-    );
+// Renderizar sección especial "¿Qué puedes hacer tú para mejorar?"
+const renderWhatCanYouDoSection = () => {
+  if (!userProgram || !userProgram.program_content) return null;
+  
+  const programContent = userProgram.program_content;
+  const whatCanYouDoSection = programContent.sections.find((section: any) => 
+    section.title.toLowerCase().includes('qué puedes hacer') || 
+    section.title.toLowerCase().includes('que puedes hacer')
+  );
 
-    if (!whatCanYouDoSection) return null;
+  if (!whatCanYouDoSection) return null;
 
-    const isExpanded = expandedSection === 'what-can-you-do';
+  const isExpanded = expandedSection === 'what-can-you-do';
+  
+  // Determinar si es el programa 6 (Bienestar Digestivo)
+  const isWellnessProgram = userProgram.profile_data?.display_block === 6;
+  
+  // Cambiar el título según el programa
+  const sectionTitle = isWellnessProgram 
+    ? "¿Qué puedes hacer tú para mantener una buena salud digestiva?"
+    : "¿Qué puedes hacer tú para mejorar?";
 
-    return (
-      <TouchableOpacity
-        style={[
-          styles.whatCanYouDoCard,
-          isExpanded && styles.expandedWhatCanYouDoCard
-        ]}
-        onPress={() => setExpandedSection(isExpanded ? null : 'what-can-you-do')}
-        activeOpacity={0.8}
-      >
-        <View style={styles.whatCanYouDoHeader}>
-          <Text style={styles.whatCanYouDoTitle}>¿Qué puedes hacer tú para mejorar?</Text>
-          <Icon 
-            name={isExpanded ? "chevron-up" : "chevron-down"} 
-            size={22} 
-            color={theme.colors.primary} 
-          />
+  return (
+    <TouchableOpacity
+      style={[
+        styles.whatCanYouDoCard,
+        isExpanded && styles.expandedWhatCanYouDoCard
+      ]}
+      onPress={() => setExpandedSection(isExpanded ? null : 'what-can-you-do')}
+      activeOpacity={0.8}
+    >
+      <View style={styles.whatCanYouDoHeader}>
+        <View style={styles.whatCanYouDoIconContainer}>
+          <Icon name="fitness" size={24} color={theme.colors.primary} />
         </View>
-        
-        {isExpanded && (
-          <View style={styles.forceWhiteBackground}>
-            {renderBulletList(whatCanYouDoSection.content, true)}
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
+        <Text style={styles.whatCanYouDoTitle}>{sectionTitle}</Text>
+        <Icon 
+          name={isExpanded ? "chevron-up" : "chevron-down"} 
+          size={24} 
+          color={theme.colors.primary} 
+        />
+      </View>
+      
+      {isExpanded && (
+        <View style={styles.whatCanYouDoContent}>
+          {renderBulletList(whatCanYouDoSection.content, true)}
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+};
   
   // Renderizar el contenido del programa usando datos del backend
   const renderProgramContent = () => {
@@ -656,7 +607,7 @@ export default function ProgramDetailsScreen() {
     const filteredSections = programContent.sections.filter((section: any) => 
       !section.title.toLowerCase().includes('qué puedes hacer') && 
       !section.title.toLowerCase().includes('que puedes hacer') &&
-      section.id !== 'recordatorio' // ← NUEVA EXCLUSIÓN
+      section.id !== 'recordatorio'
     );
     
     return (
@@ -703,10 +654,10 @@ export default function ProgramDetailsScreen() {
           </TouchableOpacity>
         ))}
 
-        {/* 🔥 NUEVO: Sección "Recuerda" como párrafo informativo */}
+        {/* Sección "Recuerda" como párrafo informativo */}
         {renderRecuerdaSection()}
 
-        {/* Factores clínicos adicionales - Datos del backend */}
+        {/* Factores clínicos adicionales - ACTUALIZADO SIN MODAL */}
         {clinicalFactors.length > 0 && (
           <View style={styles.clinicalFactorsSection}>
             <View style={styles.sectionDivider}>
@@ -715,11 +666,18 @@ export default function ProgramDetailsScreen() {
               </Text>
               <TouchableOpacity
                 style={styles.clinicalFactorsInfoButton}
-                onPress={() => setShowClinicalFactorsModal(true)}
+                onPress={() => setShowClinicalFactorsInfo(!showClinicalFactorsInfo)}
               >
                 <Icon name="help-circle-outline" size={32} color={theme.colors.primary} />
               </TouchableOpacity>
             </View>
+            
+            {/* Texto informativo que aparece al presionar el botón */}
+            {showClinicalFactorsInfo && (
+              <Text style={styles.clinicalFactorsInfoText}>
+                Pueden estar influyendo en tus síntomas digestivos. Tenerlos en cuenta te ayudará a enfocar mejor tu recuperación junto con el seguimiento médico.
+              </Text>
+            )}
             
             {clinicalFactors.map((factor: any, index: number) => {
               const factorId = `factor-${index}`;
@@ -760,38 +718,62 @@ export default function ProgramDetailsScreen() {
             })}
           </View>
         )}
-
-        {/* TODAS las recomendaciones */}
-        {priorityRecommendations.length > 0 && (
-          <View style={styles.recommendationsHighlightSection}>
-            <View style={styles.recommendationsBeautifulContainer}>
-              <View style={styles.recommendationsPromoHeader}>
-                <View style={styles.recommendationsPromoContent}>
-                  <View style={styles.recommendationsPromoTextContainer}>
-                    <Text style={styles.recommendationsPromoTitle}>Tus Pautas Personalizadas</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.recommendationsPromoInfoButton}
-                    onPress={() => setShowRecommendationsModal(true)}
-                  >
-                    <Icon name="help-circle-outline" size={28} color={theme.colors.white} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              
-              <View style={styles.recommendationsContentContainer}>
-                {/* Primero: "¿Qué puedes hacer tú para mejorar?" */}
-                {renderWhatCanYouDoSection()}
-                
-                {/* Después: TODAS las recomendaciones */}
-                {priorityRecommendations.map(recommendation => 
-                  renderRecommendation(recommendation, true)
-                )}
-              </View>
-            </View>
-          </View>
-        )}
       </Animated.View>
+    );
+  };
+
+  // NUEVA SECCIÓN DE PAUTAS PERSONALIZADAS CON TOGGLE DE INFO
+  const renderPersonalizedGuidelines = () => {
+    if (!priorityRecommendations.length > 0 && !userProgram) return null;
+
+    return (
+      <View style={styles.guidelinesMainContainer}>
+        {/* Cabecera de la sección */}
+        <View style={styles.guidelinesHeader}>
+          <View style={styles.guidelinesHeaderContent}>
+            <View style={styles.guidelinesTitleContainer}>
+              <Icon name="star" size={28} color={theme.colors.warning.main} />
+              <Text style={styles.guidelinesTitle}>Tus Pautas Personalizadas</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.guidelinesInfoButton}
+              onPress={() => setShowGuidelinesInfo(!showGuidelinesInfo)}
+            >
+              <Icon name="help-circle-outline" size={32} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Texto que solo aparece al presionar el botón de interrogación */}
+          {showGuidelinesInfo && (
+            <Text style={styles.guidelinesSubtitle}>
+              Estas pautas han sido seleccionadas para ayudarte a mejorar según tu situación actual y los factores que pueden estar influyendo en tus síntomas digestivos.
+            </Text>
+          )}
+        </View>
+
+        {/* Contenedor de todas las pautas */}
+        <View style={styles.guidelinesContentWrapper}>
+          {/* Primero: "¿Qué puedes hacer tú para mejorar?" */}
+          {renderWhatCanYouDoSection()}
+          
+          {/* Separador visual */}
+          <View style={styles.guidelinesSeparator}>
+            <View style={styles.separatorLine} />
+          </View>
+          
+          {/* Todas las recomendaciones - FILTRADAS para excluir las que no tienen herramientas */}
+          <View style={styles.recommendationsGrid}>
+            {priorityRecommendations
+              .filter(recommendation => 
+                recommendation.recommendation.tools && 
+                recommendation.recommendation.tools.trim() !== ''
+              )
+              .map(recommendation => 
+                renderRecommendation(recommendation, true)
+              )}
+          </View>
+        </View>
+      </View>
     );
   };
   
@@ -830,7 +812,7 @@ export default function ProgramDetailsScreen() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* 🆕 Cabecera con el nombre personalizado Y AVATAR MEJORADO */}
+          {/* Cabecera con el nombre personalizado Y AVATAR MEJORADO */}
           <View style={styles.programHeaderContainer}>
             <View style={styles.programHeaderGradient}>
               <View style={styles.programHeader}>
@@ -843,7 +825,7 @@ export default function ProgramDetailsScreen() {
                         resizeMode="cover"
                       />
                     ) : (
-                      // 🆕 Avatar por defecto con icono
+                      // Avatar por defecto con icono
                       <View style={styles.defaultAvatarContainer}>
                         <Icon name="person" size={28} color={theme.colors.secondary} />
                       </View>
@@ -851,7 +833,17 @@ export default function ProgramDetailsScreen() {
                   </View>
                   <View style={styles.programTitleTextContainer}>
                     <Text style={styles.programTitleSmall}>Tu Plan Personalizado</Text>
-                    <Text style={styles.programTitle}>{userName}</Text>
+                    <Text 
+                      style={[
+                        styles.programTitle,
+                        { fontSize: getResponsiveFontSize(userName) }
+                      ]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.7}
+                    >
+                      {userName}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.headerDecoration} />
@@ -893,13 +885,14 @@ export default function ProgramDetailsScreen() {
           
           {/* Contenido del programa con todas las secciones integradas */}
           {renderProgramContent()}
+          
+          {/* NUEVA SECCIÓN DE PAUTAS PERSONALIZADAS */}
+          {renderPersonalizedGuidelines()}
         </ScrollView>
       )}
       
-      {/* Modales */}
+      {/* Modales - SOLO QUEDAN ESTOS */}
       <CycleInfoModal />
-      <ClinicalFactorsInfoModal />
-      <RecommendationsInfoModal />
       <CycleRenewalModal
         visible={showRenewalModal}
         daysRemaining={daysRemaining}
@@ -1000,7 +993,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#FFFFFF',
   },
-  // 🆕 Estilos para avatar por defecto
+  // Estilos para avatar por defecto
   defaultAvatarContainer: {
     width: '100%',
     height: '100%',
@@ -1098,14 +1091,14 @@ const styles = StyleSheet.create({
     padding: theme.spacing.xs,
   },
 
-  // 🔥 NUEVO: Estilos para la sección "Recuerda"
+  // Estilos para la sección "Recuerda"
   recuerdaInfoSection: {
-    backgroundColor: '#E8F5E8', // Fondo verde muy suave
+    backgroundColor: '#E8F5E8',
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
     marginVertical: theme.spacing.lg,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50', // Verde suave
+    borderLeftColor: '#4CAF50',
     ...theme.shadows.sm,
   },
   recuerdaHeader: {
@@ -1124,7 +1117,7 @@ const styles = StyleSheet.create({
   recuerdaTitle: {
     fontSize: theme.fontSize.lg,
     fontWeight: 'bold',
-    color: '#2E7D32', // Verde más oscuro
+    color: '#2E7D32',
   },
   recuerdaContent: {
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
@@ -1134,10 +1127,10 @@ const styles = StyleSheet.create({
   recuerdaText: {
     fontSize: theme.fontSize.base,
     lineHeight: 24,
-    color: '#1B5E20', // Verde oscuro para el texto
+    color: '#1B5E20',
   },
 
-  // MODALES - Estilos únicos para cada modal
+  // MODAL DE CICLOS - Mantener estos estilos
   cycleModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1224,151 +1217,6 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
   },
 
-  clinicalModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  clinicalModalContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl,
-    width: '90%',
-    maxWidth: 400,
-    ...theme.shadows.xl,
-  },
-  clinicalModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
-  },
-  clinicalModalIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: `${theme.colors.primary}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clinicalModalCloseButton: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    padding: theme.spacing.sm,
-  },
-  clinicalModalTitle: {
-    fontSize: theme.fontSize.xxl,
-    fontWeight: 'bold',
-    color: theme.colors.text.primary,
-    paddingHorizontal: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
-    textAlign: 'center',
-  },
-  clinicalModalSimpleContent: {
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    marginHorizontal: theme.spacing.xl,
-    marginBottom: theme.spacing.lg,
-  },
-  clinicalModalSimpleText: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.text.primary,
-    lineHeight: 24,
-    textAlign: 'center',
-  },
-  clinicalModalButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.md,
-    marginHorizontal: theme.spacing.xl,
-    marginBottom: theme.spacing.xl,
-    borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
-    ...theme.shadows.sm,
-  },
-  clinicalModalButtonText: {
-    color: '#FFFFFF',
-    fontSize: theme.fontSize.base,
-    fontWeight: 'normal',
-  },
-
-  recModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  recModalContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '70%',
-    ...theme.shadows.xl,
-  },
-  recModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
-  },
-  recModalIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: `${theme.colors.primary}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recModalCloseButton: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    padding: theme.spacing.sm,
-  },
-  recModalTitle: {
-    fontSize: theme.fontSize.xxl,
-    fontWeight: 'bold',
-    color: theme.colors.text.primary,
-    paddingHorizontal: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
-    textAlign: 'center',
-  },
-  recModalSimpleContent: {
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    marginHorizontal: theme.spacing.xl,
-    marginBottom: theme.spacing.lg,
-  },
-  recModalSimpleText: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.text.primary,
-    lineHeight: 24,
-    textAlign: 'center',
-  },
-  recModalButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.md,
-    marginHorizontal: theme.spacing.xl,
-    marginBottom: theme.spacing.xl,
-    borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
-    ...theme.shadows.sm,
-  },
-  recModalButtonText: {
-    color: '#FFFFFF',
-    fontSize: theme.fontSize.base,
-    fontWeight: 'normal',
-  },
-
   // Sección del contenido del programa
   programContentSection: {
     backgroundColor: theme.colors.surface,
@@ -1400,6 +1248,15 @@ const styles = StyleSheet.create({
   clinicalFactorsInfoButton: {
     marginLeft: theme.spacing.sm,
     padding: theme.spacing.xs,
+  },
+  // NUEVO: Texto informativo de factores clínicos
+  clinicalFactorsInfoText: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    lineHeight: 22,
   },
   clinicalFactorCard: {
     backgroundColor: theme.colors.background,
@@ -1446,83 +1303,196 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
   },
-  
-  // Sección de recomendaciones
-  recommendationsHighlightSection: {
+
+  // ESTILOS PARA LA SECCIÓN DE PAUTAS PERSONALIZADAS
+  guidelinesMainContainer: {
+    backgroundColor: theme.colors.background,
     marginTop: theme.spacing.xl,
   },
-  recommendationsBeautifulContainer: {
-    backgroundColor: theme.colors.secondary,
+  guidelinesHeader: {
+    backgroundColor: theme.colors.surface,
+    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
+    marginHorizontal: theme.spacing.md,
     borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
-    marginHorizontal: theme.spacing.xs,
-    borderWidth: 1,
-    borderColor: `${theme.colors.primary}30`,
-    ...theme.shadows.lg,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    ...theme.shadows.md,
   },
-  recommendationsPromoHeader: {
-    backgroundColor: 'transparent',
-    marginBottom: theme.spacing.lg,
-  },
-  recommendationsPromoContent: {
+  guidelinesHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.sm,
   },
-  recommendationsPromoTextContainer: {
-    flex: 1,
+  guidelinesTitleContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
-  recommendationsPromoTitle: {
-    fontSize: theme.fontSize.xl,
+  guidelinesTitle: {
+    fontSize: theme.fontSize.xxl,
     fontWeight: 'bold',
-    color: theme.colors.white,
-    textAlign: 'center',
-  },
-  recommendationsPromoInfoButton: {
+    color: theme.colors.text.primary,
     marginLeft: theme.spacing.md,
+  },
+  guidelinesInfoButton: {
+    marginLeft: theme.spacing.sm,
     padding: theme.spacing.xs,
-    borderRadius: theme.borderRadius.full,
-    backgroundColor: `${theme.colors.white}20`,
   },
-  recommendationsContentContainer: {
-    // Sin estilos especiales
+  guidelinesSubtitle: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
+    lineHeight: 22,
   },
-  
-  // Estilos para "¿Qué puedes hacer tú para mejorar?"
+  guidelinesContentWrapper: {
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.lg,
+  },
+  guidelinesSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.md,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.colors.border.light,
+  },
+  recommendationsGrid: {
+    // Sin estilos especiales - las tarjetas tienen su propio espaciado
+  },
+
+  // Estilos mejorados para "¿Qué puedes hacer tú para mejorar?"
   whatCanYouDoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
     padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
     borderWidth: 2,
     borderColor: theme.colors.primary,
     ...theme.shadows.lg,
   },
   expandedWhatCanYouDoCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderColor: theme.colors.secondary,
     ...theme.shadows.xl,
   },
   whatCanYouDoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+  },
+  whatCanYouDoIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${theme.colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
   },
   whatCanYouDoTitle: {
     flex: 1,
     fontSize: theme.fontSize.lg,
     fontWeight: 'bold',
-    color: '#000000',
+    color: theme.colors.text.primary,
   },
-  
+  whatCanYouDoContent: {
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+  },
+  whatCanYouDoList: {
+    paddingVertical: theme.spacing.xs,
+  },
+  whatCanYouDoItemClean: {
+    marginBottom: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+  },
+  whatCanYouDoText: {
+    fontSize: theme.fontSize.base,
+    lineHeight: 24,
+    color: theme.colors.text.primary,
+    fontWeight: '400',
+  },
+
+  // Estilos mejorados para las recomendaciones
+  recommendationCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+    ...theme.shadows.md,
+  },
+  priorityCard: {
+    backgroundColor: theme.colors.surface,
+    borderColor: `${theme.colors.primary}50`,
+    borderWidth: 1.5,
+  },
+  expandedCard: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.primary,
+    borderWidth: 2,
+    ...theme.shadows.lg,
+  },
+  recommendationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recommendationIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${theme.colors.primary}10`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+  },
+  recommendationTitle: {
+    flex: 1,
+    fontSize: theme.fontSize.base,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginRight: theme.spacing.sm,
+  },
+  unreadTitle: {
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  recommendationExpandedContent: {
+    marginTop: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border.light,
+  },
+  toolsTitle: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: 'bold',
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.md,
+  },
+  toolsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+  },
+  toolChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  },
+  toolChipText: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.text.primary,
+    marginLeft: theme.spacing.xs,
+  },
+
   // Tarjetas de sección del programa
   programSectionCard: {
     backgroundColor: theme.colors.background,
@@ -1571,71 +1541,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   listItemClean: {
-    marginBottom: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-  },
-  whatCanYouDoList: {
-    paddingVertical: theme.spacing.xs,
-  },
-  whatCanYouDoItemClean: {
-    marginBottom: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-  },
-  whatCanYouDoText: {
-    fontSize: theme.fontSize.base,
-    lineHeight: 24,
-    color: '#000000',
-    fontWeight: '400',
-    textAlign: 'left',
-  },
-  recommendationCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: `${theme.colors.primary}30`,
-    ...theme.shadows.md,
-  },
-  priorityCard: {
-    backgroundColor: '#FFFFFF',
-    borderColor: theme.colors.primary,
-    borderWidth: 2,
-    ...theme.shadows.lg,
-  },
-  expandedCard: {
-    backgroundColor: '#FFFFFF',
-    borderColor: theme.colors.secondary,
-    borderWidth: 2,
-    ...theme.shadows.xl,
-  },
-  recommendationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  recommendationTitle: {
-    flex: 1,
-    fontSize: theme.fontSize.base,
-    fontWeight: '600',
-    color: '#000000',
-    marginRight: theme.spacing.sm,
-  },
-  unreadTitle: {
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-  },
-  toolsTitle: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.sm,
-  },
-  toolsList: {
-    marginTop: theme.spacing.xs,
-  },
-  toolItemClean: {
     marginBottom: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
   },

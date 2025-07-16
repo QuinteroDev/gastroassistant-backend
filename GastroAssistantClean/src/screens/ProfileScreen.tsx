@@ -13,7 +13,10 @@ import {
   Animated,
   Dimensions,
   Modal,
-  Image
+  Image,
+  TextInput,
+  KeyboardAvoidingView,
+  Keyboard
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -98,7 +101,10 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] = useState<string>('default'); // 🆕 Por defecto 'default'
+  const [selectedAvatar, setSelectedAvatar] = useState<string>('default');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile>({
     username: "",
     email: "",
@@ -121,6 +127,7 @@ export default function ProfileScreen() {
   const modalOpacity = useRef(new Animated.Value(0)).current;
   const avatarModalScale = useRef(new Animated.Value(0.9)).current;
   const avatarModalOpacity = useRef(new Animated.Value(0)).current;
+  const editNameAnim = useRef(new Animated.Value(0)).current;
   
   // Cargar datos reales del usuario
   useEffect(() => {
@@ -252,6 +259,87 @@ export default function ProfileScreen() {
       ]).start();
     }
   }, [showAvatarModal]);
+  
+  // 🆕 Función para iniciar edición de nombre
+  const startEditingName = () => {
+    setTempName(userProfile.first_name || userProfile.username || '');
+    setIsEditingName(true);
+    
+    // Animación de entrada
+    Animated.timing(editNameAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+  
+  // 🆕 Función para cancelar edición
+  const cancelEditingName = () => {
+    setIsEditingName(false);
+    setTempName('');
+    
+    // Animación de salida
+    Animated.timing(editNameAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+  
+  // 🆕 Función para guardar el nombre
+  const saveName = async () => {
+    if (!tempName.trim()) {
+      Alert.alert("Error", "El nombre no puede estar vacío");
+      return;
+    }
+    
+    if (tempName.trim() === userProfile.first_name) {
+      // Si no hay cambios, solo cerrar
+      cancelEditingName();
+      return;
+    }
+    
+    setIsSavingName(true);
+    try {
+      console.log('💾 Guardando nombre:', tempName);
+      
+      // Actualizar en el backend
+      const response = await api.patch('/api/profiles/me/', { 
+        first_name: tempName.trim() 
+      });
+      
+      console.log('✅ Nombre guardado exitosamente:', response.data);
+      
+      // Actualizar el estado local
+      setUserProfile(prev => ({
+        ...prev,
+        first_name: tempName.trim()
+      }));
+      
+      setIsEditingName(false);
+      
+      // Pequeña animación de confirmación
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.05,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+    } catch (error) {
+      console.error("❌ Error al guardar nombre:", error);
+      console.error("Detalles del error:", error.response?.data);
+      Alert.alert("Error", "No se pudo actualizar el nombre. Intenta de nuevo.");
+    } finally {
+      setIsSavingName(false);
+    }
+  };
   
   // 🆕 Función mejorada para guardar avatar
   const saveAvatar = async (avatarId: string) => {
@@ -772,9 +860,71 @@ export default function ProfileScreen() {
               ]}
             >
               {renderAvatar()}
-              <Text style={styles.profileName}>
-                {userProfile.first_name || userProfile.username || 'Usuario'}
-              </Text>
+              
+              {/* 🆕 Nombre con edición inline */}
+              {isEditingName ? (
+                <Animated.View 
+                  style={[
+                    styles.nameEditContainer,
+                    {
+                      opacity: editNameAnim,
+                      transform: [{
+                        scale: editNameAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.95, 1]
+                        })
+                      }]
+                    }
+                  ]}
+                >
+                  <TextInput
+                    style={styles.nameEditInput}
+                    value={tempName}
+                    onChangeText={setTempName}
+                    placeholder="Nombre o alias"
+                    placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                    autoFocus={true}
+                    maxLength={30}
+                    returnKeyType="done"
+                    onSubmitEditing={saveName}
+                    editable={!isSavingName}
+                  />
+                  <View style={styles.nameEditButtons}>
+                    <TouchableOpacity 
+                      style={styles.nameEditButton}
+                      onPress={cancelEditingName}
+                      disabled={isSavingName}
+                    >
+                      <Icon name="close" size={20} color="rgba(255, 255, 255, 0.8)" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.nameEditButton, styles.saveButton]}
+                      onPress={saveName}
+                      disabled={isSavingName || !tempName.trim()}
+                    >
+                      {isSavingName ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <Icon name="checkmark" size={20} color="#ffffff" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </Animated.View>
+              ) : (
+                <View style={styles.nameContainer}>
+                  <Text style={styles.profileName}>
+                    {userProfile.first_name || userProfile.username || 'Usuario'}
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.editNameButton}
+                    onPress={startEditingName}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="pencil" size={16} color="rgba(255, 255, 255, 0.8)" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              
               <Text style={styles.profileEmail}>
                 {userProfile.email || 'No hay correo registrado'}
               </Text>
@@ -908,12 +1058,28 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#ffffff',
   },
+  
+  // 🆕 Estilos para nombre editable
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xs,
+  },
   profileName: {
     fontSize: theme.fontSize.xxl,
     fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: theme.spacing.xs,
   },
+  editNameButton: {
+    marginLeft: theme.spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
   profileEmail: {
     fontSize: theme.fontSize.base,
     color: 'rgba(255, 255, 255, 0.8)',
@@ -1111,6 +1277,40 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  
+  // 🆕 Estilos para edición inline de nombre
+  nameEditContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: theme.borderRadius.lg,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+  },
+  nameEditInput: {
+    flex: 1,
+    fontSize: theme.fontSize.xl,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    padding: 0,
+    marginRight: theme.spacing.sm,
+  },
+  nameEditButtons: {
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+  },
+  nameEditButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   
   // Datos clínicos

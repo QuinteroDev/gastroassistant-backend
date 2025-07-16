@@ -479,10 +479,12 @@ export default function OnboardingClinicalFactorsScreen() {
             </View>
             
             {/* Renderizar todas las preguntas dinámicamente */}
-            {questionnaire.questions.map((question, index) => 
-              renderOptions(question, index)
-            )}
-            
+            {questionnaire.questions.map((question, index) => (
+              <React.Fragment key={question.id}>
+                {renderOptions(question, index)}
+              </React.Fragment>
+            ))}
+                        
             {/* Mensaje de error */}
             {error && (
               <View style={styles.errorContainer}>

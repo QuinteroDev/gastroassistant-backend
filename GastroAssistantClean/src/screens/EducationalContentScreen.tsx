@@ -10,7 +10,9 @@ import {
   Animated,
   Dimensions,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Image,
+  Linking
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import MainHeaderComponent from '../components/MainHeaderComponent';
@@ -271,6 +273,7 @@ export default function EducationalContentScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [markingAsRead, setMarkingAsRead] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refluxionExpanded, setRefluxionExpanded] = useState<boolean>(false);
   
   // Estados de paginación
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -281,6 +284,7 @@ export default function EducationalContentScreen() {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const refluxionScale = useRef(new Animated.Value(1)).current;
   
   // Cargar datos del backend
   useEffect(() => {
@@ -385,6 +389,25 @@ export default function EducationalContentScreen() {
     }
   };
   
+  // Función para alternar el banner de Refluxion
+  const toggleRefluxion = () => {
+    // Animación al expandir/colapsar
+    Animated.sequence([
+      Animated.timing(refluxionScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(refluxionScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    setRefluxionExpanded(!refluxionExpanded);
+  };
+  
   // Obtener estadísticas del backend
   const getStats = () => {
     if (!learnData) return { totalArticles: 0, readCount: 0, readPercentage: 0 };
@@ -446,6 +469,79 @@ export default function EducationalContentScreen() {
           <Icon name="chevron-forward" size={16} color={currentPageState === totalPages ? "#ccc" : theme.colors.primary} />
         </TouchableOpacity>
       </View>
+    );
+  };
+  
+  // Función para renderizar el banner de Refluxion
+  const renderRefluxionBanner = () => {
+    return (
+      <Animated.View
+        style={[
+          {
+            opacity: fadeAnim,
+            transform: [
+              { translateY: slideAnim },
+              { scale: refluxionScale }
+            ],
+          }
+        ]}
+      >
+        <TouchableOpacity
+          style={[
+            styles.refluxionBanner,
+            refluxionExpanded && styles.refluxionBannerExpanded
+          ]}
+          onPress={toggleRefluxion}
+          activeOpacity={0.9}
+        >
+          {!refluxionExpanded ? (
+            // Vista colapsada - Solo logo
+            <View style={styles.refluxionCollapsed}>
+              <Image 
+                source={require('../assets/images/refluxion.png')}
+                style={styles.refluxionLogo}
+                resizeMode="contain"
+              />
+              <View style={styles.expandIconContainer}>
+                <Icon name="chevron-down" size={20} color="#999" />
+              </View>
+            </View>
+          ) : (
+            // Vista expandida
+            <View style={styles.refluxionExpanded}>
+              <Image 
+                source={require('../assets/images/refluxion.png')}
+                style={styles.refluxionLogoExpanded}
+                resizeMode="contain"
+              />
+              
+              <Text style={styles.refluxionTitle}>
+                ¿Quieres profundizar más?
+              </Text>
+              
+              <Text style={styles.refluxionDescription}>
+                Accede a contenido ampliado, artículos especializados 
+                y recursos adicionales sobre salud digestiva.
+              </Text>
+              
+              <TouchableOpacity
+                style={styles.refluxionButton}
+                onPress={() => Linking.openURL('https://www.refluxion.com')}
+              >
+                <Icon name="globe-outline" size={18} color="#212E21" />
+                <Text style={styles.refluxionButtonText}>
+                  Visitar Refluxion.com
+                </Text>
+                <Icon name="arrow-forward" size={18} color="#212E21" />
+              </TouchableOpacity>
+              
+              <View style={styles.collapseIconContainer}>
+                <Icon name="chevron-up" size={20} color="#999" />
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
   
@@ -571,47 +667,47 @@ export default function EducationalContentScreen() {
     );
   };
   
-  // Renderizar contenido bloqueado
-  const renderLockedContent = (locked: LockedPreview, index: number) => {
-    return (
-      <Animated.View
-        key={`locked-${index}`}
-        style={[
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          }
-        ]}
-      >
-        <View style={[styles.articleCard, styles.lockedCard]}>
-          <View style={styles.lockedOverlay}>
-            <Icon name="lock-closed" size={16} color="#999" />
-          </View>
-          
-          <View style={styles.articleHeader}>
-            <View style={styles.lockedIconContainer}>
-              <Icon name="lock-closed" size={20} color="#999" />
-            </View>
-            <View style={styles.articleInfoContainer}>
-              <Text style={styles.lockedTitle} numberOfLines={2}>
-                {locked.title}
-              </Text>
-              <View style={styles.unlockBadge}>
-                <Icon name="star-outline" size={12} color="#f59e0b" />
-                <Text style={styles.unlockRequirement}>
-                  {locked.unlock_requirement}
-                </Text>
-              </View>
-            </View>
-          </View>
-          
-          <Text style={styles.lockedSummary} numberOfLines={3}>
-            {locked.summary}
-          </Text>
+// Renderizar contenido bloqueado
+const renderLockedContent = (locked: LockedPreview, index: number) => {
+  return (
+    <Animated.View
+      key={`locked-${index}`}
+      style={[
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }
+      ]}
+    >
+      <View style={[styles.articleCard, styles.lockedCard]}>
+        <View style={styles.lockedOverlay}>
+          <Icon name="lock-closed" size={16} color="#999" />
         </View>
-      </Animated.View>
-    );
-  };
+        
+        <View style={styles.articleHeader}>
+          <View style={styles.lockedIconContainer}>
+            <Icon name="lock-closed" size={20} color="#999" />
+          </View>
+          <View style={styles.articleInfoContainer}>
+            <Text style={styles.lockedTitle} numberOfLines={2}>
+              {locked.title}
+            </Text>
+            <View style={styles.unlockBadge}>
+              <Icon name="star-outline" size={12} color="#f59e0b" />
+              <Text style={styles.unlockRequirement}>
+               Medalla de Mes {index + 1}
+              </Text>
+            </View>
+          </View>
+        </View>
+        
+        <Text style={styles.lockedSummary} numberOfLines={3}>
+          {locked.summary}
+        </Text>
+      </View>
+    </Animated.View>
+  );
+};
   
   if (isLoading) {
     return (
@@ -800,6 +896,9 @@ export default function EducationalContentScreen() {
               {/* Contenido General con paginación */}
               {getPaginatedContent(learnData.static_content, currentPage).map((access) => renderArticle(access))}
               
+              {/* 🆕 Banner de Refluxion como última pieza */}
+              {renderRefluxionBanner()}
+              
               {/* Paginación para contenido general */}
               {renderPagination(currentPage, setCurrentPage, learnData.static_content.length)}
               
@@ -824,6 +923,9 @@ export default function EducationalContentScreen() {
               {learnData.unlocked_content.length > 0 ? (
                 <>
                   {getPaginatedContent(learnData.unlocked_content, currentPageUnlocked).map((access) => renderArticle(access))}
+                  
+                  {/* 🆕 Banner de Refluxion en desbloqueables también */}
+                  {renderRefluxionBanner()}
                   
                   {/* Paginación para contenido desbloqueado */}
                   {renderPagination(currentPageUnlocked, setCurrentPageUnlocked, learnData.unlocked_content.length)}
@@ -1007,9 +1109,9 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   progressCircle: {
-    width: 85,
-    height: 85,
-    borderRadius: 42.5,
+    width: 95,
+    height: 95,
+    borderRadius: 47.5,
     backgroundColor: theme.colors.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1018,12 +1120,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   progressPercentage: {
-    fontSize: theme.fontSize.xl,
+    fontSize: 22,
     fontWeight: 'bold',
     color: theme.colors.primary,
+    marginBottom: 2,
   },
   progressLabel: {
-    fontSize: theme.fontSize.xs,
+    fontSize: 11,
     color: theme.colors.text.secondary,
     fontWeight: '500',
   },
@@ -1574,5 +1677,93 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: theme.spacing.md,
     fontWeight: '500',
+  },
+  
+  // ========================================
+  // 🆕 ESTILOS PARA EL BANNER DE REFLUXION
+  // ========================================
+  
+// ========================================
+// 🆕 ESTILOS PARA EL BANNER DE REFLUXION
+// ========================================
+
+
+refluxionBanner: {
+  backgroundColor: '#212E21',
+  borderRadius: theme.borderRadius.xl,
+  marginBottom: theme.spacing.lg,
+  borderWidth: 1,
+  borderColor: '#212E21',
+  ...theme.shadows.md,
+  overflow: 'hidden',
+},
+refluxionBannerExpanded: {
+  borderColor: '#212E21',
+  ...theme.shadows.lg,
+},
+refluxionCollapsed: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: theme.spacing.lg, // Reducir el padding
+  paddingHorizontal: theme.spacing.md,
+  position: 'relative',
+  minHeight: 80, // Reducir la altura mínima
+},
+refluxionLogo: {
+  width: width * 0.5, // 50% del ancho de pantalla
+  height: 40, // Altura proporcional
+  resizeMode: 'contain',
+},
+refluxionLogoExpanded: {
+  width: width * 0.6, // 60% del ancho en expandido
+  height: 70,
+  marginBottom: theme.spacing.md,
+  resizeMode: 'contain',
+},
+  expandIconContainer: {
+    position: 'absolute',
+    right: theme.spacing.md,
+    padding: theme.spacing.xs,
+  },
+  collapseIconContainer: {
+    position: 'absolute',
+    top: theme.spacing.md,
+    right: theme.spacing.md,
+  },
+  refluxionExpanded: {
+    padding: theme.spacing.xl,
+    alignItems: 'center',
+    backgroundColor: '#212E21',
+  },
+  refluxionTitle: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  refluxionDescription: {
+    fontSize: theme.fontSize.base,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
+    opacity: 0.9,
+  },
+  refluxionButton: {
+    backgroundColor: '#EBFC72',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.md,
+    gap: theme.spacing.sm,
+  },
+  refluxionButtonText: {
+    color: '#000000',
+    fontSize: theme.fontSize.base,
+    fontWeight: '700',
   },
 });

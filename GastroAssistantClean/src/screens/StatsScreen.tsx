@@ -12,6 +12,8 @@ import {
   Dimensions,
   Image
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MainHeaderComponent from '../components/MainHeaderComponent';
 import TabNavigationBar from '../components/TabNavigationBar';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -19,6 +21,14 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import api from '../utils/api';
 import { theme } from '../constants/theme';
+
+// Tipos de navegación
+type RootStackParamList = {
+  Stats: undefined;
+  HabitNotes: undefined;
+};
+
+type StatsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Stats'>;
 
 // Mapeo de títulos de hábitos - ACTUALIZADO
 const HABIT_TITLES: { [key: string]: string } = {
@@ -92,39 +102,45 @@ interface Medal {
   is_earned?: boolean;
 }
 
+interface DailyNotesSummary {
+  currentMonthCount: number;
+  totalNotesCount: number;
+  lastNoteDate: string | null;
+}
+
 const { width } = Dimensions.get('window');
 
-// Función para obtener imagen e info del nivel - ACTUALIZADA
+// Función para obtener imagen e info del nivel
 const getLevelInfo = (level: string) => {
   const levelMap: { [key: string]: { image: any; color: string; name: string } } = {
     'NOVATO': { 
       image: require('../assets/images/levels/novato.png'), 
-      color: theme.colors.primary, // Azul de Gastro Assistant
+      color: theme.colors.primary,
       name: 'Novato' 
     },
     'BRONCE': { 
       image: require('../assets/images/levels/bronce.png'), 
-      color: theme.colors.primary, // Azul de Gastro Assistant
+      color: theme.colors.primary,
       name: 'Bronce' 
     },
     'PLATA': { 
       image: require('../assets/images/levels/plata.png'), 
-      color: theme.colors.primary, // Azul de Gastro Assistant
+      color: theme.colors.primary,
       name: 'Plata' 
     },
     'ORO': { 
       image: require('../assets/images/levels/oro.png'), 
-      color: theme.colors.primary, // Azul de Gastro Assistant
+      color: theme.colors.primary,
       name: 'Oro' 
     },
     'PLATINO': { 
       image: require('../assets/images/levels/platino.png'), 
-      color: theme.colors.primary, // Azul de Gastro Assistant
+      color: theme.colors.primary,
       name: 'Platino' 
     },
     'MAESTRO': { 
       image: require('../assets/images/levels/maestro.png'), 
-      color: theme.colors.primary, // Azul de Gastro Assistant
+      color: theme.colors.primary,
       name: 'Maestro' 
     }
   };
@@ -132,10 +148,9 @@ const getLevelInfo = (level: string) => {
   return levelMap[level] || { image: null, color: theme.colors.primary, name: 'Desconocido' };
 };
 
-// Función para obtener imagen de medalla - ACTUALIZADA (sin testing)
+// Función para obtener imagen de medalla
 const getMedalImage = (medalName: string) => {
   const medalImages: { [key: string]: any } = {
-    // Solo medallas por ciclo con los nombres actualizados
     'Maestro de Hábitos': require('../assets/images/medals/mes1.png'),
     'Guardián Nutricional': require('../assets/images/medals/mes2.png'),
     'Campeón del Movimiento': require('../assets/images/medals/mes3.png'),
@@ -151,6 +166,7 @@ const getMedalImage = (medalName: string) => {
 const WEEK_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
 export default function StatsScreen() {
+  const navigation = useNavigation<StatsNavigationProp>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<StatsData>({
@@ -170,6 +186,11 @@ export default function StatsScreen() {
   
   const [gamificationData, setGamificationData] = useState<GamificationData | null>(null);
   const [allMedals, setAllMedals] = useState<Medal[]>([]);
+  const [notesData, setNotesData] = useState<DailyNotesSummary>({
+    currentMonthCount: 0,
+    totalNotesCount: 0,
+    lastNoteDate: null
+  });
   
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -189,9 +210,16 @@ export default function StatsScreen() {
         // Cargar todas las medallas disponibles
         const medalsResponse = await api.get('/api/gamification/all-medals/');
         console.log('Medals response:', medalsResponse.data);
-        
-        // Las medallas ya vienen con is_earned desde el backend
         setAllMedals(medalsResponse.data.medals);
+        
+        // Cargar resumen de notas diarias
+        try {
+          const notesResponse = await api.get('/api/habits/daily-notes/summary/');
+          console.log('Notes summary:', notesResponse.data);
+          setNotesData(notesResponse.data);
+        } catch (err) {
+          console.log('No hay notas disponibles');
+        }
         
         // Obtener datos de hábitos (mantener lógica existente)
         const habitsResponse = await api.get('/api/habits/');
@@ -221,7 +249,6 @@ export default function StatsScreen() {
           date.setDate(date.getDate() - i);
           const dateStr = date.toISOString().split('T')[0];
           
-          // Crear etiqueta con día y fecha
           const dayName = WEEK_DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1];
           const dayNumber = date.getDate();
           const dayLabel = `${dayName}\n${dayNumber}`;
@@ -243,13 +270,11 @@ export default function StatsScreen() {
             if (historyResponse.data && Array.isArray(historyResponse.data)) {
               const logs = historyResponse.data;
               
-              // Contar registros y días únicos
               logs.forEach((log: any) => {
                 if (log.completion_level > 0) {
                   totalLogs++;
                   completedDays.add(log.date);
                   
-                  // Actualizar datos semanales
                   if (weeklyMap.has(log.date)) {
                     const dayData = weeklyMap.get(log.date)!;
                     dayData.completed++;
@@ -258,24 +283,20 @@ export default function StatsScreen() {
                 }
               });
               
-              // Verificar rachas
               if (habit.streak) {
                 currentMaxStreak = Math.max(currentMaxStreak, habit.streak.current_streak);
                 longestMaxStreak = Math.max(longestMaxStreak, habit.streak.longest_streak);
                 
-                // Calcular tasa de completado para este hábito
                 const completedCount = logs.filter((log: any) => log.completion_level > 0).length;
                 const daysWithLogs = new Set(logs.map((log: any) => log.date)).size;
                 const habitCompletionRate = daysWithLogs > 0 ? completedCount / daysWithLogs : 0;
                 
-                // 🆕 USAR TÍTULO ACTUALIZADO DEL MAPEO
                 const habitTitle = HABIT_TITLES[habit.habit.habit_type] || habit.habit.text;
                 
-                // Encontrar el mejor hábito
                 if (habit.streak.current_streak > topHabitData.streak || 
                     (habit.streak.current_streak === topHabitData.streak && habitCompletionRate > topHabitData.completionRate)) {
                   topHabitData = {
-                    name: habitTitle, // 🆕 USAR TÍTULO ACTUALIZADO
+                    name: habitTitle,
                     streak: habit.streak.current_streak,
                     completionRate: habitCompletionRate
                   };
@@ -290,19 +311,16 @@ export default function StatsScreen() {
           }
         }
         
-        // Convertir weeklyMap a array
         const weeklyData = Array.from(weeklyMap.entries()).map(([date, data], index) => ({
           day: data.dayLabel,
           completed: data.completed,
           total: data.total
         }));
         
-        // Calcular progreso semanal
         const totalPossible = habits.length * 7;
         const weeklyProgress = totalPossible > 0 ? totalLogs / totalPossible : 0;
         const avgCompletion = habitCount > 0 ? totalCompletionRate / habitCount : 0;
         
-        // Actualizar el estado
         setStats({
           weeklyProgress: Math.min(1, weeklyProgress),
           totalDaysTracked: completedDays.size,
@@ -345,82 +363,13 @@ export default function StatsScreen() {
     loadStats();
   }, []);
   
-  // Renderizar tarjeta de nivel del usuario
-  const renderLevelCard = () => {
-    if (!gamificationData) return null;
-    
-    const levelInfo = getLevelInfo(gamificationData.level);
-    
-    return (
-      <Animated.View 
-        style={[
-          styles.levelCard,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
-        ]}
-      >
-        {/* Decoraciones de fondo para nivel */}
-        <View style={styles.levelDecorations}>
-          <View style={styles.levelDecoration1}>
-            <Text style={styles.levelDecoEmoji}>🎯</Text>
-          </View>
-          <View style={styles.levelDecoration2}>
-            <Text style={styles.levelDecoEmoji}>⚡</Text>
-          </View>
-        </View>
-        
-        <View style={styles.levelHeader}>
-          <MaterialCommunityIcons name="trophy" size={28} color={theme.colors.primary} />
-          <Text style={styles.levelTitle}>Tu Nivel Actual</Text>
-        </View>
-        
-        <View style={styles.levelContent}>
-          {levelInfo.image ? (
-            <Image 
-              source={levelInfo.image} 
-              style={styles.levelImage}
-              resizeMode="contain"
-            />
-          ) : (
-            <Text style={styles.levelEmoji}>🟤</Text>
-          )}
-          <Text style={[styles.levelName, { color: theme.colors.primary }]}>
-            {levelInfo.name}
-          </Text>
-          
-          {gamificationData.progress.next_level_points && (
-            <>
-              <Text style={styles.progressLabel}>
-                Progreso hacia el siguiente nivel
-              </Text>
-              <View style={styles.progressBarContainer}>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressBarFill,
-                      { 
-                        width: `${gamificationData.progress.progress_percentage}%`,
-                        backgroundColor: theme.colors.primary // Siempre azul de Gastro Assistant
-                      }
-                    ]} 
-                  />
-                </View>
-                <Text style={styles.progressPercentage}>
-                  {Math.round(gamificationData.progress.progress_percentage)}%
-                </Text>
-              </View>
-            </>
-          )}
-        </View>
-      </Animated.View>
-    );
+  // Función para navegar a las notas
+  const navigateToNotes = () => {
+    navigation.navigate('HabitNotes');
   };
   
-  // Renderizar grid de medallas - ACTUALIZADO
+  // Renderizar medallas
   const renderMedalsSection = () => {
-    // Filtrar medallas de testing y limitar a 6
     const filteredMedals = allMedals.filter(medal => 
       !medal.name.toLowerCase().includes('testing') && 
       !medal.name.toLowerCase().includes('prueba')
@@ -452,21 +401,18 @@ export default function StatsScreen() {
             }
           ]}
         >
-          {/* Título embellecido dentro de la tarjeta */}
           <View style={styles.medalsSectionHeader}>
             <MaterialCommunityIcons name="medal" size={28} color={theme.colors.accent} />
             <Text style={styles.medalsSectionTitle}>Medallas</Text>
             <View style={styles.medalsHeaderLine} />
           </View>
           
-          {/* Decoración de podio */}
           <View style={styles.podiumDecoration}>
             <View style={styles.podiumStep1} />
             <View style={styles.podiumStep2} />
             <View style={styles.podiumStep3} />
           </View>
           
-          {/* Elementos decorativos */}
           <View style={styles.medalDecorations}>
             <View style={styles.starDecoration1}>
               <Text style={styles.starEmoji}>⭐</Text>
@@ -482,7 +428,6 @@ export default function StatsScreen() {
           <View style={styles.medalsGrid}>
             {filteredMedals.map((medal, index) => {
               const medalImage = getMedalImage(medal.name);
-              console.log(`Medalla: "${medal.name}" - Imagen encontrada: ${medalImage ? 'SÍ' : 'NO'}`);
               
               return (
                 <Animated.View
@@ -505,21 +450,6 @@ export default function StatsScreen() {
                       medal.is_earned ? styles.medalEarned : styles.medalLocked
                     ]}
                     activeOpacity={0.8}
-                    onPress={() => {
-                      // Pequeña animación al tocar
-                      Animated.sequence([
-                        Animated.timing(new Animated.Value(1), {
-                          toValue: 0.95,
-                          duration: 100,
-                          useNativeDriver: true,
-                        }),
-                        Animated.timing(new Animated.Value(0.95), {
-                          toValue: 1,
-                          duration: 100,
-                          useNativeDriver: true,
-                        }),
-                      ]).start();
-                    }}
                   >
                     {medalImage ? (
                       <Image 
@@ -611,7 +541,54 @@ export default function StatsScreen() {
     );
   };
   
-  // Renderizar tarjeta de estadística mejorada
+  // Renderizar sección de notas
+  const renderNotesSection = () => {
+    const currentMonth = new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    
+    return (
+      <TouchableOpacity 
+        style={styles.notesCard}
+        onPress={navigateToNotes}
+        activeOpacity={0.8}
+      >
+        <View style={styles.notesHeader}>
+          <View style={styles.notesIconContainer}>
+            <Icon name="book-outline" size={24} color={theme.colors.primary} />
+          </View>
+          <View style={styles.notesContent}>
+            <Text style={styles.notesTitle}>Consultar Notas de Hábitos</Text>
+            <Text style={styles.notesSubtitle}>
+              {notesData.currentMonthCount > 0 
+                ? `${notesData.currentMonthCount} notas en ${currentMonth}`
+                : 'No hay notas este mes'}
+            </Text>
+          </View>
+          <Icon name="chevron-forward" size={24} color={theme.colors.text.secondary} />
+        </View>
+        
+        {notesData.totalNotesCount > 0 && (
+          <View style={styles.notesStats}>
+            <View style={styles.notesStat}>
+              <Icon name="document-text-outline" size={16} color={theme.colors.text.secondary} />
+              <Text style={styles.notesStatText}>
+                {notesData.totalNotesCount} notas totales
+              </Text>
+            </View>
+            {notesData.lastNoteDate && (
+              <View style={styles.notesStat}>
+                <Icon name="calendar-outline" size={16} color={theme.colors.text.secondary} />
+                <Text style={styles.notesStatText}>
+                  Última: {new Date(notesData.lastNoteDate).toLocaleDateString('es-ES')}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+  
+  // Renderizar tarjeta de estadística
   const renderStatCard = (
     icon: JSX.Element, 
     title: string, 
@@ -658,7 +635,7 @@ export default function StatsScreen() {
           style={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header con resumen */}
+          {/* Header con Nivel Actual - NUEVO DISEÑO */}
           <View style={styles.headerBackground}>
             <View style={styles.headerPattern} />
             <Animated.View 
@@ -671,34 +648,55 @@ export default function StatsScreen() {
               ]}
             >
               <View style={styles.mainProgressCard}>
-                <Text style={styles.progressTitle}>Tu Progreso General</Text>
-                <View style={styles.progressCircleContainer}>
-                  <View style={styles.progressCircle}>
-                    <Text style={styles.progressPercentage}>
-                      {Math.round(stats.avgCompletionRate * 100)}%
-                    </Text>
-                    <Text style={styles.progressLabel}>Completado</Text>
-                  </View>
-                </View>
+                <Text style={styles.progressTitle}>Tu Nivel Actual</Text>
                 
-                <View style={styles.summaryRow}>
-                  <View style={styles.summaryItem}>
-                    <Icon name="calendar" size={20} color={theme.colors.white} />
-                    <Text style={styles.summaryValue}>{stats.totalDaysTracked}</Text>
-                    <Text style={styles.summaryLabel}>Días activo</Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryItem}>
-                    <Icon name="flame" size={20} color={theme.colors.white} />
-                    <Text style={styles.summaryValue}>{stats.currentStreak}</Text>
-                    <Text style={styles.summaryLabel}>Racha actual</Text>
-                  </View>
-                </View>
+                {gamificationData && (
+                  <>
+                    <View style={styles.levelCircleContainer}>
+                      {getLevelInfo(gamificationData.level).image ? (
+                        <Image 
+                          source={getLevelInfo(gamificationData.level).image} 
+                          style={styles.levelImageHeader}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <Text style={styles.levelEmojiHeader}>🏆</Text>
+                      )}
+                    </View>
+                    
+                    <Text style={styles.levelNameHeader}>
+                      {getLevelInfo(gamificationData.level).name}
+                    </Text>
+                    
+                    {gamificationData.progress.next_level_points && (
+                      <>
+                        <Text style={styles.progressLabelHeader}>
+                          Progreso hacia el siguiente nivel
+                        </Text>
+                        <View style={styles.progressBarContainerHeader}>
+                          <View style={styles.progressBarHeader}>
+                            <View 
+                              style={[
+                                styles.progressBarFillHeader,
+                                { 
+                                  width: `${gamificationData.progress.progress_percentage}%`
+                                }
+                              ]} 
+                            />
+                          </View>
+                          <Text style={styles.progressPercentageHeader}>
+                            {Math.round(gamificationData.progress.progress_percentage)}%
+                          </Text>
+                        </View>
+                      </>
+                    )}
+                  </>
+                )}
               </View>
             </Animated.View>
           </View>
           
-          {/* Sección de Nivel y Medallas */}
+          {/* Sección de Medallas */}
           <Animated.View 
             style={[
               styles.gamificationSection,
@@ -708,7 +706,6 @@ export default function StatsScreen() {
               }
             ]}
           >
-            {renderLevelCard()}
             {renderMedalsSection()}
           </Animated.View>
           
@@ -723,6 +720,19 @@ export default function StatsScreen() {
             ]}
           >
             {renderWeeklyChart()}
+          </Animated.View>
+          
+          {/* NUEVA SECCIÓN - Notas de Hábitos */}
+          <Animated.View 
+            style={[
+              styles.notesSection,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            {renderNotesSection()}
           </Animated.View>
           
           {/* Estadísticas detalladas */}
@@ -858,7 +868,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Header con patrón
+  // Header con nivel actual - NUEVO DISEÑO
   headerBackground: {
     backgroundColor: theme.colors.primary,
     paddingBottom: 30,
@@ -880,7 +890,7 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md,
   },
   
-  // Tarjeta de progreso principal
+  // Tarjeta de nivel en el header
   mainProgressCard: {
     backgroundColor: theme.colors.secondary,
     borderRadius: theme.borderRadius.xl,
@@ -894,50 +904,55 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     marginBottom: theme.spacing.sm,
   },
-  progressCircleContainer: {
+  levelCircleContainer: {
     marginBottom: theme.spacing.sm,
   },
-  progressCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...theme.shadows.md,
+  levelImageHeader: {
+    width: 120,
+    height: 120,
   },
-  progressPercentage: {
+  levelEmojiHeader: {
+    fontSize: 64,
+  },
+  levelNameHeader: {
     fontSize: theme.fontSize.xl,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: theme.colors.white,
+    marginBottom: theme.spacing.md,
   },
-  progressLabel: {
-    fontSize: theme.fontSize.xs,
-    color: theme.colors.text.secondary,
+  progressLabelHeader: {
+    fontSize: theme.fontSize.sm,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: theme.spacing.sm,
   },
-  summaryRow: {
+  progressBarContainerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
+    width: '90%',
+    alignSelf: 'center',
   },
-  summaryItem: {
+  progressBarHeader: {
     flex: 1,
-    alignItems: 'center',
+    height: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: theme.borderRadius.full,
+    overflow: 'hidden',
+    marginRight: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
-  summaryValue: {
-    fontSize: theme.fontSize.lg,
+  progressBarFillHeader: {
+    height: '100%',
+    backgroundColor: '#EBFC72', // Amarillo brillante de Gastro Assistant
+    borderRadius: theme.borderRadius.full,
+    minWidth: '10%', // Mínimo 10% para que siempre se vea
+  },
+  progressPercentageHeader: {
+    fontSize: theme.fontSize.base,
     fontWeight: 'bold',
     color: theme.colors.white,
-    marginVertical: 2,
-  },
-  summaryLabel: {
-    fontSize: theme.fontSize.xs,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  summaryDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    minWidth: 45,
+    textAlign: 'right',
   },
   
   // Sección de gamificación
@@ -945,97 +960,6 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     marginTop: -10,
     paddingTop: theme.spacing.lg,
-  },
-  
-  // Tarjeta de nivel
-  levelCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
-    paddingTop: theme.spacing.xl,
-    marginBottom: theme.spacing.md,
-    position: 'relative',
-    overflow: 'hidden',
-    ...theme.shadows.lg,
-    borderWidth: 1,
-    borderColor: `${theme.colors.primary}10`,
-  },
-  levelDecorations: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    pointerEvents: 'none',
-  },
-  levelDecoration1: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    opacity: 0.1,
-    transform: [{ rotate: '15deg' }],
-  },
-  levelDecoration2: {
-    position: 'absolute',
-    bottom: 15,
-    left: 15,
-    opacity: 0.1,
-    transform: [{ rotate: '-15deg' }],
-  },
-  levelDecoEmoji: {
-    fontSize: 24,
-    color: theme.colors.primary,
-  },
-  levelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-    paddingBottom: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: `${theme.colors.primary}15`,
-  },
-  levelTitle: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginLeft: theme.spacing.sm,
-    flex: 1,
-  },
-  levelContent: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-  },
-  levelEmoji: {
-    fontSize: 48,
-    marginBottom: theme.spacing.sm,
-  },
-  levelImage: {
-    width: 160, // MÁS GRANDE (era 80)
-    height: 160, // MÁS GRANDE (era 80)
-    marginBottom: theme.spacing.md,
-  },
-  levelName: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: 'bold',
-    marginBottom: theme.spacing.xs,
-  },
-  progressBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginTop: theme.spacing.sm,
-  },
-  progressBar: {
-    flex: 1,
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: theme.borderRadius.full,
-    overflow: 'hidden',
-    marginRight: theme.spacing.sm,
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: theme.borderRadius.full,
   },
   
   // Sección de medallas
@@ -1162,23 +1086,23 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   
-  // Grid de medallas - ACTUALIZADO
+  // Grid de medallas
   medalsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: theme.spacing.xs, // Gap más pequeño para que quepan 3
+    gap: theme.spacing.xs,
   },
   medalCard: {
-    width: (width - theme.spacing.md * 2 - theme.spacing.lg * 2 - theme.spacing.sm * 4) / 3, // Ancho correcto para 3 por fila
+    width: (width - theme.spacing.md * 2 - theme.spacing.lg * 2 - theme.spacing.sm * 4) / 3,
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl, // Bordes más redondeados
-    padding: theme.spacing.sm, // Padding ajustado
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginBottom: theme.spacing.md, // Más espacio vertical
-    minHeight: 120, // Más altura (era 90)
+    marginBottom: theme.spacing.md,
+    minHeight: 120,
     ...theme.shadows.md,
   },
   medalEarned: {
@@ -1197,12 +1121,12 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.95 }],
   },
   medalIcon: {
-    fontSize: 32, // Más grande (era 24)
+    fontSize: 32,
     marginBottom: theme.spacing.sm,
   },
   medalImage: {
-    width: 95, // Ajustado para que quepan 3 por fila
-    height: 95, // Ajustado para que quepan 3 por fila
+    width: 95,
+    height: 95,
     marginBottom: theme.spacing.sm,
   },
   medalImageLocked: {
@@ -1212,11 +1136,11 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   medalName: {
-    fontSize: theme.fontSize.sm, // Ligeramente más grande (era xs)
+    fontSize: theme.fontSize.sm,
     fontWeight: '600',
     color: theme.colors.text.primary,
     textAlign: 'center',
-    lineHeight: 16, // Más espacio de línea
+    lineHeight: 16,
   },
   medalTextLocked: {
     opacity: 0.7,
@@ -1225,7 +1149,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    width: 26, // Ligeramente más grande
+    width: 26,
     height: 26,
     borderRadius: 13,
     backgroundColor: theme.colors.accent,
@@ -1241,7 +1165,7 @@ const styles = StyleSheet.create({
   },
   medalGlow: {
     position: 'absolute',
-    top: -6, // Más glow
+    top: -6,
     left: -6,
     right: -6,
     bottom: -6,
@@ -1253,7 +1177,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    width: 22, // Ligeramente más grande
+    width: 22,
     height: 22,
     borderRadius: 11,
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -1263,7 +1187,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.5)',
   },
   medalRequirementIcon: {
-    fontSize: 12, // Ligeramente más grande
+    fontSize: 12,
   },
   
   // Gráfico semanal
@@ -1311,6 +1235,62 @@ const styles = StyleSheet.create({
   chartLabelToday: {
     color: theme.colors.accent,
     fontWeight: 'bold',
+  },
+  
+  // NUEVA SECCIÓN - Notas de hábitos
+  notesSection: {
+    padding: theme.spacing.md,
+  },
+  notesCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    ...theme.shadows.md,
+    borderWidth: 1,
+    borderColor: `${theme.colors.primary}10`,
+  },
+  notesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notesIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${theme.colors.primary}15`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  notesContent: {
+    flex: 1,
+  },
+  notesTitle: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 4,
+  },
+  notesSubtitle: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.text.secondary,
+  },
+  notesStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border.light,
+  },
+  notesStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notesStatText: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.text.secondary,
+    marginLeft: theme.spacing.xs,
   },
   
   // Grid de estadísticas

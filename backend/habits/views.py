@@ -489,3 +489,67 @@ class CheckAllHabitsCompletedView(APIView):
             'completed_count': len(logs_today),
             'total_habits': active_trackers.count()
         })
+
+
+class DailyNotesSummaryView(APIView):
+    """Vista para obtener resumen de notas diarias"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        today = timezone.now().date()
+        current_month_start = today.replace(day=1)
+        
+        # Contar notas del mes actual
+        current_month_count = DailyNote.objects.filter(
+            user=user,
+            date__gte=current_month_start,
+            date__lte=today
+        ).count()
+        
+        # Total de notas
+        total_notes = DailyNote.objects.filter(user=user).count()
+        
+        # Última nota
+        last_note = DailyNote.objects.filter(user=user).order_by('-date').first()
+        
+        return Response({
+            'currentMonthCount': current_month_count,
+            'totalNotesCount': total_notes,
+            'lastNoteDate': last_note.date if last_note else None
+        })
+    
+class DailyNotesMonthlyView(APIView):
+    """Vista para obtener notas agrupadas por mes"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        
+        # Obtener todas las notas ordenadas por fecha
+        notes = DailyNote.objects.filter(user=user).order_by('-date')
+        
+        # Agrupar por mes
+        monthly_notes = {}
+        for note in notes:
+            month_key = note.date.strftime('%Y-%m')
+            month_name = note.date.strftime('%B %Y')
+            
+            if month_key not in monthly_notes:
+                monthly_notes[month_key] = {
+                    'month': month_name,
+                    'month_key': month_key,
+                    'notes': []
+                }
+            
+            monthly_notes[month_key]['notes'].append({
+                'id': note.id,
+                'date': note.date,
+                'notes': note.notes,
+                'all_habits_completed': note.all_habits_completed
+            })
+        
+        # Convertir a lista ordenada
+        result = list(monthly_notes.values())
+        
+        return Response(result)

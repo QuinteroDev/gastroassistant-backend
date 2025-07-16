@@ -8,6 +8,7 @@ import {
   StatusBar,
   Modal,
   Image,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { removeData } from '../utils/storage';
@@ -26,6 +27,14 @@ export default function MainHeaderComponent({ showBackButton, onBackPress }: Mai
 
   const handleLogoutPress = () => {
     setShowLogoutConfirm(true);
+  };
+  
+  const handleNotificationsPress = () => {
+    Alert.alert(
+      "Próximamente",
+      "Las notificaciones estarán disponibles pronto. ¡Mantente atento a las actualizaciones!",
+      [{ text: "OK", style: "default" }]
+    );
   };
   
   const handleLogout = async () => {
@@ -80,12 +89,23 @@ export default function MainHeaderComponent({ showBackButton, onBackPress }: Mai
           </View>
           
           {/* Área derecha */}
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={handleLogoutPress}
-          >
-            <Icon name="log-out-outline" size={22} color={theme.colors.header.icon} />
-          </TouchableOpacity>
+          <View style={styles.rightSection}>
+            <TouchableOpacity 
+              style={styles.notificationButton} 
+              onPress={handleNotificationsPress}
+            >
+              <Icon name="notifications-outline" size={22} color={theme.colors.header.icon} />
+              {/* Indicador de notificaciones (para futuro uso) */}
+              <View style={styles.notificationBadge} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.logoutButton} 
+              onPress={handleLogoutPress}
+            >
+              <Icon name="log-out-outline" size={22} color={theme.colors.header.icon} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
       
@@ -148,6 +168,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -168,6 +192,21 @@ const styles = StyleSheet.create({
   },
   logoTextAccent: {
     color: theme.colors.secondary,
+  },
+  notificationButton: {
+    padding: theme.spacing.sm,
+    marginRight: theme.spacing.xs,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.error.main,
+    opacity: 0, // Oculto por ahora, se puede activar en el futuro
   },
   logoutButton: {
     padding: theme.spacing.sm,

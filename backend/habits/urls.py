@@ -3,8 +3,10 @@ from .views import (
     UserHabitTrackersView,
     HabitLogView,
     HabitLogsHistoryView,
-    DailyNoteView,  # Nueva
-    CheckAllHabitsCompletedView  # Nueva
+    DailyNoteView,  
+    CheckAllHabitsCompletedView,
+    DailyNotesSummaryView,
+    DailyNotesMonthlyView
 )
 
 urlpatterns = [
@@ -14,4 +16,6 @@ urlpatterns = [
     path('<int:habit_id>/history/', HabitLogsHistoryView.as_view(), name='habit-logs-history'),
     path('daily-notes/', DailyNoteView.as_view(), name='daily-notes'),  # Nueva
     path('check-completion/', CheckAllHabitsCompletedView.as_view(), name='check-completion'),  # Nueva
+    path('daily-notes/summary/', DailyNotesSummaryView.as_view(), name='daily-notes-summary'),
+    path('daily-notes/monthly/', DailyNotesMonthlyView.as_view(), name='daily-notes-monthly'),
 ]
