@@ -7,4 +7,9 @@ venv/
 env/
 
 # Archivos de entorno
+.env.DS_Store
+.expo/
+GastroAssistantClean/
 .env
+*.pyc
+__pycache__/
