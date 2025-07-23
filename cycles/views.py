@@ -17,6 +17,10 @@ def check_cycle_status(request):
     current_cycle = CycleService.get_current_cycle(user)
     needs_renewal = CycleService.needs_new_cycle(user)
     
+    # IMPORTANTE: Si hay un ciclo activo sin onboarding completado, marcarlo como needs_renewal
+    if current_cycle and current_cycle.status == 'ACTIVE' and not current_cycle.onboarding_completed_at:
+        needs_renewal = True
+    
     response_data = {
         'needs_renewal': needs_renewal,
         'current_cycle': None,

@@ -23,13 +23,14 @@ class GamificationService:
     }
     
     # Umbrales para cambio de nivel por ciclo (mantener igual)
+ # En services.py, línea ~25 aproximadamente:
     LEVEL_THRESHOLDS = {
-        1: {'points': 1600, 'level': 'NOVATO'},    
-        2: {'points': 1600, 'level': 'BRONCE'},   
-        3: {'points': 1600, 'level': 'PLATA'},     
-        4: {'points': 1600, 'level': 'ORO'},       
-        5: {'points': 1600, 'level': 'PLATINO'},   
-        6: {'points': 1600, 'level': 'MAESTRO'},  
+        1: {'points': 1600, 'level': 'BRONCE'},    # ✅ CORREGIDO
+        2: {'points': 1600, 'level': 'PLATA'},     # ✅ CORREGIDO  
+        3: {'points': 1600, 'level': 'ORO'},       # ✅ CORREGIDO
+        4: {'points': 1600, 'level': 'PLATINO'},   # ✅ CORREGIDO
+        5: {'points': 1600, 'level': 'MAESTRO'},   # ✅ CORREGIDO
+        6: {'points': 1600, 'level': 'MAESTRO'},   # (mantener igual)
     }
     
     @staticmethod
@@ -445,3 +446,79 @@ class GamificationService:
             'level_changed': level_changed,
             'points_earned': daily_points.total_points
         }
+    
+    @staticmethod
+    def reset_for_new_cycle(user, new_cycle):
+        """
+        Resetea los puntos y asigna el nuevo ciclo al usuario
+        NUEVO MÉTODO: Se llama cuando se crea un nuevo ciclo
+        """
+        user_level = GamificationService.get_or_create_user_level(user)
+        
+        # Actualizar el ciclo actual
+        user_level.current_cycle = new_cycle
+        
+        # IMPORTANTE: Resetear puntos del ciclo a 0
+        user_level.current_cycle_points = 0
+        
+        # La racha se mantiene si viene de días consecutivos
+        # Solo se resetea si no ha habido actividad
+        today = timezone.now().date()
+        if user_level.last_activity_date:
+            days_since_last_activity = (today - user_level.last_activity_date).days
+            if days_since_last_activity > 1:
+                user_level.current_streak = 0
+        
+        user_level.save()
+        
+        print(f"✅ Gamificación reseteada para {user.username} - Ciclo {new_cycle.cycle_number}")
+        return user_level
+    
+    @staticmethod
+    def create_cycle_summary(user, completed_cycle):
+        """
+        Crea un resumen de gamificación para un ciclo completado
+        NUEVO MÉTODO: Guarda el historial antes de resetear
+        """
+        from .models import CycleGamificationSummary
+        
+        user_level = GamificationService.get_or_create_user_level(user)
+        
+        # Contar medallas ganadas en este ciclo
+        medals_count = UserMedal.objects.filter(
+            user=user,
+            cycle_earned=completed_cycle
+        ).count()
+        
+        # Contar días activos y perfectos
+        daily_points = DailyPoints.objects.filter(
+            user=user,
+            cycle=completed_cycle
+        )
+        
+        active_days = daily_points.count()
+        perfect_days = daily_points.filter(
+            habits_completed=5,  # Asumiendo 5 hábitos
+            habits_total=5
+        ).count()
+        
+        # Crear el resumen
+        summary, created = CycleGamificationSummary.objects.update_or_create(
+            user=user,
+            cycle=completed_cycle,
+            defaults={
+                'total_points_earned': user_level.current_cycle_points,
+                'final_level': user_level.current_level,
+                'medals_earned_count': medals_count,
+                'best_streak': user_level.longest_streak,
+                'active_days': active_days,
+                'perfect_days': perfect_days
+            }
+        )
+        
+        print(f"📊 Resumen creado para {user.username} - Ciclo {completed_cycle.cycle_number}:")
+        print(f"   - Puntos totales: {user_level.current_cycle_points}")
+        print(f"   - Nivel final: {user_level.current_level}")
+        print(f"   - Medallas ganadas: {medals_count}")
+        
+        return summary

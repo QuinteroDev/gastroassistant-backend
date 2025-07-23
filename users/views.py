@@ -223,7 +223,15 @@ def confirm_password_reset(request):
         return Response({'error': 'La contraseña debe tener al menos 6 caracteres'}, status=400)
     
     try:
-        reset_token = PasswordResetToken.objects.get(token=token)
+        # Intentar convertir el token a UUID primero
+        import uuid
+        try:
+            token_uuid = uuid.UUID(token)
+        except ValueError:
+            return Response({'error': 'Token inválido'}, status=400)
+        
+        # Buscar el token
+        reset_token = PasswordResetToken.objects.get(token=token_uuid)
         
         if not reset_token.is_valid():
             return Response({'error': 'El enlace ha expirado o ya ha sido usado'}, status=400)

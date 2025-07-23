@@ -2,8 +2,6 @@
 from rest_framework import serializers
 from .models import UserProfile
 
-from rest_framework import serializers
-from .models import UserProfile
 
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
@@ -20,13 +18,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'weight_kg',
             'avatar',
             'height_cm',
-            # Factores clínicos (todos)
+            # Factores clínicos (AGREGAR TODOS LOS QUE FALTAN)
             'has_hernia',
             'has_altered_motility',
             'has_slow_emptying',
             'has_dry_mouth',
             'has_constipation',
             'stress_affects',
+            'has_gastritis',              # AGREGAR ESTE
+            'h_pylori_status',           # AGREGAR ESTE
+            'has_intestinal_disorders',   # AGREGAR ESTE
+            'is_smoker',                 # AGREGAR ESTE
+            'alcohol_consumption',        # AGREGAR ESTE
             # Pruebas diagnósticas
             'has_endoscopy',
             'endoscopy_result',

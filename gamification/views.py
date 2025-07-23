@@ -58,7 +58,7 @@ class GamificationDashboardView(APIView):
 class ProcessGamificationView(APIView):
     """
     Procesa la gamificación cuando se actualizan hábitos
-    MEJORADO: Maneja mejor las medallas y cambios de nivel
+    ARREGLADO: Serializa correctamente las medallas
     """
     permission_classes = [IsAuthenticated]
     
@@ -82,32 +82,71 @@ class ProcessGamificationView(APIView):
                 target_date
             )
             
+            # Crear respuesta base
             response_data = {
                 'processed': True,
                 'date': target_date.isoformat(),
-                'level_up': result['level_up'],
-                'level_changed': result['level_changed'],
-                'new_medals_count': len(result['new_medals']),
+                'level_up': len(result.get('new_medals', [])) > 0,
+                'level_changed': result.get('level_changed', False),
+                'new_medals_count': len(result.get('new_medals', [])),
                 'points_earned': result.get('points_earned', 0)
             }
             
-            # Incluir información de medallas si las hay
-            if result['new_medals']:
-                response_data['new_medals'] = UserMedalSerializer(
-                    result['new_medals'], many=True
-                ).data
-                
-                # Log para debugging
-                medal_names = [medal.medal.name for medal in result['new_medals']]
-                print(f"🏆 Usuario {request.user.username} ganó medallas: {medal_names}")
+            # ARREGLO: Serializar medallas manualmente si el serializer no funciona
+            if result.get('new_medals'):
+                try:
+                    # Intentar con el serializer primero
+                    serialized_medals = UserMedalSerializer(result['new_medals'], many=True).data
+                    
+                    # Si el serializer devuelve lista vacía, serializar manualmente
+                    if not serialized_medals:
+                        serialized_medals = []
+                        for user_medal in result['new_medals']:
+                            medal_data = {
+                                'id': user_medal.id,
+                                'medal': {
+                                    'id': user_medal.medal.id,
+                                    'name': user_medal.medal.name,
+                                    'description': user_medal.medal.description,
+                                    'icon': user_medal.medal.icon,
+                                    'required_points': user_medal.medal.required_points,
+                                    'required_level': user_medal.medal.required_level,
+                                    'required_cycle_number': user_medal.medal.required_cycle_number,
+                                },
+                                'earned_at': user_medal.earned_at.isoformat() if user_medal.earned_at else None,
+                                'points_when_earned': user_medal.points_when_earned,
+                                'level_when_earned': user_medal.level_when_earned,
+                                'cycle_number': user_medal.cycle_earned.cycle_number if user_medal.cycle_earned else None
+                            }
+                            serialized_medals.append(medal_data)
+                    
+                    response_data['new_medals'] = serialized_medals
+                    
+                    # Log para debugging
+                    print(f"🏆 Medallas serializadas: {len(serialized_medals)}")
+                    if serialized_medals:
+                        print(f"   Primera medalla: {serialized_medals[0].get('medal', {}).get('name', 'Sin nombre')}")
+                        
+                except Exception as e:
+                    print(f"❌ Error serializando medallas: {str(e)}")
+                    # Fallback: serialización manual básica
+                    response_data['new_medals'] = [{
+                        'id': m.id,
+                        'medal': {
+                            'name': m.medal.name,
+                            'description': m.medal.description,
+                            'icon': m.medal.icon
+                        }
+                    } for m in result.get('new_medals', [])]
+            else:
+                response_data['new_medals'] = []
             
             # Incluir información de nivel si cambió
-            if result['level_changed']:
+            if result.get('level_changed'):
                 response_data['new_level'] = result['user_level'].current_level
-                print(f"🆙 Usuario {request.user.username} subió a nivel: {result['user_level'].current_level}")
             
             # Incluir información de progreso
-            if result['user_level']:
+            if result.get('user_level'):
                 response_data['current_level'] = result['user_level'].current_level
                 response_data['current_points'] = result['user_level'].current_cycle_points
                 response_data['current_streak'] = result['user_level'].current_streak
@@ -115,8 +154,9 @@ class ProcessGamificationView(APIView):
             return Response(response_data)
             
         except Exception as e:
-            # Log del error para debugging
             print(f"❌ Error en ProcessGamificationView: {str(e)}")
+            import traceback
+            traceback.print_exc()
             
             return Response({
                 'error': 'Error interno al procesar gamificación',

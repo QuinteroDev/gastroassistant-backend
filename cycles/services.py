@@ -6,6 +6,8 @@ from .models import UserCycle, CycleSnapshot, CycleHabitAssignment
 from questionnaires.models import UserHabitAnswer, HabitQuestion
 from profiles.models import UserProfile
 
+# En cycles/services.py, actualiza la función create_new_cycle:
+
 class CycleService:
     @staticmethod
     @transaction.atomic
@@ -21,6 +23,10 @@ class CycleService:
         if last_cycle and last_cycle.status == 'PENDING_RENEWAL':
             last_cycle.status = 'COMPLETED'
             last_cycle.save()
+            
+            # NUEVO: Crear resumen de gamificación del ciclo anterior
+            from gamification.services import GamificationService
+            GamificationService.create_cycle_summary(user, last_cycle)
         
         # Crear nuevo ciclo
         new_cycle = UserCycle.objects.create(
@@ -30,6 +36,10 @@ class CycleService:
             end_date=timezone.now() + timedelta(days=30),
             status='ACTIVE'
         )
+        
+        # NUEVO: Resetear la gamificación para el nuevo ciclo
+        from gamification.services import GamificationService
+        GamificationService.reset_for_new_cycle(user, new_cycle)
         
         return new_cycle
     
