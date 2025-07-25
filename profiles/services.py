@@ -73,16 +73,16 @@ class PhenotypeClassificationService:
         if gerdq_positive and endoscopy_done and not endoscopy_positive and ph_done and ph_negative:
             return 'D'
         
-        # Escenario E: GERDq+, Sin pruebas
-        if gerdq_positive and not endoscopy_done and not ph_done:
+        # Escenario E: GERDq+, RSI-, Sin pruebas (Síntomas digestivos sin pruebas)
+        if gerdq_positive and not rsi_positive and not endoscopy_done and not ph_done:
             return 'E'
         
-        # Escenario F: RSI+, Sin pruebas
-        if rsi_positive and not endoscopy_done and not ph_done:
+        # Escenario F: GERDq-, RSI+, Sin pruebas (Síntomas extraesofágicos sin pruebas)
+        if not gerdq_positive and rsi_positive and not endoscopy_done and not ph_done:
             return 'F'
         
-        # Escenario G: GERDq+, Endoscopia normal, pH desconocido
-        if gerdq_positive and endoscopy_done and not endoscopy_positive and (not ph_done or (ph_done and not ph_positive and not ph_negative)):
+        # Escenario G: GERDq+, RSI+, Sin pruebas (Perfil mixto sin pruebas)
+        if gerdq_positive and rsi_positive and not endoscopy_done and not ph_done:
             return 'G'
         
         # Escenario H: Cuestionarios negativos, Endoscopia normal, pH-
@@ -121,10 +121,12 @@ class PhenotypeClassificationService:
             return 'EXTRAESOPHAGEAL'
         elif scenario in ['D', 'H']:
             return 'FUNCTIONAL'
-        elif scenario in ['E', 'G']:
-            return 'SYMPTOMS_NO_TESTS'
+        elif scenario == 'E':
+            return 'SYMPTOMS_NO_TESTS'           # GERDq+ / RSI- sin pruebas
         elif scenario == 'F':
-            return 'EXTRAESOPHAGEAL_NO_TESTS'
+            return 'EXTRAESOPHAGEAL_NO_TESTS'   # GERDq- / RSI+ sin pruebas
+        elif scenario == 'G':
+            return 'SYMPTOMS_MIXED_NO_TESTS'    # GERDq+ / RSI+ sin pruebas
         elif scenario == 'I':
             return 'NO_SYMPTOMS'
         else:

@@ -49,6 +49,8 @@ class UserProgramSerializer(serializers.ModelSerializer):
         display_block = self._determine_display_block(profile)
         
         # Contenido de los bloques (movido desde el frontend)
+# Reemplaza todo el diccionario program_blocks por esto:
+
         program_blocks = {
             1: {
                 'title': 'ERGE Erosiva',
@@ -57,7 +59,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'que_significa',
                         'title': '¿Qué significa tu perfil?',
-                        'content': 'En tu endoscopia se ha identificado una inflamación en el esófago, conocida como esofagitis erosiva. Esto confirma que el reflujo está dañando el tejido esofágico, por lo que es importante actuar con un enfoque médico y de hábitos.',
+                        'content': 'En tu endoscopia se ha identificado una inflamación en el esófago, conocida como esofagitis erosiva. Este hallazgo es compatible con daño producido por el reflujo ácido, por lo que es importante actuar combinando el tratamiento médico y los hábitos digestivos adecuados.',
                         'icon': 'psychology'
                     },
                     {
@@ -74,11 +76,13 @@ class UserProgramSerializer(serializers.ModelSerializer):
                         'id': 'que_hacer',
                         'title': '¿Qué puedes hacer tú para mejorar?',
                         'content': [
+                            'Al tratarse de una lesión visible en la mucosa esofágica, el tratamiento farmacológico (habitualmente con IBP) es clave para la curación. Pero tus hábitos son igualmente importantes:',
                             'Evita acostarte justo después de comer. Espera al menos 3 horas antes de tumbarte o irte a dormir.',
                             'Cenas ligeras y sin prisas. Las comidas copiosas, especialmente por la noche, agravan los síntomas.',
                             'Si tienes molestias nocturnas, eleva el cabecero de la cama (mejor con alza o cuñas que con almohadas).',
                             'Come sin prisa, masticando bien cada bocado y en un entorno tranquilo.',
-                            'Bebe en sorbos pequeños durante el día, preferiblemente lejos de las comidas.'
+                            'Bebe en sorbos pequeños durante el día, preferiblemente lejos de las comidas.',
+                            'Combinando el tratamiento médico y las pautas digestivas adecuadas, es posible favorecer la recuperación y prevenir complicaciones.'
                         ],
                         'icon': 'checkmark-circle'
                     },
@@ -98,7 +102,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'que_significa',
                         'title': '¿Qué significa tu perfil?',
-                        'content': 'Tienes síntomas claros de reflujo, pero la endoscopia no muestra daño visible en el esófago. Sin embargo, la pH-metría ha confirmado que hay un exceso de reflujo ácido. Esto se conoce como ERGE no erosiva o NERD, una forma muy frecuente de reflujo.',
+                        'content': 'Presentas síntomas compatibles con reflujo, aunque la endoscopia no muestra daño visible en el esófago. Sin embargo, la pH-metría ha confirmado que hay un exceso de reflujo ácido. Esto se conoce como ERGE no erosiva o NERD, una forma muy frecuente de reflujo.',
                         'icon': 'psychology'
                     },
                     {
@@ -139,7 +143,6 @@ class UserProgramSerializer(serializers.ModelSerializer):
                 ]
             },
 
-
             3: {
                 'title': 'Reflujo Extraesofágico',
                 'emoji': '🟦',
@@ -147,7 +150,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'que_significa',
                         'title': '¿Qué significa tu perfil?',
-                        'content': 'Tus síntomas afectan principalmente a la garganta o al sistema respiratorio superior: carraspeo, ronquera, tos crónica, sensación de cuerpo extraño, entre otros. Este patrón se asocia a lo que se conoce como reflujo extraesofágico o "reflujo silencioso", ya que a menudo ocurre sin los síntomas clásicos de acidez o ardor. En algunos casos, pueden coexistir ambos tipos de síntomas, tanto digestivos como respiratorios, lo que refuerza la sospecha de reflujo.',
+                        'content': 'Tus síntomas afectan principalmente a la garganta o al sistema respiratorio superior: carraspeo, ronquera, tos crónica, sensación de cuerpo extraño, entre otros. Este patrón podría estar relacionado con lo que se conoce como reflujo extraesofágico o "reflujo silencioso", una forma de reflujo que a veces se presenta sin los síntomas digestivos clásicos como acidez o ardor. En algunos casos, pueden coexistir molestias digestivas y respiratorias, lo que refuerza la posibilidad de que el reflujo esté implicado, aunque no siempre pueda confirmarse sin pruebas.',
                         'icon': 'psychology'
                     },
                     {
@@ -177,7 +180,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'seguimiento_medico',
                         'title': '¿Y el seguimiento médico?',
-                        'content': 'La guía recomienda que si estos síntomas persisten, puede ser útil una evaluación adicional por otorrinolaringología o neumología, especialmente si no hay mejora tras cambios en el estilo de vida. Habla con tu médico si los síntomas se mantienen o interfieren en tu vida diaria. Aunque los síntomas de garganta o respiratorios no siempre se deben al reflujo ácido, en tu caso sí podrían estar relacionados. Por eso, adoptar medidas enfocadas en reducir el reflujo podría ayudarte a aliviarlos de forma progresiva.',
+                        'content': 'Si los síntomas persisten o interfieren en tu vida diaria, es recomendable consultar con tu médico. En algunos casos, puede ser útil una evaluación complementaria por otorrinolaringología o neumología para descartar otras causas. Aunque no podemos confirmar con seguridad que tus síntomas se deban al reflujo, en base a tus respuestas, es posible que estén relacionados. Por eso, adoptar medidas enfocadas en reducir el reflujo podría ayudarte a aliviarlos de forma progresiva.',
                         'icon': 'hospital-user'
                     }
                 ]
@@ -190,7 +193,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'que_significa',
                         'title': '¿Qué significa tu perfil?',
-                        'content': 'En tu caso, las pruebas digestivas no han mostrado reflujo ácido excesivo ni lesiones en el esófago. Aun así, los síntomas persisten. Esto puede deberse a una mayor sensibilidad del esófago o a una alteración funcional en la forma en que tu cuerpo percibe ciertos estímulos. Es lo que se conoce como hipersensibilidad esofágica o pirosis funcional.',
+                        'content': 'En tu caso, las pruebas digestivas no han mostrado reflujo ácido excesivo ni lesiones en el esófago. Aun así, los síntomas persisten. Una posible explicación es una mayor sensibilidad del esófago o a una alteración funcional en la forma en que tu cuerpo percibe ciertos estímulos. Es lo que se conoce como hipersensibilidad esofágica o pirosis funcional.',
                         'icon': 'psychology'
                     },
                     {
@@ -220,7 +223,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'seguimiento_medico',
                         'title': '¿Y el seguimiento médico?',
-                        'content': 'Este tipo de diagnóstico suele confirmarse tras descartar otras causas mediante pruebas. Si no te has hecho una evaluación completa, coméntaselo a tu médico. Y si ya estás en seguimiento, puede ser útil complementar el abordaje con herramientas centradas en tu bienestar digestivo y emocional. En los perfiles funcionales, el apoyo psicológico puede ser un recurso valioso para gestionar mejor los síntomas y reducir su impacto en tu día a día.',
+                        'content': 'Este tipo de diagnóstico suele confirmarse tras descartar otras causas mediante pruebas. Si no te has hecho una evaluación completa, coméntaselo a tu médico. Si ya estás en seguimiento, complementar el enfoque médico con estrategias digestivas, hábitos saludables y técnicas de regulación emocional puede ayudarte a mejorar. En los perfiles funcionales, el apoyo psicológico puede ser un recurso valioso para gestionar mejor los síntomas y reducir su impacto en tu día a día',
                         'icon': 'hospital-user'
                     },
                     {
@@ -233,20 +236,19 @@ class UserProgramSerializer(serializers.ModelSerializer):
             },
 
             5: {
-                'title': 'Síntomas sin Pruebas',
+                'title': 'Síntomas Digestivos sin Pruebas',
                 'emoji': '🟫',
                 'sections': [
                     {
                         'id': 'que_significa',
                         'title': '¿Qué significa tu perfil?',
-                        'content': 'Tus respuestas en los cuestionarios sugieren un perfil compatible con reflujo o molestias digestivas relevantes. Si los síntomas persisten, interfieren con tu calidad de vida o han ido en aumento, es recomendable comentarlo con tu médico de cabecera o especialista en digestivo. Él o ella podrá valorar si es necesario realizar pruebas para conocer mejor tu caso.',
+                        'content': 'Tus respuestas indican molestias digestivas típicas como acidez, ardor o regurgitación, compatibles con un perfil de reflujo. Sin embargo, actualmente no se han realizado pruebas diagnósticas que permitan confirmar con seguridad si hay reflujo ácido. En muchos casos, estos síntomas mejoran aplicando cambios en los hábitos digestivos. Si persisten, consulta con tu médico para valorar la necesidad de una evaluación más completa.',
                         'icon': 'psychology'
                     },
                     {
                         'id': 'por_que_importante',
                         'title': '¿Por qué es importante tenerlo en cuenta?',
                         'content': [
-                            'Si no hay signos de alarma, las guías clínicas indican que no siempre es necesario hacer pruebas de forma inmediata.',
                             'Muchas personas mejoran aplicando cambios en sus hábitos, incluso antes de recibir un diagnóstico confirmado.',
                             'Aun así, si los síntomas persisten o aumentan, consultar con un médico es clave para avanzar en el diagnóstico.'
                         ],
@@ -269,18 +271,17 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'seguimiento_medico',
                         'title': '¿Y el seguimiento médico?',
-                        'content': 'Si tus síntomas son persistentes, afectan a tu calidad de vida o no mejoras tras aplicar estas medidas, consulta con tu médico de cabecera o especialista en digestivo. Puede valorar si es necesario hacer una prueba como la endoscopia o la pH-metría para conocer mejor tu caso.',
+                        'content': 'Si los síntomas persisten, empeoran o te preocupan, no lo ignores: solicita una evaluación médica. Tu profesional de referencia podrá valorar si es necesario realizar estudios adicionales para comprender mejor lo que ocurre y decidir el tratamiento más adecuado.',
                         'icon': 'hospital-user'
                     },
                     {
                         'id': 'recordatorio',
                         'title': 'Recuerda',
-                        'content': 'Muchas personas comienzan a mejorar antes incluso de tener un diagnóstico completo, simplemente aplicando cambios clave en sus hábitos. Pero si los síntomas persisten, no lo ignores: dar el paso hacia una evaluación puede ser lo que necesites para avanzar.',
+                        'content': 'Muchas personas comienzan a mejorar antes incluso de tener un diagnóstico completo, simplemente aplicando cambios clave en sus hábitos. Pero si los síntomas persisten, no lo ignores: dar el paso hacia una evaluación puede ser lo que necesitas para avanzar.',
                         'icon': 'checkmark-circle'
                     }
                 ]
             },
-
 
             6: {
                 'title': 'Bienestar Digestivo',
@@ -329,8 +330,104 @@ class UserProgramSerializer(serializers.ModelSerializer):
                         'icon': 'checkmark-circle'
                     }
                 ]
-            }
+            },
 
+            7: {
+                'title': 'Síntomas Extraesofágicos sin Pruebas',
+                'emoji': '🟫',
+                'sections': [
+                    {
+                        'id': 'que_significa',
+                        'title': '¿Qué significa tu perfil?',
+                        'content': 'Tus síntomas afectan principalmente a la garganta o vías respiratorias superiores: carraspeo, tos crónica, ronquera o sensación de cuerpo extraño. Aunque estos síntomas pueden estar relacionados con reflujo extraesofágico, no se han realizado pruebas que lo confirmen. En muchos casos, adoptar ciertos hábitos digestivos y posturales ayuda a reducir estas molestias. Si los síntomas persisten, consulta con un profesional para valorar posibles pruebas o derivación.',
+                        'icon': 'psychology'
+                    },
+                    {
+                        'id': 'por_que_importante',
+                        'title': '¿Por qué es importante tenerlo en cuenta?',
+                        'content': [
+                            'Muchas personas mejoran aplicando cambios en sus hábitos, incluso antes de recibir un diagnóstico confirmado.',
+                            'Aun así, si los síntomas persisten o aumentan, consultar con un médico es clave para avanzar en el diagnóstico.'
+                        ],
+                        'icon': 'alert-circle'
+                    },
+                    {
+                        'id': 'que_hacer',
+                        'title': '¿Qué puedes hacer tú para mejorar?',
+                        'content': [
+                            'En tu caso, los síntomas afectan más a la garganta y las vías respiratorias altas. Aunque no siempre hay daño visible, este tipo de reflujo suele responder bien a cambios en los hábitos y en el estilo de vida.',
+                            'Evita las cenas copiosas o muy tardías. Es ideal cenar ligero y al menos 3 horas antes de acostarte.',
+                            'No te tumbes inmediatamente después de comer.',
+                            'Reduce alimentos que notes que aumentan tu mucosidad o el carraspeo. En estos casos, algunas personas experimentan más sensibilidad con alimentos muy ácidos, como cítricos o vinagres.',
+                            'Evita el carraspeo habitual para romper el círculo vicioso de tos y aclaramiento constante.',
+                            'En lugar de aclarar la garganta, mantén una buena hidratación a lo largo del día, tomando sorbos pequeños y frecuentes, preferiblemente entre comidas. Esto ayuda a romper el círculo vicioso de carraspeo y tos.',
+                            'Si tienes síntomas nocturnos, puede ayudarte elevar ligeramente el cabecero de la cama y dormir del lado izquierdo.',
+                            'Come tranquilo, sin distracciones, y mastica bien cada bocado para facilitar la digestión.'
+                        ],
+                        'icon': 'checkmark-circle'
+                    },
+                    {
+                        'id': 'seguimiento_medico',
+                        'title': '¿Y el seguimiento médico?',
+                        'content': 'Si los síntomas persisten, empeoran o te preocupan, no lo ignores: solicita una evaluación médica. Tu profesional de referencia podrá valorar si es necesario realizar estudios adicionales para comprender mejor lo que ocurre y decidir el tratamiento más adecuado.',
+                        'icon': 'hospital-user'
+                    },
+                    {
+                        'id': 'recordatorio',
+                        'title': 'Recuerda',
+                        'content': 'Muchas personas comienzan a mejorar antes incluso de tener un diagnóstico completo, simplemente aplicando cambios clave en sus hábitos. Pero si los síntomas persisten, no lo ignores: dar el paso hacia una evaluación puede ser lo que necesitas para avanzar.',
+                        'icon': 'checkmark-circle'
+                    }
+                ]
+            },
+
+            8: {
+                'title': 'Perfil Mixto sin Pruebas',
+                'emoji': '🟫',
+                'sections': [
+                    {
+                        'id': 'que_significa',
+                        'title': '¿Qué significa tu perfil?',
+                        'content': 'Tus respuestas reflejan síntomas tanto digestivos como extraesofágicos. Esto puede estar relacionado con un reflujo que afecte tanto al esófago como a las vías respiratorias altas. Sin pruebas diagnósticas aún realizadas, no podemos confirmarlo, pero aplicar medidas en ambos frentes puede ayudarte a mejorar. Si los síntomas persisten, es importante valorarlo con tu médico.',
+                        'icon': 'psychology'
+                    },
+                    {
+                        'id': 'por_que_importante',
+                        'title': '¿Por qué es importante tenerlo en cuenta?',
+                        'content': [
+                            'Muchas personas mejoran aplicando cambios en sus hábitos, incluso antes de recibir un diagnóstico confirmado.',
+                            'Aun así, si los síntomas persisten o aumentan, consultar con un médico es clave para avanzar en el diagnóstico.'
+                        ],
+                        'icon': 'alert-circle'
+                    },
+                    {
+                        'id': 'que_hacer',
+                        'title': '¿Qué puedes hacer tú para mejorar?',
+                        'content': [
+                            'Evita las cenas copiosas o muy tardías. Es ideal cenar ligero y al menos 3 horas antes de acostarte.',
+                            'No te tumbes inmediatamente después de comer.',
+                            'Reduce alimentos que notes que aumentan tu mucosidad o el carraspeo. En estos casos, algunas personas experimentan más sensibilidad con alimentos muy ácidos, como cítricos o vinagres.',
+                            'Evita el carraspeo habitual para romper el círculo vicioso de tos y aclaramiento constante.',
+                            'En lugar de aclarar la garganta, mantén una buena hidratación a lo largo del día, tomando sorbos pequeños y frecuentes, preferiblemente entre comidas. Esto ayuda a romper el círculo vicioso de carraspeo y tos.',
+                            'Si tienes síntomas nocturnos, puede ayudarte elevar ligeramente el cabecero de la cama y dormir del lado izquierdo.',
+                            'Come tranquilo, sin distracciones, y mastica bien cada bocado para facilitar la digestión.'
+                        ],
+                        'icon': 'checkmark-circle'
+                    },
+                    {
+                        'id': 'seguimiento_medico',
+                        'title': '¿Y el seguimiento médico?',
+                        'content': 'Si los síntomas persisten, empeoran o te preocupan, no lo ignores: solicita una evaluación médica. Tu profesional de referencia podrá valorar si es necesario realizar estudios adicionales para comprender mejor lo que ocurre y decidir el tratamiento más adecuado.',
+                        'icon': 'hospital-user'
+                    },
+                    {
+                        'id': 'recordatorio',
+                        'title': 'Recuerda',
+                        'content': 'Muchas personas comienzan a mejorar antes incluso de tener un diagnóstico completo, simplemente aplicando cambios clave en sus hábitos. Pero si los síntomas persisten, no lo ignores: dar el paso hacia una evaluación puede ser lo que necesitas para avanzar.',
+                        'icon': 'checkmark-circle'
+                    }
+                ]
+            }
         }
         
         return program_blocks.get(display_block, program_blocks[6])
@@ -413,7 +510,6 @@ class UserProgramSerializer(serializers.ModelSerializer):
                 'tools': 'Plan de movimiento moderado, pautas alimentarias progresivas, seguimiento de hábitos digestivos.',
                 'icon': 'monitor-weight'
             },
-            # 🔥 NUEVOS: SMOKING y ALCOHOL
             'smoking': {
                 'title': 'Tabaquismo y reflujo',
                 'content': 'Fumar reduce la presión del esfínter esofágico inferior, enlentece el aclaramiento del ácido y disminuye la producción de saliva protectora. Cuanto más tiempo se mantiene el hábito, mayor suele ser la frecuencia e intensidad de los síntomas. Dejar de fumar no solo mejora el reflujo, sino que también favorece la digestión y la salud intestinal a medio y largo plazo.',
@@ -467,7 +563,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
         if getattr(profile, 'has_excess_weight', False):
             applicable_factors.append(clinical_factors_content['bmi_high'])
         
-        # 🔥 NUEVO: Leer SMOKING y ALCOHOL de UserHabitAnswer
+        # Leer SMOKING y ALCOHOL de UserHabitAnswer
         try:
             from questionnaires.models import UserHabitAnswer
             
@@ -515,7 +611,11 @@ class UserProgramSerializer(serializers.ModelSerializer):
             return 3  # Reflujo Extraesofágico
         elif phenotype == 'FUNCTIONAL' or scenario in ['D', 'H']:
             return 4  # Perfil Funcional
-        elif phenotype in ['SYMPTOMS_NO_TESTS', 'EXTRAESOPHAGEAL_NO_TESTS'] or scenario in ['E', 'F', 'G']:
-            return 5  # Síntomas sin pruebas
+        elif phenotype == 'SYMPTOMS_NO_TESTS' or scenario == 'E':
+            return 5  # Síntomas digestivos sin pruebas (GERDq+ / RSI-)
+        elif phenotype == 'EXTRAESOPHAGEAL_NO_TESTS' or scenario == 'F':
+            return 7  # Síntomas extraesofágicos sin pruebas (GERDq- / RSI+)
+        elif phenotype == 'SYMPTOMS_MIXED_NO_TESTS' or scenario == 'G':
+            return 8  # Perfil mixto sin pruebas (GERDq+ / RSI+)
         else:
             return 6  # Bienestar digestivo

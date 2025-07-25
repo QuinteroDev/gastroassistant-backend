@@ -25,12 +25,12 @@ class GamificationService:
     # Umbrales para cambio de nivel por ciclo (mantener igual)
  # En services.py, línea ~25 aproximadamente:
     LEVEL_THRESHOLDS = {
-        1: {'points': 1600, 'level': 'BRONCE'},    # ✅ CORREGIDO
-        2: {'points': 1600, 'level': 'PLATA'},     # ✅ CORREGIDO  
-        3: {'points': 1600, 'level': 'ORO'},       # ✅ CORREGIDO
-        4: {'points': 1600, 'level': 'PLATINO'},   # ✅ CORREGIDO
-        5: {'points': 1600, 'level': 'MAESTRO'},   # ✅ CORREGIDO
-        6: {'points': 1600, 'level': 'MAESTRO'},   # (mantener igual)
+        1: {'points': 1600, 'level': 'BRONCE'},    
+        2: {'points': 1600, 'level': 'PLATA'},    
+        3: {'points': 1600, 'level': 'ORO'},      
+        4: {'points': 1600, 'level': 'PLATINO'},  
+        5: {'points': 1600, 'level': 'MAESTRO'},   
+        6: {'points': 1600, 'level': 'MAESTRO'},   
     }
     
     @staticmethod
