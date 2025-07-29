@@ -40,10 +40,10 @@ class PhenotypeClassificationService:
     def get_diagnostic_tests(profile):
         """
         Obtiene los resultados de las pruebas diagnósticas del perfil.
-        Retorna una tupla de (endoscopy_positive, ph_positive).
+        Retorna una tupla de (endoscopy_positive, ph_positive, ph_negative).
         """
         # Verificar resultado de la endoscopia
-        endoscopy_positive = profile.has_endoscopy and profile.endoscopy_result.startswith('ESOPHAGITIS_')
+        endoscopy_positive = profile.has_endoscopy and profile.endoscopy_result and profile.endoscopy_result.startswith('ESOPHAGITIS_')
         
         # Verificar resultado de la pH-metría
         ph_positive = profile.has_ph_monitoring and profile.ph_monitoring_result == 'POSITIVE'
@@ -55,79 +55,77 @@ class PhenotypeClassificationService:
     def determine_scenario(gerdq_positive, rsi_positive, endoscopy_done, endoscopy_positive, 
                            ph_done, ph_positive, ph_negative):
         """
-        Determina el escenario (A-L) según la combinación de resultados.
+        Determina el escenario (A-M) según la combinación de resultados.
         """
-        # Escenario A: GERDq+, Endoscopia positiva (esofagitis)
-        if gerdq_positive and endoscopy_done and endoscopy_positive:
-            return 'A'
         
-        # Escenario B: GERDq+, Endoscopia normal, pH+ (NERD)
-        if gerdq_positive and endoscopy_done and not endoscopy_positive and ph_done and ph_positive:
-            return 'B'
+        # === CASOS CON ENDOSCOPIA POSITIVA (Prioridad máxima) ===
+        if endoscopy_done and endoscopy_positive:
+            if gerdq_positive:
+                return 'A'  # ERGE erosiva sintomática
+            elif not gerdq_positive and not rsi_positive:
+                return 'J'  # ERGE erosiva silente
+            # Si tiene RSI+ y esofagitis, sigue siendo A
+            else:
+                return 'A'
         
-        # Escenario C: RSI+, Endoscopia normal o no hecha (Extraesofágico)
-        if rsi_positive and (not endoscopy_done or (endoscopy_done and not endoscopy_positive)):
+        # === CASOS CON pH-METRÍA POSITIVA ===
+        if ph_done and ph_positive:
+            if gerdq_positive and rsi_positive and endoscopy_done and not endoscopy_positive:
+                return 'M'  # NERD mixto
+            elif gerdq_positive and endoscopy_done and not endoscopy_positive:
+                return 'B'  # NERD clásico
+            elif not gerdq_positive and not rsi_positive and endoscopy_done and not endoscopy_positive:
+                return 'K'  # NERD silente
+        
+        # === CASOS CON pH-METRÍA NEGATIVA ===
+        if ph_done and ph_negative:
+            if gerdq_positive and endoscopy_done and not endoscopy_positive:
+                return 'D'  # Funcional
+            elif rsi_positive and not gerdq_positive and endoscopy_done and not endoscopy_positive:
+                return 'L'  # Extraesofágico sin reflujo
+            elif not gerdq_positive and not rsi_positive and endoscopy_done and not endoscopy_positive:
+                return 'H'  # Sano evaluado
+        
+        # === CASOS CON SOLO ENDOSCOPIA (sin pH) ===
+        # Escenario C: RSI+ con endoscopia normal, sin pH
+        if rsi_positive and endoscopy_done and not endoscopy_positive and not ph_done:
             return 'C'
         
-        # Escenario D: GERDq+, Endoscopia normal, pH- (Funcional)
-        if gerdq_positive and endoscopy_done and not endoscopy_positive and ph_done and ph_negative:
-            return 'D'
+        # === CASOS SIN PRUEBAS ===
+        if not endoscopy_done and not ph_done:
+            if gerdq_positive and rsi_positive:
+                return 'G'  # Mixto sin evaluar
+            elif gerdq_positive and not rsi_positive:
+                return 'E'  # Digestivo sin evaluar
+            elif not gerdq_positive and rsi_positive:
+                return 'F'  # Extraesofágico sin evaluar
+            elif not gerdq_positive and not rsi_positive:
+                return 'I'  # Sin síntomas sin evaluar
         
-        # Escenario E: GERDq+, RSI-, Sin pruebas (Síntomas digestivos sin pruebas)
-        if gerdq_positive and not rsi_positive and not endoscopy_done and not ph_done:
-            return 'E'
-        
-        # Escenario F: GERDq-, RSI+, Sin pruebas (Síntomas extraesofágicos sin pruebas)
-        if not gerdq_positive and rsi_positive and not endoscopy_done and not ph_done:
-            return 'F'
-        
-        # Escenario G: GERDq+, RSI+, Sin pruebas (Perfil mixto sin pruebas)
-        if gerdq_positive and rsi_positive and not endoscopy_done and not ph_done:
-            return 'G'
-        
-        # Escenario H: Cuestionarios negativos, Endoscopia normal, pH-
-        if not gerdq_positive and not rsi_positive and endoscopy_done and not endoscopy_positive and ph_done and ph_negative:
-            return 'H'
-        
-        # Escenario I: Sin síntomas ni pruebas
-        if not gerdq_positive and not rsi_positive and not endoscopy_done and not ph_done:
-            return 'I'
-        
-        # Escenario J: Sin síntomas, Endoscopia positiva (silente)
-        if not gerdq_positive and not rsi_positive and endoscopy_done and endoscopy_positive:
-            return 'J'
-        
-        # Escenario K: Sin síntomas, Endoscopia normal, pH+
-        if not gerdq_positive and not rsi_positive and endoscopy_done and not endoscopy_positive and ph_done and ph_positive:
-            return 'K'
-        
-        # Escenario L: RSI+, Endoscopia normal, pH-
-        if not gerdq_positive and rsi_positive and endoscopy_done and not endoscopy_positive and ph_done and ph_negative:
-            return 'L'
-        
-        # Si no coincide con ningún escenario definido
         return None
     
     @staticmethod
     def determine_phenotype(scenario):
         """
-        Determina el fenotipo basado en el escenario y siguiendo la prioridad clínica.
+        Determina el fenotipo basado en el escenario.
         """
         if scenario in ['A', 'J']:
             return 'EROSIVE'
         elif scenario in ['B', 'K']:
             return 'NERD'
+        elif scenario == 'M':
+            return 'NERD_MIXED'
         elif scenario in ['C', 'L']:
             return 'EXTRAESOPHAGEAL'
-        elif scenario in ['D', 'H']:
+        elif scenario == 'D':
             return 'FUNCTIONAL'
         elif scenario == 'E':
-            return 'SYMPTOMS_NO_TESTS'           # GERDq+ / RSI- sin pruebas
+            return 'SYMPTOMS_NO_TESTS'
         elif scenario == 'F':
-            return 'EXTRAESOPHAGEAL_NO_TESTS'   # GERDq- / RSI+ sin pruebas
+            return 'EXTRAESOPHAGEAL_NO_TESTS'
         elif scenario == 'G':
-            return 'SYMPTOMS_MIXED_NO_TESTS'    # GERDq+ / RSI+ sin pruebas
-        elif scenario == 'I':
+            return 'SYMPTOMS_MIXED_NO_TESTS'
+        elif scenario in ['H', 'I']:
             return 'NO_SYMPTOMS'
         else:
             return 'UNDETERMINED'
@@ -136,7 +134,6 @@ class PhenotypeClassificationService:
     def classify_user(user):
         """
         Clasifica al usuario según sus cuestionarios y pruebas diagnósticas.
-        Actualiza el perfil con el escenario y fenotipo correspondientes.
         """
         profile = user.profile
         

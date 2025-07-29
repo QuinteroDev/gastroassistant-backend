@@ -59,19 +59,26 @@ class UserProgramView(generics.RetrieveAPIView):
             # Escenarios A, J → ERGE erosiva
             profile_data['display_block'] = 1
         elif instance.program.type == 'B':
-            # Escenarios B, K → ERGE no erosiva
-            profile_data['display_block'] = 2
+            # Programas tipo B pueden ser bloque 2 o 9
+            if profile.phenotype == 'NERD_MIXED' or profile.scenario == 'M':
+                profile_data['display_block'] = 9  # 🆕 NERD Mixto
+            else:
+                profile_data['display_block'] = 2  # NERD regular
         elif instance.program.type == 'C':
             # Escenarios C, L → Reflujo extraesofágico
             profile_data['display_block'] = 3
         elif instance.program.type == 'D':
-            # Programas tipo D pueden ser bloque 4, 5 o 6
-            if profile.phenotype == 'FUNCTIONAL' or profile.scenario in ['D', 'H']:
-                profile_data['display_block'] = 4  # Perfil funcional
-            elif profile.phenotype in ['SYMPTOMS_NO_TESTS', 'EXTRAESOPHAGEAL_NO_TESTS'] or profile.scenario in ['E', 'F', 'G']:
-                profile_data['display_block'] = 5  # Síntomas sin pruebas
-            else:
-                profile_data['display_block'] = 6  # Sin síntomas
+            # Programas tipo D pueden ser bloque 4, 5, 6, 7 u 8
+            if profile.phenotype == 'FUNCTIONAL' or profile.scenario == 'D':
+                profile_data['display_block'] = 4  # Perfil funcional (solo D)
+            elif profile.phenotype == 'SYMPTOMS_NO_TESTS' or profile.scenario == 'E':
+                profile_data['display_block'] = 5  # Síntomas digestivos sin pruebas
+            elif profile.phenotype == 'EXTRAESOPHAGEAL_NO_TESTS' or profile.scenario == 'F':
+                profile_data['display_block'] = 7  # Síntomas extraesofágicos sin pruebas
+            elif profile.phenotype == 'SYMPTOMS_MIXED_NO_TESTS' or profile.scenario == 'G':
+                profile_data['display_block'] = 8  # Síntomas mixtos sin pruebas
+            elif profile.phenotype == 'NO_SYMPTOMS' or profile.scenario in ['H', 'I']:
+                profile_data['display_block'] = 6  # Sin síntomas (H e I)
         
         # Serializar el programa
         serializer = self.get_serializer(instance)

@@ -1,4 +1,5 @@
-# recommendations/admin.py (continuación)
+# recommendations/admin.py
+
 from django.contrib import admin
 from .models import RecommendationType, ConditionalRecommendation, UserRecommendation
 
@@ -14,12 +15,17 @@ class ConditionalRecommendationAdmin(admin.ModelAdmin):
     list_filter = ('recommendation_type__type', 'is_active', 'condition_value')
     search_fields = ('title', 'content', 'tools')
     list_editable = ('order', 'is_active')
+    
     fieldsets = (
         (None, {
-            'fields': ('recommendation_type', 'title', 'is_active')
+            'fields': ('recommendation_type', 'title', 'icon_type', 'is_active')
         }),
         ('Contenido', {
-            'fields': ('content', 'tools')
+            'fields': ('content',)
+        }),
+        ('Herramientas sugeridas', {
+            'fields': ('tools_title', 'tools'),
+            'description': 'El título aparecerá sobre la lista de herramientas en la app'
         }),
         ('Condiciones', {
             'fields': ('condition_value', 'order')
@@ -28,7 +34,7 @@ class ConditionalRecommendationAdmin(admin.ModelAdmin):
 
 @admin.register(UserRecommendation)
 class UserRecommendationAdmin(admin.ModelAdmin):
-    list_display = ('user', 'get_recommendation_title', 'get_recommendation_type', 
+    list_display = ('user', 'get_recommendation_title', 'get_recommendation_type',
                    'is_read', 'is_prioritized', 'assigned_at', 'read_at')
     list_filter = ('is_read', 'is_prioritized', 'recommendation__recommendation_type__type')
     search_fields = ('user__username', 'user__email', 'recommendation__title')

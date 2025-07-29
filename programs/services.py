@@ -35,10 +35,10 @@ class ProgramAssignmentService:
     def determine_program_type(user_profile):
         """
         Determina el tipo de programa basado en el fenotipo del usuario.
-        
         Mapeo de Fenotipos a Programas:
         - EROSIVE -> 'A'
         - NERD -> 'B'
+        - NERD_MIXED -> 'B' (usa el mismo programa base pero con contenido diferente)
         - EXTRAESOPHAGEAL -> 'C'
         - Otros (FUNCTIONAL, SYMPTOMS_NO_TESTS, etc.) -> 'D'
         """
@@ -49,8 +49,8 @@ class ProgramAssignmentService:
         if phenotype == 'EROSIVE' or scenario in ['A', 'J']:
             return 'A'
         
-        # Escenarios B, K -> NERD -> Programa B
-        elif phenotype == 'NERD' or scenario in ['B', 'K']:
+        # Escenarios B, K, M -> NERD y NERD_MIXED -> Programa B
+        elif phenotype in ['NERD', 'NERD_MIXED'] or scenario in ['B', 'K', 'M']:
             return 'B'
         
         # Escenarios C, L -> EXTRAESOPHAGEAL -> Programa C

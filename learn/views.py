@@ -28,11 +28,29 @@ class LearnDashboardView(APIView):
         
         for access in available_content:
             content_data = UserContentAccessSerializer(access).data
-            
             if access.static_content:
                 static_content.append(content_data)
             elif access.unlockable_content:
                 unlocked_content.append(content_data)
+        
+        # NUEVO: Ordenar contenido por prioridad
+        # Primero no leídos (ordenados por fecha más reciente)
+        # Luego leídos (ordenados por fecha más reciente)
+        def sort_content_by_priority(content_list):
+            # Separar leídos y no leídos
+            unread = [c for c in content_list if not c['is_read']]
+            read = [c for c in content_list if c['is_read']]
+            
+            # Ordenar cada grupo por fecha de creación (más reciente primero)
+            unread.sort(key=lambda x: x['content_data']['created_at'], reverse=True)
+            read.sort(key=lambda x: x['content_data']['created_at'], reverse=True)
+            
+            # Combinar: primero no leídos, luego leídos
+            return unread + read
+        
+        # Aplicar ordenamiento a ambas listas
+        static_content = sort_content_by_priority(static_content)
+        unlocked_content = sort_content_by_priority(unlocked_content)
         
         # Contenido bloqueado próximo a desbloquear (preview)
         locked_preview = ContentUnlockService.get_locked_content_preview(request.user)

@@ -110,15 +110,18 @@ class TestGamificationViews:
         """Test obtener todas las medallas disponibles"""
         client, user, _, cycle, _ = authenticated_client_with_cycle
         
+        # Contar medallas existentes antes de crear las nuestras
+        existing_medals_count = Medal.objects.count()
+        
         # Crear varias medallas
         medal1 = Medal.objects.create(
-            name='Medalla 1',
+            name='Test Medalla 1',
             required_points=100,
             required_level='NOVATO',
             required_cycle_number=1
         )
         medal2 = Medal.objects.create(
-            name='Medalla 2',
+            name='Test Medalla 2',
             required_points=500,
             required_level='BRONCE',
             required_cycle_number=1
@@ -137,13 +140,20 @@ class TestGamificationViews:
         response = client.get(url)
         
         assert response.status_code == 200
-        assert response.data['total_medals'] == 2
+        assert response.data['total_medals'] == existing_medals_count + 2
         assert response.data['earned_count'] == 1
         
-        # Verificar is_earned
+        # Verificar is_earned para nuestras medallas
         medals_data = response.data['medals']
-        assert medals_data[0]['is_earned'] is True  # medal1
-        assert medals_data[1]['is_earned'] is False  # medal2
+        # Buscar nuestras medallas por nombre
+        test_medals = [m for m in medals_data if 'Test Medalla' in m['name']]
+        assert len(test_medals) == 2
+        
+        earned_medal = next(m for m in test_medals if m['name'] == 'Test Medalla 1')
+        not_earned_medal = next(m for m in test_medals if m['name'] == 'Test Medalla 2')
+        
+        assert earned_medal['is_earned'] is True
+        assert not_earned_medal['is_earned'] is False
     
     def test_test_gamification_view_staff_only(self, authenticated_client_with_cycle):
         """Test que la vista de test es solo para staff"""

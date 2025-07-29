@@ -1,0 +1,212 @@
+[
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 1,
+      "fields": {
+        "recommendation_type": 1,
+        "title": "El peso y tus síntomas digestivos",
+        "icon_type": "monitor-weight",
+        "content": "Tu índice de masa corporal (IMC) sugiere que podrías tener un exceso de peso corporal. Esto no es una crítica, sino una información relevante que puede ayudarte a entender mejor tus síntomas digestivos. El exceso de peso abdominal puede aumentar la presión en el estómago y favorecer el reflujo. Por eso, una pequeña mejora en tu composición corporal puede tener un gran impacto positivo. Trabajar poco a poco tu alimentación, el movimiento y el bienestar general es una estrategia clave.",
+        "condition_value": "BMI_OVER_25",
+        "tools": "Plan de movimiento moderado | Revisión de pautas alimentarias progresivas | Seguimiento de hábitos digestivos clave",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 2,
+      "fields": {
+        "recommendation_type": 2,
+        "title": "Hernia de hiato o cardias incompetente",
+        "icon_type": "stomach",
+        "content": "weeeeeees La hernia de hiato o un cardias débil pueden facilitar que el contenido del estómago suba hacia el esófago, especialmente al agacharse o acostarse. Esto puede ser una causa importante de tus síntomas. Por eso, trabajar la respiración diafragmática, cuidar la postura y reducir la presión en la zona abdominal son estrategias fundamentales.",
+        "condition_value": "YES",
+        "tools": "Respiración diafragmática | Posturas correctas | Evitar presión abdominal",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 3,
+      "fields": {
+        "recommendation_type": 10,
+        "title": "Gastritis",
+        "icon_type": "stomach",
+        "content": "Como presentas signos de gastritis, vamos a iniciar con un enfoque más suave para proteger tu estómago. Priorizaremos alimentos fáciles de digerir, ritmos tranquilos al comer y algunas pautas específicas que favorecen la regeneración digestiva. Es importante que, en paralelo, trabajes con tu médico para identificar y corregir la causa de la inflamación, como puede ser el uso de fármacos, infecciones o irritantes alimentarios.",
+        "condition_value": "YES",
+        "tools": "Alimentación suave | Protección gástrica | Evitar irritantes",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 4,
+      "fields": {
+        "recommendation_type": 11,
+        "title": "H. pylori activo",
+        "icon_type": "stomach",
+        "content": "Se ha identificado una infección activa por Helicobacter pylori. Es fundamental que sigas el tratamiento pautado por tu médico para erradicarla de forma eficaz. Mientras tanto, aplicaremos recomendaciones enfocadas en reducir la irritación gástrica.",
+        "condition_value": "ACTIVE",
+        "tools": "Tratamiento médico | Alimentación suave | Evitar irritantes",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 5,
+      "fields": {
+        "recommendation_type": 11,
+        "title": "H. pylori tratado",
+        "icon_type": "stomach",
+        "content": "Aunque ya trataste la infección por Helicobacter pylori, es común que persista cierta sensibilidad digestiva durante un tiempo. Por eso, es importante seguir las pautas que refuercen tu salud digestiva y apoyen tu proceso de recuperación.",
+        "condition_value": "TREATED",
+        "tools": "Alimentación progresiva | Seguimiento de recuperación | Refuerzo de salud intestinal",
+        "order": 2,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 6,
+      "fields": {
+        "recommendation_type": 3,
+        "title": "Motilidad esofágica alterada",
+        "icon_type": "moving",
+        "content": "Algunas personas presentan una motilidad esofágica reducida, lo que significa que el esófago no se contrae correctamente para empujar el contenido hacia el estómago. Esto afecta al aclaramiento esofágico, que es una de las principales defensas frente al reflujo. Cuando este mecanismo está alterado, el ácido o los alimentos pueden permanecer más tiempo en el esófago, generando molestias. Masticar bien, comer despacio, elegir alimentos más blandos y húmedos, y mantener una buena hidratación con sorbos pequeños entre horas puede ayudarte mucho.",
+        "condition_value": "YES",
+        "tools": "Alimentación suave | Registro de sensaciones | Técnicas de masticación",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 7,
+      "fields": {
+        "recommendation_type": 5,
+        "title": "Vaciamiento gástrico lento (gastroparesia)",
+        "icon_type": "hourglass-outline",
+        "content": "Si tu estómago se vacía lentamente, es normal que sientas pesadez, hinchazón o más reflujo. Evitar comidas muy abundantes, con exceso de grasa o que te dejen demasiado lleno puede aliviar esa carga y favorecer una digestión más fluida. También ayuda comer en un estado de calma y sin distracciones, para que tu sistema digestivo funcione de forma más eficiente.",
+        "condition_value": "YES",
+        "tools": "Comidas fraccionadas | Pautas de vaciamiento | Control de volumen",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 8,
+      "fields": {
+        "recommendation_type": 6,
+        "title": "Salivación reducida / sequedad bucal",
+        "icon_type": "water-outline",
+        "content": "La saliva es una defensa natural frente al ácido: ayuda a neutralizarlo y limpiar el esófago. Si tu producción es baja, tu sistema digestivo pierde parte de esa protección. Hidratarte bien, revisar posibles fármacos y evitar tabaco y alcohol puede marcar una gran diferencia.",
+        "condition_value": "YES",
+        "tools": "Hidratación adecuada | Higiene bucal | Evitar alcohol/tabaco",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 9,
+      "fields": {
+        "recommendation_type": 6,
+        "title": "Estreñimiento o esfuerzo al defecar",
+        "icon_type": "pending-actions",
+        "content": "El esfuerzo al defecar aumenta la presión en el abdomen, lo que puede agravar el reflujo. Mejorar la regularidad intestinal también favorece tu salud digestiva general. La fibra, el movimiento y una correcta postura al defecar te pueden ayudar.",
+        "condition_value": "YES",
+        "tools": "Aumento de fibra | Uso de taburete | Hidratación adecuada | Actividad física",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 15,
+      "fields": {
+        "recommendation_type": 6,
+        "title": "Estreñimiento ocasional",
+        "icon_type": "pending-actions",
+        "content": "A veces tienes dificultades con el tránsito intestinal. Esto puede aumentar la presión abdominal y empeorar el reflujo ocasionalmente. Mantener una rutina de hábitos saludables puede ayudarte.",
+        "condition_value": "SOMETIMES",
+        "tools": "Hidratación regular | Actividad física diaria | Rutina matutina con agua templada",
+        "order": 2,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 10,
+      "fields": {
+        "recommendation_type": 8,
+        "title": "Estrés o ansiedad como agravantes",
+        "icon_type": "psychology",
+        "content": "El sistema digestivo está estrechamente conectado con el sistema nervioso. En situaciones de estrés o ansiedad, la sensibilidad digestiva puede aumentar, lo que hace que las molestias se perciban con más intensidad. Por eso es clave trabajar también el bienestar emocional.",
+        "condition_value": "YES",
+        "tools": "Respiración consciente | Relajación guiada | Diario emocional",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 11,
+      "fields": {
+        "recommendation_type": 8,
+        "title": "Manejo ocasional del estrés",
+        "icon_type": "psychology",
+        "content": "Notas que a veces el estrés influye en tus síntomas digestivos. Esto es normal y parte de la conexión mente-intestino. Tener algunas estrategias básicas de manejo del estrés puede ser beneficioso para tu bienestar digestivo.",
+        "condition_value": "SOMETIMES",
+        "tools": "Técnicas de relajación básicas | Mindfulness simple",
+        "order": 2,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 12,
+      "fields": {
+        "recommendation_type": 12,
+        "title": "Alteraciones intestinales",
+        "icon_type": "pending-actions",
+        "content": "Has indicado que tienes una alteración digestiva como SIBO, disbiosis intestinal o síndrome del intestino irritable (SII). Estas condiciones pueden provocar distensión abdominal y aumentar la presión dentro del sistema digestivo, lo que en algunos casos agrava los síntomas de reflujo. Es fundamental trabajar con tu médico o nutricionista para abordar el origen de estos desequilibrios, mientras aplicamos pautas que ayuden a reducir la producción de gases, mejorar la motilidad intestinal y favorecer un entorno digestivo más estable.",
+        "condition_value": "YES",
+        "tools": "Seguimiento médico especializado | Pautas para reducir gases | Estrategias para mejorar motilidad",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 13,
+      "fields": {
+        "recommendation_type": 8,
+        "title": "Tabaquismo y reflujo",
+        "icon_type": "psychology",
+        "content": "Fumar reduce la presión del esfínter esofágico inferior, enlentece el aclaramiento del ácido y disminuye la producción de saliva protectora. Cuanto más tiempo se mantiene el hábito, mayor suele ser la frecuencia e intensidad de los síntomas. Dejar de fumar no solo mejora el reflujo, sino que también favorece la digestión y la salud intestinal a medio y largo plazo.",
+        "condition_value": "YES",
+        "tools": "",
+        "order": 1,
+        "is_active": true
+      }
+    },
+    {
+      "model": "recommendations.conditionalrecommendation",
+      "pk": 14,
+      "fields": {
+        "recommendation_type": 9,
+        "title": "Consumo de alcohol y digestión",
+        "icon_type": "psychology",
+        "content": "",
+        "condition_value": "YES",
+        "tools": "Reducción progresiva del consumo | Identificación de desencadenantes | Alternativas saludables | Estrategias para proteger la mucosa digestiva",
+        "order": 1,
+        "is_active": true
+      }
+    }
+  ]

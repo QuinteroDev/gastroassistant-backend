@@ -427,174 +427,166 @@ class UserProgramSerializer(serializers.ModelSerializer):
                         'icon': 'checkmark-circle'
                     }
                 ]
+            },
+            9: {  # 🆕 NUEVO BLOQUE: NERD MIXTO
+                'title': 'ERGE No Erosiva Mixta (NERD Mixto)',
+                'emoji': '🟨',
+                'sections': [
+                    {
+                        'id': 'que_significa',
+                        'title': '¿Qué significa tu perfil?',
+                        'content': 'Tus síntomas incluyen tanto molestias digestivas típicas (como ardor, acidez o regurgitación) como síntomas respiratorios o de garganta (como tos, carraspeo o ronquera). En tu caso, ya se ha confirmado la presencia de reflujo ácido mediante pruebas, lo que puede explicar ambos tipos de síntomas. Por eso, es importante trabajar tanto los hábitos digestivos como aquellos que pueden ayudarte a mejorar las molestias de garganta o respiratorias.',
+                        'icon': 'psychology'
+                    },
+                    {
+                        'id': 'por_que_importante',
+                        'title': '¿Por qué es importante tenerlo en cuenta?',
+                        'content': [
+                            'La ausencia de lesiones visibles no hace que los síntomas sean menos molestos o incapacitantes.',
+                            'Este tipo de reflujo puede mostrar una respuesta limitada al tratamiento farmacológico, por lo que las medidas de estilo de vida son fundamentales.',
+                            'Al tener síntomas mixtos, es crucial abordar tanto los aspectos digestivos como los respiratorios para lograr una mejoría integral.',
+                            'La buena noticia es que, con el enfoque adecuado, puedes recuperar el control y sentirte mucho mejor.'
+                        ],
+                        'icon': 'alert-circle'
+                    },
+                    {
+                        'id': 'que_hacer',
+                        'title': '¿Qué puedes hacer tú para mejorar?',
+                        'content': [
+                            'Evita las cenas copiosas o muy tardías. Es ideal cenar ligero y al menos 3 horas antes de acostarte.',
+                            'No te tumbes inmediatamente después de comer.',
+                            'Reduce alimentos que notes que aumentan tu mucosidad o el carraspeo. En estos casos, algunas personas experimentan más sensibilidad con alimentos muy ácidos, como cítricos o vinagres.',
+                            'Evita el carraspeo habitual para romper el círculo vicioso de tos y aclaramiento constante.',
+                            'En lugar de aclarar la garganta, mantén una buena hidratación a lo largo del día, tomando sorbos pequeños y frecuentes, preferiblemente entre comidas. Esto ayuda a romper el círculo vicioso de carraspeo y tos.',
+                            'Si tienes síntomas nocturnos, puede ayudarte elevar ligeramente el cabecero de la cama y dormir del lado izquierdo.',
+                            'Come tranquilo, sin distracciones, y mastica bien cada bocado para facilitar la digestión.',
+                            'Bebe en sorbos pequeños entre comidas, evitando beber durante la comida.',
+                            'Evita alimentos o bebidas que claramente notes que te sientan mal, pero no hagas restricciones excesivas si no hay una relación clara.'
+                        ],
+                        'icon': 'checkmark-circle'
+                    },
+                    {
+                        'id': 'seguimiento_medico',
+                        'title': '¿Y el seguimiento médico?',
+                        'content': 'Una endoscopia sin lesiones es un buen punto de partida, pero no significa que todo esté resuelto. Al presentar síntomas tanto digestivos como respiratorios, puede ser útil un enfoque multidisciplinar. Si los síntomas siguen presentes, es importante revisar la situación con tu médico. En algunos casos, puede ser beneficiosa la valoración por otorrinolaringología para los síntomas de garganta. Mantener revisiones periódicas y avanzar con los hábitos adecuados es la mejor forma de recuperar el equilibrio digestivo.',
+                        'icon': 'hospital-user'
+                    },
+                    {
+                        'id': 'recordatorio',
+                        'title': 'Recuerda',
+                        'content': 'En GastroAssistant no esperas a que todo pase solo: te damos herramientas prácticas para que avances, incluso cuando las pruebas no muestran alteraciones. El hecho de que tengas síntomas mixtos significa que necesitas un enfoque integral, y aquí te acompañaremos en cada paso del camino.',
+                        'icon': 'checkmark-circle'
+                    }
+                ]
             }
         }
         
         return program_blocks.get(display_block, program_blocks[6])
 
     def get_clinical_factors(self, obj):
-        """Obtiene los factores clínicos aplicables al usuario"""
+        """Obtiene los factores clínicos aplicables al usuario desde la base de datos"""
         profile = obj.user.profile
-        
-        # Definición de factores clínicos (movido desde el frontend)
-        clinical_factors_content = {
-            'hernia': {
-                'title': 'Hernia de hiato o cardias incompetente',
-                'content': 'La hernia de hiato puede debilitar la barrera que separa el estómago del esófago, facilitando que los ácidos asciendan con más facilidad. Esto puede estar influyendo en tus síntomas. En tu caso, trabajar la respiración diafragmática y cuidar la postura abdominal puede ayudarte.',
-                'tools': 'Respiración diafragmática, posturas correctas, evitar presión abdominal.',
-                'icon': 'stomach'
-            },
-            'gastritis': {
-                'title': 'Gastritis',
-                'content': 'Como presentas signos de gastritis, vamos a iniciar con un enfoque más suave para proteger tu estómago. Priorizaremos alimentos fáciles de digerir, ritmos tranquilos al comer y algunas pautas específicas que favorecen la regeneración digestiva.',
-                'tools': 'Alimentación suave, protección gástrica, evitar irritantes.',
-                'icon': 'stomach'
-            },
-            'motility': {
-                'title': 'Motilidad esofágica alterada',
-                'content': 'Algunas personas tienen alteraciones en la forma en la que el esófago empuja los alimentos hacia el estómago. Si este movimiento está debilitado, el ácido puede quedar más tiempo en el esófago. Masticar bien, comer despacio y evitar mezclar alimentos sólidos con bebidas frías puede ayudarte.',
-                'tools': 'Alimentación suave, registro de sensaciones, técnicas de masticación.',
-                'icon': 'moving'
-            },
-            'emptying': {
-                'title': 'Vaciamiento gástrico lento (gastroparesia)',
-                'content': 'Cuando el estómago tarda mucho en vaciarse, aumenta la presión interna y eso puede favorecer el reflujo. En tu caso, hacer comidas pequeñas, repartidas y con bajo contenido graso puede ayudarte a sentirte mejor.',
-                'tools': 'Comidas fraccionadas, pautas de vaciamiento, control de volumen.',
-                'icon': 'hourglass-outline'
-            },
-            'saliva': {
-                'title': 'Salivación reducida / sequedad bucal',
-                'content': 'La saliva ayuda a neutralizar el ácido que asciende al esófago. Si tienes poca salivación, el aclaramiento natural se debilita. Beber agua a lo largo del día, evitar el tabaco y revisar efectos secundarios de medicamentos puede ser clave para mejorar.',
-                'tools': 'Hidratación adecuada, higiene bucal, evitar alcohol/tabaco.',
-                'icon': 'water-outline'
-            },
-            'constipation': {
-                'title': 'Estreñimiento o esfuerzo al defecar',
-                'content': 'El estreñimiento aumenta la presión abdominal y puede empeorar el reflujo. Mejorar tu evacuación puede tener un impacto positivo. Te recomendamos hidratarte bien, incluir fibra y usar un taburete para adoptar una mejor postura al defecar.',
-                'tools': 'Aumento de fibra, uso de taburete, hidratación adecuada, actividad física.',
-                'icon': 'pending-actions'
-            },
-            'intestinal': {
-                'title': 'Alteraciones intestinales',
-                'content': 'Has indicado que tienes una alteración digestiva como SIBO, disbiosis intestinal o síndrome del intestino irritable (SII). Estas condiciones pueden provocar distensión abdominal y aumentar la presión dentro del sistema digestivo, lo que en algunos casos agrava los síntomas de reflujo.',
-                'tools': 'Seguimiento médico especializado, pautas para reducir gases, estrategias para mejorar motilidad.',
-                'icon': 'pending-actions'
-            },
-            'h_pylori_active': {
-                'title': 'H. pylori activo',
-                'content': 'Se ha identificado una infección activa por Helicobacter pylori. Es fundamental que sigas el tratamiento pautado por tu médico para erradicarla de forma eficaz. Mientras tanto, aplicaremos recomendaciones enfocadas en reducir la irritación gástrica.',
-                'tools': 'Tratamiento médico, alimentación suave, evitar irritantes.',
-                'icon': 'stomach'
-            },
-            'h_pylori_treated': {
-                'title': 'H. pylori tratado',
-                'content': 'Aunque ya trataste la infección por Helicobacter pylori, es común que persista cierta sensibilidad digestiva durante un tiempo. Por eso, es importante seguir las pautas que refuercen tu salud digestiva y apoyen tu proceso de recuperación.',
-                'tools': 'Alimentación progresiva, seguimiento de recuperación, refuerzo de salud intestinal.',
-                'icon': 'stomach'
-            },
-            'stress_yes': {
-                'title': 'Estrés o ansiedad como agravantes',
-                'content': 'El estrés puede hacer que el cuerpo esté más sensible a los estímulos digestivos. Muchas personas sienten que sus síntomas aumentan en periodos de tensión. Trabajar el bienestar emocional también es parte del cuidado digestivo.',
-                'tools': 'Respiración consciente, relajación guiada, diario emocional.',
-                'icon': 'psychology'
-            },
-            'stress_sometimes': {
-                'title': 'Manejo ocasional del estrés',
-                'content': 'Notas que a veces el estrés influye en tus síntomas digestivos. Esto es normal y parte de la conexión mente-intestino. Tener algunas estrategias básicas de manejo del estrés puede ser beneficioso para tu bienestar digestivo.',
-                'tools': 'Técnicas de relajación básicas, mindfulness simple.',
-                'icon': 'psychology'
-            },
-            'bmi_high': {
-                'title': 'El peso y tus síntomas digestivos',
-                'content': 'Tu índice de masa corporal (IMC) sugiere que podrías tener un exceso de peso corporal. Esto no es una crítica, sino una información relevante que puede ayudarte a entender mejor tus síntomas digestivos. El exceso de peso abdominal puede aumentar la presión en el estómago y favorecer el reflujo.',
-                'tools': 'Plan de movimiento moderado, pautas alimentarias progresivas, seguimiento de hábitos digestivos.',
-                'icon': 'monitor-weight'
-            },
-            'smoking': {
-                'title': 'Tabaquismo y reflujo',
-                'content': 'Fumar reduce la presión del esfínter esofágico inferior, enlentece el aclaramiento del ácido y disminuye la producción de saliva protectora. Cuanto más tiempo se mantiene el hábito, mayor suele ser la frecuencia e intensidad de los síntomas. Dejar de fumar no solo mejora el reflujo, sino que también favorece la digestión y la salud intestinal a medio y largo plazo.',
-                'tools': 'Plan de cesación tabáquica, estrategias para fortalecer el esfínter esofágico, técnicas para mejorar el aclaramiento esofágico.',
-                'icon': 'psychology'
-            },
-            'alcohol': {
-                'title': 'Consumo de alcohol y digestión',
-                'content': 'El alcohol puede relajar el esfínter esofágico inferior, facilitar el paso del ácido al esófago y dañar la mucosa digestiva. Esto es más evidente en consumos altos o frecuentes. En muchas personas actúa como desencadenante directo de síntomas, especialmente si se combina con comidas copiosas o cenas tardías. Reducir su consumo puede ayudarte a mejorar los síntomas y proteger tu sistema digestivo a largo plazo.',
-                'tools': 'Reducción progresiva del consumo, identificación de desencadenantes, alternativas saludables, estrategias para proteger la mucosa digestiva.',
-                'icon': 'psychology'
-            }
-        }
-        
         applicable_factors = []
         
-        # Verificar qué factores aplican al usuario
+        # Importar el modelo necesario
+        from recommendations.models import ConditionalRecommendation
+        
+        # Mapeo de condiciones del perfil a tipos de recomendación y valores
+        profile_conditions = []
+        
+        # 1. Hernia
         if getattr(profile, 'has_hernia', 'NO') == 'YES':
-            applicable_factors.append(clinical_factors_content['hernia'])
+            profile_conditions.append(('HERNIA', 'YES'))
         
+        # 2. Gastritis
         if getattr(profile, 'has_gastritis', 'NO') == 'YES':
-            applicable_factors.append(clinical_factors_content['gastritis'])
+            profile_conditions.append(('GASTRITIS', 'YES'))
         
+        # 3. Motilidad alterada
         if getattr(profile, 'has_altered_motility', 'NO') == 'YES':
-            applicable_factors.append(clinical_factors_content['motility'])
+            profile_conditions.append(('MOTILITY', 'YES'))
         
+        # 4. Vaciamiento lento
         if getattr(profile, 'has_slow_emptying', 'NO') == 'YES':
-            applicable_factors.append(clinical_factors_content['emptying'])
+            profile_conditions.append(('EMPTYING', 'YES'))
         
+        # 5. Sequedad bucal
         if getattr(profile, 'has_dry_mouth', 'NO') == 'YES':
-            applicable_factors.append(clinical_factors_content['saliva'])
+            profile_conditions.append(('SALIVA', 'YES'))
         
-        if getattr(profile, 'has_constipation', 'NO') == 'YES':
-            applicable_factors.append(clinical_factors_content['constipation'])
+        # 6. Estreñimiento
+        constipation_status = getattr(profile, 'has_constipation', 'NO')
+        if constipation_status in ['YES', 'SOMETIMES']:
+            profile_conditions.append(('CONSTIPATION', constipation_status))
         
+        # 7. Alteraciones intestinales
         if getattr(profile, 'has_intestinal_disorders', 'NO') == 'YES':
-            applicable_factors.append(clinical_factors_content['intestinal'])
+            profile_conditions.append(('INTESTINAL', 'YES'))
         
-        # H. pylori
+        # 8. H. pylori
         h_pylori_status = getattr(profile, 'h_pylori_status', 'NO')
         if h_pylori_status == 'ACTIVE':
-            applicable_factors.append(clinical_factors_content['h_pylori_active'])
+            profile_conditions.append(('H_PYLORI', 'ACTIVE'))
         elif h_pylori_status == 'TREATED':
-            applicable_factors.append(clinical_factors_content['h_pylori_treated'])
+            profile_conditions.append(('H_PYLORI', 'TREATED'))
         
-        if getattr(profile, 'stress_affects', 'NO') == 'YES':
-            applicable_factors.append(clinical_factors_content['stress_yes'])
-        elif getattr(profile, 'stress_affects', 'NO') == 'SOMETIMES':
-            applicable_factors.append(clinical_factors_content['stress_sometimes'])
+        # 9. Estrés
+        stress_status = getattr(profile, 'stress_affects', 'NO')
+        if stress_status in ['YES', 'SOMETIMES']:
+            profile_conditions.append(('STRESS', stress_status))
         
+        # 10. IMC elevado
         if getattr(profile, 'has_excess_weight', False):
-            applicable_factors.append(clinical_factors_content['bmi_high'])
+            profile_conditions.append(('BMI', 'BMI_OVER_25'))
         
-        # Leer SMOKING y ALCOHOL de UserHabitAnswer
+        # 11. Smoking y Alcohol desde UserHabitAnswer
         try:
             from questionnaires.models import UserHabitAnswer
             
-            # 1. 🚬 SMOKING - Pregunta 4
+            # SMOKING
             smoking_answer = UserHabitAnswer.objects.filter(
                 user=obj.user,
                 question__habit_type='SMOKING',
                 is_onboarding=True
             ).first()
             
-            if smoking_answer:
-                smoking_value = smoking_answer.selected_option.value
-                # Si fuma (valores 0 o 1 = "Sí, todos los días" o "Sí, ocasionalmente")
-                if smoking_value in [0, 1]:
-                    applicable_factors.append(clinical_factors_content['smoking'])
+            if smoking_answer and smoking_answer.selected_option.value in [0, 1]:
+                profile_conditions.append(('SMOKING', 'YES'))
             
-            # 2. 🍷 ALCOHOL - Pregunta 5
+            # ALCOHOL
             alcohol_answer = UserHabitAnswer.objects.filter(
                 user=obj.user,
                 question__habit_type='ALCOHOL',
                 is_onboarding=True
             ).first()
             
-            if alcohol_answer:
-                alcohol_value = alcohol_answer.selected_option.value
-                # Si bebe alcohol (valores 0, 1, 2 = "Sí, frecuentemente", "Sí, a veces", "Muy ocasionalmente")
-                if alcohol_value in [0, 1, 2]:
-                    applicable_factors.append(clinical_factors_content['alcohol'])
-                    
+            if alcohol_answer and alcohol_answer.selected_option.value in [0, 1, 2]:
+                profile_conditions.append(('ALCOHOL', 'YES'))
+                
         except Exception as e:
-            print(f"❌ Error al leer hábitos SMOKING/ALCOHOL en serializer: {str(e)}")
+            print(f"❌ Error al leer hábitos SMOKING/ALCOHOL: {str(e)}")
+        
+        # Ahora buscar las recomendaciones correspondientes en la BD
+        for rec_type, condition_value in profile_conditions:
+            try:
+                recommendation = ConditionalRecommendation.objects.filter(
+                    recommendation_type__type=rec_type,
+                    condition_value=condition_value,
+                    is_active=True
+                ).first()
+                
+                if recommendation:
+                    # Crear el diccionario con la estructura que espera el frontend
+                    factor = {
+                        'title': recommendation.title,
+                        'content': recommendation.content,
+                        'tools': recommendation.tools,
+                        'icon': recommendation.icon_type or 'medical'  # Fallback a 'medical' si no hay icon_type
+                    }
+                    applicable_factors.append(factor)
+                    
+            except Exception as e:
+                print(f"❌ Error al buscar recomendación {rec_type}-{condition_value}: {str(e)}")
         
         return applicable_factors
 
@@ -607,9 +599,11 @@ class UserProgramSerializer(serializers.ModelSerializer):
             return 1  # ERGE Erosiva
         elif phenotype == 'NERD' or scenario in ['B', 'K']:
             return 2  # ERGE No Erosiva
+        elif phenotype == 'NERD_MIXED' or scenario == 'M':  # 🆕 NUEVO
+            return 9  # ERGE No Erosiva Mixta (NERD Mixto)
         elif phenotype == 'EXTRAESOPHAGEAL' or scenario in ['C', 'L']:
             return 3  # Reflujo Extraesofágico
-        elif phenotype == 'FUNCTIONAL' or scenario in ['D', 'H']:
+        elif phenotype == 'FUNCTIONAL' or scenario == 'D':  # Solo D
             return 4  # Perfil Funcional
         elif phenotype == 'SYMPTOMS_NO_TESTS' or scenario == 'E':
             return 5  # Síntomas digestivos sin pruebas (GERDq+ / RSI-)
@@ -617,5 +611,5 @@ class UserProgramSerializer(serializers.ModelSerializer):
             return 7  # Síntomas extraesofágicos sin pruebas (GERDq- / RSI+)
         elif phenotype == 'SYMPTOMS_MIXED_NO_TESTS' or scenario == 'G':
             return 8  # Perfil mixto sin pruebas (GERDq+ / RSI+)
-        else:
+        elif phenotype == 'NO_SYMPTOMS' or scenario in ['H', 'I']:  # H e I
             return 6  # Bienestar digestivo

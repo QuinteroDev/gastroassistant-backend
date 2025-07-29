@@ -45,11 +45,18 @@ class ConditionalRecommendation(models.Model):
         verbose_name="Tipo de recomendación"
     )
     title = models.CharField(max_length=255, verbose_name="Título")
+    icon_type = models.CharField(max_length=50, blank=True, null=True)
     content = models.TextField(verbose_name="Contenido")
     condition_value = models.CharField(
         max_length=50, 
         verbose_name="Valor de la condición",
         help_text="Valor específico que activa esta recomendación (ej: 'YES', 'BMI_OVER_25', 'EROSIVE')"
+    )
+    tools_title = models.CharField(
+        max_length=255, 
+        blank=True,
+        verbose_name="Título de herramientas",
+        help_text="Título que aparecerá sobre las herramientas sugeridas"
     )
     tools = models.TextField(
         blank=True,

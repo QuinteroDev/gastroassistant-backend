@@ -139,17 +139,19 @@ class UserCycle(models.Model):
         
         return self.status
     
+# En cycles/models.py, asegúrate que el método devuelve el status:
     def check_and_update_status(self):
-        """Verifica y actualiza el estado del ciclo"""
+        """
+        Verifica y actualiza el estado del ciclo basado en la fecha actual.
+        """
         now = timezone.now()
         
         if self.status == 'ACTIVE':
             if now >= self.end_date:
                 self.status = 'PENDING_RENEWAL'
                 self.save()
-            elif (self.end_date - now).days <= 3:  # 3 días antes
-                # Aquí podrías enviar notificación
-                pass
+        
+        return self.status  # ← ESTA LÍNEA DEBE ESTAR
 
 class CycleHabitAssignment(models.Model):
     """

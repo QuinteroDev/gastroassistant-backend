@@ -12,8 +12,8 @@ class ConditionalRecommendationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ConditionalRecommendation
-        fields = ['id', 'recommendation_type', 'title', 'content', 
-                 'condition_value', 'tools', 'order']
+        fields = ['id', 'recommendation_type', 'title', 'content',
+                 'condition_value', 'tools', 'tools_title', 'order', 'icon_type']
 
 class UserRecommendationSerializer(serializers.ModelSerializer):
     recommendation = ConditionalRecommendationSerializer(read_only=True)

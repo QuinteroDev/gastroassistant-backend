@@ -5,6 +5,8 @@ from django.db import transaction
 from .models import UserCycle, CycleSnapshot, CycleHabitAssignment
 from questionnaires.models import UserHabitAnswer, HabitQuestion
 from profiles.models import UserProfile
+from gamification.services import GamificationService  # ← AÑADE ESTO
+
 
 # En cycles/services.py, actualiza la función create_new_cycle:
 

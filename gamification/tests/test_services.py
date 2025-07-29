@@ -39,7 +39,6 @@ class TestGamificationService:
             tracker = HabitTracker.objects.create(
                 user=user,
                 habit=habit,
-                cycle=cycle,
                 is_promoted=(i == 0)  # Primer hábito promocionado
             )
             habits.append(habit)
@@ -185,13 +184,13 @@ class TestGamificationService:
         
         # Crear medallas disponibles
         medal1 = Medal.objects.create(
-            name='Medalla 100',
+            name='Test Medalla 100',
             required_points=100,
             required_level='NOVATO',
             required_cycle_number=1
         )
         medal2 = Medal.objects.create(
-            name='Medalla 1000',
+            name='Test Medalla 1000',
             required_points=1000,
             required_level='BRONCE',
             required_cycle_number=1
@@ -200,9 +199,12 @@ class TestGamificationService:
         # Verificar medallas
         new_medals = GamificationService.check_new_medals(user)
         
+        # Filtrar solo nuestras medallas de test
+        test_medals = [m for m in new_medals if 'Test Medalla' in m.medal.name]
+        
         # Debería obtener solo la primera (tiene 500 puntos, menos de 1000)
-        assert len(new_medals) == 1
-        assert new_medals[0].medal == medal1
+        assert len(test_medals) == 1
+        assert test_medals[0].medal == medal1
     
     def test_process_daily_gamification(self, user_with_habits_and_cycle):
         """Test proceso completo de gamificación diaria"""

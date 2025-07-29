@@ -13,6 +13,7 @@ class UserProfile(models.Model):
     PHENOTYPE_CHOICES = [
         ('EROSIVE', 'ERGE Erosiva'),
         ('NERD', 'ERGE No Erosiva (NERD)'),
+        ('NERD_MIXED', 'ERGE No Erosiva Mixta'),
         ('EXTRAESOPHAGEAL', 'Reflujo Extraesofágico'),
         ('FUNCTIONAL', 'Perfil Funcional / Hipersensibilidad'),
         ('SYMPTOMS_NO_TESTS', 'Síntomas sin Pruebas'),

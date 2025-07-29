@@ -8,7 +8,7 @@ from django.conf import settings
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Configurar Django antes de cualquier import
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'test_settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gastro_assistant.settings')  # ← CAMBIAR A TU SETTINGS REAL
 
 # Configurar Django
 if not settings.configured:
