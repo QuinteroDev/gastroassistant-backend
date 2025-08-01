@@ -54,31 +54,33 @@ class UserProgramView(generics.RetrieveAPIView):
             'display_block': None  # Se llenará según el caso
         }
         
-        # Determinar qué bloque específico mostrar dentro del programa
-        if instance.program.type == 'A':
-            # Escenarios A, J → ERGE erosiva
-            profile_data['display_block'] = 1
-        elif instance.program.type == 'B':
-            # Programas tipo B pueden ser bloque 2 o 9
-            if profile.phenotype == 'NERD_MIXED' or profile.scenario == 'M':
-                profile_data['display_block'] = 9  # 🆕 NERD Mixto
-            else:
-                profile_data['display_block'] = 2  # NERD regular
-        elif instance.program.type == 'C':
-            # Escenarios C, L → Reflujo extraesofágico
-            profile_data['display_block'] = 3
-        elif instance.program.type == 'D':
-            # Programas tipo D pueden ser bloque 4, 5, 6, 7 u 8
-            if profile.phenotype == 'FUNCTIONAL' or profile.scenario == 'D':
-                profile_data['display_block'] = 4  # Perfil funcional (solo D)
-            elif profile.phenotype == 'SYMPTOMS_NO_TESTS' or profile.scenario == 'E':
-                profile_data['display_block'] = 5  # Síntomas digestivos sin pruebas
-            elif profile.phenotype == 'EXTRAESOPHAGEAL_NO_TESTS' or profile.scenario == 'F':
-                profile_data['display_block'] = 7  # Síntomas extraesofágicos sin pruebas
-            elif profile.phenotype == 'SYMPTOMS_MIXED_NO_TESTS' or profile.scenario == 'G':
-                profile_data['display_block'] = 8  # Síntomas mixtos sin pruebas
-            elif profile.phenotype == 'NO_SYMPTOMS' or profile.scenario in ['H', 'I']:
-                profile_data['display_block'] = 6  # Sin síntomas (H e I)
+        # Mapeo directo de escenarios a bloques según la nueva tabla
+        scenario_to_block = {
+            'A': 1,   # ERGE Erosiva
+            'B': 9,   # NERD Mixto
+            'C': 2,   # NERD
+            'D': 3,   # Reflujo Extraesofágico
+            'E': 6,   # Bienestar Digestivo (CAMBIADO)
+            'F': 4,   # Perfil Funcional
+            'F2': 4,  # Perfil Funcional
+            'F3': 4,  # Perfil Funcional
+            'F4': 6,  # Bienestar Digestivo
+            'G': 8,   # Perfil Mixto sin Pruebas
+            'H': 5,   # Síntomas Digestivos sin Pruebas
+            'I': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'J': 6,   # Bienestar Digestivo
+            'K': 8,   # Perfil Mixto sin Pruebas
+            'L': 5,   # Síntomas Digestivos sin Pruebas
+            'M': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'N': 6,   # Bienestar Digestivo
+            'O': 8,   # Perfil Mixto sin Pruebas
+            'P': 5,   # Síntomas Digestivos sin Pruebas
+            'Q': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'R': 6,   # Bienestar Digestivo
+        }
+        
+        # Determinar qué bloque mostrar basado en el escenario
+        profile_data['display_block'] = scenario_to_block.get(profile.scenario, 6)
         
         # Serializar el programa
         serializer = self.get_serializer(instance)

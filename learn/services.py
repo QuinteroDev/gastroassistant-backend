@@ -53,7 +53,7 @@ class ContentUnlockService:
             # Contenido que requiere esas medallas
             medal_content = UnlockableEducationalContent.objects.filter(
                 unlock_type='MEDAL',
-                required_medal_id__in=user_medals,
+                required_medal__in=user_medals,
                 is_active=True
             )
             

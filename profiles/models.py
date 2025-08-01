@@ -21,6 +21,31 @@ class UserProfile(models.Model):
         ('NO_SYMPTOMS', 'Sin Síntomas ni Pruebas'),
         ('UNDETERMINED', 'No Determinado')
     ]
+
+    SCENARIO_CHOICES = [
+        ('A', 'A - Endoscopia positiva'),
+        ('B', 'B - NERD Mixto (Endo- pH+ GERDq+ RSI+)'),
+        ('C', 'C - NERD (Endo- pH+ GERDq+ RSI-)'),
+        ('D', 'D - Extraesofágico (Endo- pH+ GERDq- RSI+)'),
+        ('E', 'E - Bienestar (Endo- pH+ GERDq- RSI-)'),
+        ('F', 'F - Funcional (Endo- pH- GERDq+ RSI+)'),
+        ('F2', 'F2 - Funcional (Endo- pH- GERDq+ RSI-)'),
+        ('F3', 'F3 - Funcional (Endo- pH- GERDq- RSI+)'),
+        ('F4', 'F4 - Bienestar (Endo- pH- GERDq- RSI-)'),
+        ('G', 'G - Mixto sin pH (Endo- No pH GERDq+ RSI+)'),
+        ('H', 'H - Digestivo sin pH (Endo- No pH GERDq+ RSI-)'),
+        ('I', 'I - Extraesofágico sin pH (Endo- No pH GERDq- RSI+)'),
+        ('J', 'J - Bienestar sin pH (Endo- No pH GERDq- RSI-)'),
+        ('K', 'K - Mixto sin Endo (No Endo pH hecha GERDq+ RSI+)'),
+        ('L', 'L - Digestivo sin Endo (No Endo pH hecha GERDq+ RSI-)'),
+        ('M', 'M - Extraesofágico sin Endo (No Endo pH hecha GERDq- RSI+)'),
+        ('N', 'N - Bienestar sin Endo (No Endo pH hecha GERDq- RSI-)'),
+        ('O', 'O - Mixto sin pruebas (No pruebas GERDq+ RSI+)'),
+        ('P', 'P - Digestivo sin pruebas (No pruebas GERDq+ RSI-)'),
+        ('Q', 'Q - Extraesofágico sin pruebas (No pruebas GERDq- RSI+)'),
+        ('R', 'R - Bienestar sin pruebas (No pruebas GERDq- RSI-)'),
+    ]
+    
     
     # Resultados de endoscopia
     ENDOSCOPY_CHOICES = [
@@ -234,10 +259,11 @@ class UserProfile(models.Model):
     
     # Escenario A-L según la clasificación de la guía
     scenario = models.CharField(
-        max_length=1, 
+        max_length=3,  # 🆕 CAMBIADO DE 1 A 3 para soportar F2, F3, F4
+        choices=SCENARIO_CHOICES,  # 🆕 AGREGADO choices
         blank=True, 
         null=True,
-        verbose_name="Escenario (A-L)"
+        verbose_name="Escenario diagnóstico"
     )
     
     onboarding_complete = models.BooleanField(default=False)

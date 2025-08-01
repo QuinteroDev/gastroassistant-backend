@@ -193,7 +193,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'que_significa',
                         'title': '¿Qué significa tu perfil?',
-                        'content': 'En tu caso, las pruebas digestivas no han mostrado reflujo ácido excesivo ni lesiones en el esófago. Aun así, los síntomas persisten. Una posible explicación es una mayor sensibilidad del esófago o a una alteración funcional en la forma en que tu cuerpo percibe ciertos estímulos. Es lo que se conoce como hipersensibilidad esofágica o pirosis funcional.',
+                        'content': 'En tu caso, las pruebas digestivas no han mostrado reflujo ácido excesivo ni lesiones en el esófago. Aun así, los síntomas persisten. Una posible explicación es una mayor sensibilidad del esófago o a una alteración funcional en la forma en que tu cuerpo percibe ciertos estímulos. Es lo que se conoce como hipersensibilidad esofágica o pirosis funcional. Algunas personas, en lugar de notar ardor o molestias típicas, tienen síntomas más altos como carraspeo, tos o sensación de nudo en la garganta. ',
                         'icon': 'psychology'
                     },
                     {
@@ -202,7 +202,8 @@ class UserProgramSerializer(serializers.ModelSerializer):
                         'content': [
                             'Este diagnóstico no significa que "no tengas nada": tus síntomas son reales, pero no se deben a un daño físico visible.',
                             'En estos casos, la guía clínica destaca que lo más útil es el enfoque educativo y los cambios en el estilo de vida, más que tratamientos farmacológicos intensivos.',
-                            'Factores como el estrés, la ansiedad o haber tenido problemas digestivos durante mucho tiempo pueden hacer que el cuerpo se vuelva más sensible y reaccione con más intensidad, aunque las pruebas estén bien.'
+                            'Factores como el estrés, la ansiedad o haber tenido problemas digestivos durante mucho tiempo pueden hacer que el cuerpo se vuelva más sensible y reaccione con más intensidad, aunque las pruebas estén bien.',
+                            'En los trastornos funcionales digestivos, la evidencia sobre el papel de la terapia psicológica (como la terapia cognitivo-conductual o estrategias de regulación emocional) es cada vez más clara. Este tipo de apoyo puede ayudarte a reducir la intensidad del malestar, mejorar la percepción de los síntomas y acompañarte en el proceso de recuperación.'
                         ],
                         'icon': 'alert-circle'
                     },
@@ -216,7 +217,8 @@ class UserProgramSerializer(serializers.ModelSerializer):
                             'Escucha tu cuerpo: si algún alimento te genera molestias claras, puedes reducirlo, pero no es necesario hacer muchas eliminaciones si no hay una causa identificada.',
                             'Mantén horarios regulares para las comidas y deja suficiente tiempo antes de acostarte.',
                             'Hidrátate bien durante el día y evita grandes cantidades de líquido durante las comidas.',
-                            'En los trastornos funcionales digestivos, la evidencia sobre el papel de la terapia psicológica (como la terapia cognitivo-conductual o estrategias de regulación emocional) es cada vez más clara. Este tipo de apoyo puede ayudarte a reducir la intensidad del malestar, mejorar la percepción de los síntomas y acompañarte en el proceso de recuperación.'
+                            'En los trastornos funcionales digestivos, la evidencia sobre el papel de la terapia psicológica (como la terapia cognitivo-conductual o estrategias de regulación emocional) es cada vez más clara. Este tipo de apoyo puede ayudarte a reducir la intensidad del malestar, mejorar la percepción de los síntomas y acompañarte en el proceso de recuperación.',
+                            'Si tus molestias incluyen carraspeo o síntomas en la garganta como tos o mucosidad, necesidad de aclarar constantemente la garganta: Reduce alimentos que notes que aumentan tu mucosidad o el carraspeo (como cítricos o vinagres), Evita carraspear de forma habitual: puede empeorar la irritación y Mantente bien hidratado durante el día, con pequeños sorbos entre comidas.'
                         ],
                         'icon': 'checkmark-circle'
                     },
@@ -346,6 +348,8 @@ class UserProgramSerializer(serializers.ModelSerializer):
                         'id': 'por_que_importante',
                         'title': '¿Por qué es importante tenerlo en cuenta?',
                         'content': [
+                            'A veces se relaciona con el ascenso de pequeñas cantidades de ácido o contenido gástrico hacia la zona de la laringe o faringe.',
+                            'Según la guía clínica, la relación entre estos síntomas y el reflujo no siempre está clara, pero muchos pacientes mejoran al modificar sus hábitos.',
                             'Muchas personas mejoran aplicando cambios en sus hábitos, incluso antes de recibir un diagnóstico confirmado.',
                             'Aun así, si los síntomas persisten o aumentan, consultar con un médico es clave para avanzar en el diagnóstico.'
                         ],
@@ -369,7 +373,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'seguimiento_medico',
                         'title': '¿Y el seguimiento médico?',
-                        'content': 'Si los síntomas persisten, empeoran o te preocupan, no lo ignores: solicita una evaluación médica. Tu profesional de referencia podrá valorar si es necesario realizar estudios adicionales para comprender mejor lo que ocurre y decidir el tratamiento más adecuado.',
+                        'content': 'Si los síntomas persisten, empeoran o te preocupan, no lo ignores: solicita una evaluación médica. Tu profesional de referencia podrá valorar si es necesario realizar estudios adicionales para comprender mejor lo que ocurre y decidir el tratamiento más adecuado. En algunos casos, puede ser útil una evaluación complementaria por otorrinolaringología o neumología para descartar otras causas.',
                         'icon': 'hospital-user'
                     },
                     {
@@ -417,7 +421,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'seguimiento_medico',
                         'title': '¿Y el seguimiento médico?',
-                        'content': 'Si los síntomas persisten, empeoran o te preocupan, no lo ignores: solicita una evaluación médica. Tu profesional de referencia podrá valorar si es necesario realizar estudios adicionales para comprender mejor lo que ocurre y decidir el tratamiento más adecuado.',
+                        'content': 'Si los síntomas persisten, empeoran o te preocupan, no lo ignores: solicita una evaluación médica. Tu profesional de referencia podrá valorar si es necesario realizar estudios adicionales para comprender mejor lo que ocurre y decidir el tratamiento más adecuado. En algunos casos, puede ser útil una evaluación complementaria por otorrinolaringología o neumología para descartar otras causas.',
                         'icon': 'hospital-user'
                     },
                     {
@@ -591,25 +595,54 @@ class UserProgramSerializer(serializers.ModelSerializer):
         return applicable_factors
 
     def _determine_display_block(self, profile):
-        """Determina qué bloque mostrar basado en el perfil"""
-        phenotype = profile.phenotype
+        """
+        Determina qué bloque mostrar basado en el escenario del usuario.
+        Mapeo actualizado según la nueva tabla de escenarios A-R.
+        """
         scenario = profile.scenario
         
-        if phenotype == 'EROSIVE' or scenario in ['A', 'J']:
-            return 1  # ERGE Erosiva
-        elif phenotype == 'NERD' or scenario in ['B', 'K']:
-            return 2  # ERGE No Erosiva
-        elif phenotype == 'NERD_MIXED' or scenario == 'M':  # 🆕 NUEVO
-            return 9  # ERGE No Erosiva Mixta (NERD Mixto)
-        elif phenotype == 'EXTRAESOPHAGEAL' or scenario in ['C', 'L']:
-            return 3  # Reflujo Extraesofágico
-        elif phenotype == 'FUNCTIONAL' or scenario == 'D':  # Solo D
-            return 4  # Perfil Funcional
-        elif phenotype == 'SYMPTOMS_NO_TESTS' or scenario == 'E':
-            return 5  # Síntomas digestivos sin pruebas (GERDq+ / RSI-)
-        elif phenotype == 'EXTRAESOPHAGEAL_NO_TESTS' or scenario == 'F':
-            return 7  # Síntomas extraesofágicos sin pruebas (GERDq- / RSI+)
-        elif phenotype == 'SYMPTOMS_MIXED_NO_TESTS' or scenario == 'G':
-            return 8  # Perfil mixto sin pruebas (GERDq+ / RSI+)
-        elif phenotype == 'NO_SYMPTOMS' or scenario in ['H', 'I']:  # H e I
-            return 6  # Bienestar digestivo
+        # Mapeo directo de escenarios a bloques según la nueva tabla
+        scenario_to_block = {
+            'A': 1,   # ERGE Erosiva
+            'B': 9,   # NERD Mixto
+            'C': 2,   # NERD
+            'D': 3,   # Reflujo Extraesofágico
+            'E': 6,   # Bienestar Digestivo (CAMBIADO del 2 al 6)
+            'F': 4,   # Perfil Funcional
+            'F2': 4,  # Perfil Funcional
+            'F3': 4,  # Perfil Funcional
+            'F4': 6,  # Bienestar Digestivo
+            'G': 8,   # Perfil Mixto sin Pruebas
+            'H': 5,   # Síntomas Digestivos sin Pruebas
+            'I': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'J': 6,   # Bienestar Digestivo
+            'K': 8,   # Perfil Mixto sin Pruebas
+            'L': 5,   # Síntomas Digestivos sin Pruebas
+            'M': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'N': 6,   # Bienestar Digestivo
+            'O': 8,   # Perfil Mixto sin Pruebas
+            'P': 5,   # Síntomas Digestivos sin Pruebas
+            'Q': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'R': 6,   # Bienestar Digestivo
+        }
+        
+        # Si tenemos un escenario, usar el mapeo directo
+        if scenario and scenario in scenario_to_block:
+            return scenario_to_block[scenario]
+        
+        # Fallback por si acaso no hay escenario (no debería pasar con el nuevo algoritmo)
+        # pero lo mantenemos por compatibilidad
+        phenotype = profile.phenotype
+        phenotype_to_block = {
+            'EROSIVE': 1,
+            'NERD': 2,
+            'NERD_MIXED': 9,
+            'EXTRAESOPHAGEAL': 3,
+            'FUNCTIONAL': 4,
+            'SYMPTOMS_NO_TESTS': 5,
+            'NO_SYMPTOMS': 6,
+            'EXTRAESOPHAGEAL_NO_TESTS': 7,
+            'SYMPTOMS_MIXED_NO_TESTS': 8,
+        }
+        
+        return phenotype_to_block.get(phenotype, 6)  # Default a Bienestar Digestivo
