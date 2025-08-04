@@ -1,26 +1,119 @@
-# profiles/tests/test_services.py
+# profiles/tests/test_services.py - ACTUALIZADO
 import pytest
 from django.test import TestCase
+from django.contrib.auth.models import User
 from profiles.services import PhenotypeClassificationService
+from profiles.models import UserProfile
 
 class TestPhenotypeClassificationService(TestCase):
     
-    def test_determine_scenario_a_erosive(self):
-        """Test escenario A: GERDq+, Endoscopia con esofagitis"""
+    def setUp(self):
+        """Configurar usuario de prueba con perfil"""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com'
+        )
+        self.profile = UserProfile.objects.get(user=self.user)
+    
+    def test_scenario_a_erosive_always(self):
+        """Test REGLA 1: Endoscopia positiva siempre es escenario A"""
+        # Con cualquier combinación de cuestionarios
+        test_cases = [
+            (True, True),    # GERDq+, RSI+
+            (True, False),   # GERDq+, RSI-
+            (False, True),   # GERDq-, RSI+
+            (False, False),  # GERDq-, RSI-
+        ]
+        
+        for gerdq, rsi in test_cases:
+            scenario = PhenotypeClassificationService.determine_scenario(
+                gerdq_positive=gerdq,
+                rsi_positive=rsi,
+                endoscopy_done=True,
+                endoscopy_positive=True,  # SIEMPRE positiva
+                ph_done=False,
+                ph_positive=False,
+                ph_negative=False
+            )
+            assert scenario == 'A', f"Endoscopia positiva con GERDq={gerdq}, RSI={rsi} debería ser A"
+    
+    def test_both_questionnaires_negative_rules(self):
+        """Test REGLA 2: Ambos cuestionarios negativos"""
+        # Escenario E: Endo-, pH+, sin síntomas
         scenario = PhenotypeClassificationService.determine_scenario(
-            gerdq_positive=True,
-            rsi_positive=True,  # Puede ser cualquier valor
+            gerdq_positive=False,
+            rsi_positive=False,
             endoscopy_done=True,
-            endoscopy_positive=True,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=True,
+            ph_negative=False
+        )
+        assert scenario == 'E'
+        
+        # Escenario F4: Endo-, pH-, sin síntomas
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=False,
+            rsi_positive=False,
+            endoscopy_done=True,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=False,
+            ph_negative=True
+        )
+        assert scenario == 'F4'
+        
+        # Escenario J: Endo-, pH no hecha, sin síntomas
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=False,
+            rsi_positive=False,
+            endoscopy_done=True,
+            endoscopy_positive=False,
             ph_done=False,
             ph_positive=False,
             ph_negative=False
         )
+        assert scenario == 'J'
         
-        assert scenario == 'A'
+        # Escenario N: Endo no hecha, pH hecha, sin síntomas
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=False,
+            rsi_positive=False,
+            endoscopy_done=False,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=True,  # No importa el resultado
+            ph_negative=False
+        )
+        assert scenario == 'N'
+        
+        # Escenario R: Sin pruebas, sin síntomas
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=False,
+            rsi_positive=False,
+            endoscopy_done=False,
+            endoscopy_positive=False,
+            ph_done=False,
+            ph_positive=False,
+            ph_negative=False
+        )
+        assert scenario == 'R'
     
-    def test_determine_scenario_b_nerd(self):
-        """Test escenario B: GERDq+, RSI-, Endoscopia normal, pH+"""
+    def test_nerd_scenarios(self):
+        """Test REGLA 3: Endoscopia negativa + pH positiva"""
+        # Escenario B: NERD Mixto
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=True,
+            endoscopy_done=True,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=True,
+            ph_negative=False
+        )
+        assert scenario == 'B'
+        
+        # Escenario C: NERD clásico
         scenario = PhenotypeClassificationService.determine_scenario(
             gerdq_positive=True,
             rsi_positive=False,
@@ -30,78 +123,242 @@ class TestPhenotypeClassificationService(TestCase):
             ph_positive=True,
             ph_negative=False
         )
-        
-        assert scenario == 'B'
-    
-    def test_determine_scenario_c_extraesophageal(self):
-        """Test escenario C: GERDq-, RSI+, Endoscopia normal"""
-        scenario = PhenotypeClassificationService.determine_scenario(
-            gerdq_positive=False,
-            rsi_positive=True,
-            endoscopy_done=True,  # C requiere endoscopia hecha
-            endoscopy_positive=False,
-            ph_done=False,
-            ph_positive=False,
-            ph_negative=False
-        )
-        
         assert scenario == 'C'
-    
-    def test_determine_scenario_f_no_tests(self):
-        """Test escenario F: GERDq-, RSI+, Sin pruebas"""
+        
+        # Escenario D: Extraesofágico con reflujo
         scenario = PhenotypeClassificationService.determine_scenario(
             gerdq_positive=False,
             rsi_positive=True,
-            endoscopy_done=False,  # F no tiene pruebas
+            endoscopy_done=True,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=True,
+            ph_negative=False
+        )
+        assert scenario == 'D'
+    
+    def test_functional_scenarios(self):
+        """Test REGLA 4: Endoscopia negativa + pH negativa"""
+        # Escenario F: Funcional con síntomas mixtos
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=True,
+            endoscopy_done=True,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=False,
+            ph_negative=True
+        )
+        assert scenario == 'F'
+        
+        # Escenario F2: Funcional con síntomas digestivos
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=False,
+            endoscopy_done=True,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=False,
+            ph_negative=True
+        )
+        assert scenario == 'F2'
+        
+        # Escenario F3: Funcional con síntomas extraesofágicos
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=False,
+            rsi_positive=True,
+            endoscopy_done=True,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=False,
+            ph_negative=True
+        )
+        assert scenario == 'F3'
+    
+    def test_incomplete_tests_scenarios(self):
+        """Test REGLA 5: Pruebas incompletas"""
+        # Casos con endoscopia negativa pero sin pH
+        # Escenario G: Mixto sin pH
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=True,
+            endoscopy_done=True,
             endoscopy_positive=False,
             ph_done=False,
             ph_positive=False,
             ph_negative=False
         )
+        assert scenario == 'G'
         
-        assert scenario == 'F'
+        # Escenario H: Digestivo sin pH
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=False,
+            endoscopy_done=True,
+            endoscopy_positive=False,
+            ph_done=False,
+            ph_positive=False,
+            ph_negative=False
+        )
+        assert scenario == 'H'
+        
+        # Escenario I: Extraesofágico sin pH
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=False,
+            rsi_positive=True,
+            endoscopy_done=True,
+            endoscopy_positive=False,
+            ph_done=False,
+            ph_positive=False,
+            ph_negative=False
+        )
+        assert scenario == 'I'
     
-    def test_all_scenarios_coverage(self):
-        """Test de cobertura de todos los escenarios A-M"""
+    def test_no_endoscopy_scenarios(self):
+        """Test casos sin endoscopia pero con pH"""
+        # Escenario K: Mixto sin endoscopia
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=True,
+            endoscopy_done=False,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=True,
+            ph_negative=False
+        )
+        assert scenario == 'K'
+        
+        # Escenario L: Digestivo sin endoscopia
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=False,
+            endoscopy_done=False,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=False,
+            ph_negative=True
+        )
+        assert scenario == 'L'
+        
+        # Escenario M: Extraesofágico sin endoscopia
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=False,
+            rsi_positive=True,
+            endoscopy_done=False,
+            endoscopy_positive=False,
+            ph_done=True,
+            ph_positive=True,
+            ph_negative=False
+        )
+        assert scenario == 'M'
+    
+    def test_no_tests_scenarios(self):
+        """Test casos sin ninguna prueba"""
+        # Escenario O: Mixto sin pruebas
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=True,
+            endoscopy_done=False,
+            endoscopy_positive=False,
+            ph_done=False,
+            ph_positive=False,
+            ph_negative=False
+        )
+        assert scenario == 'O'
+        
+        # Escenario P: Digestivo sin pruebas
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=True,
+            rsi_positive=False,
+            endoscopy_done=False,
+            endoscopy_positive=False,
+            ph_done=False,
+            ph_positive=False,
+            ph_negative=False
+        )
+        assert scenario == 'P'
+        
+        # Escenario Q: Extraesofágico sin pruebas
+        scenario = PhenotypeClassificationService.determine_scenario(
+            gerdq_positive=False,
+            rsi_positive=True,
+            endoscopy_done=False,
+            endoscopy_positive=False,
+            ph_done=False,
+            ph_positive=False,
+            ph_negative=False
+        )
+        assert scenario == 'Q'
+    
+    def test_scenario_to_block_mapping(self):
+        """Test mapeo de escenarios a bloques de contenido"""
+        expected_mappings = {
+            'A': 1,   # ERGE Erosiva
+            'B': 9,   # NERD Mixto
+            'C': 2,   # NERD
+            'D': 3,   # Reflujo Extraesofágico
+            'E': 6,   # Bienestar Digestivo
+            'F': 4,   # Perfil Funcional
+            'F2': 4,  # Perfil Funcional
+            'F3': 4,  # Perfil Funcional
+            'F4': 6,  # Bienestar Digestivo
+            'G': 8,   # Perfil Mixto sin Pruebas
+            'H': 5,   # Síntomas Digestivos sin Pruebas
+            'I': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'J': 6,   # Bienestar Digestivo
+            'K': 8,   # Perfil Mixto sin Pruebas
+            'L': 5,   # Síntomas Digestivos sin Pruebas
+            'M': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'N': 6,   # Bienestar Digestivo
+            'O': 8,   # Perfil Mixto sin Pruebas
+            'P': 5,   # Síntomas Digestivos sin Pruebas
+            'Q': 7,   # Síntomas Extraesofágicos sin Pruebas
+            'R': 6,   # Bienestar Digestivo
+        }
+        
+        # Este test verificaría que el mapeo en el serializer es correcto
+        # pero necesitaría acceso a _determine_display_block
+        for scenario, expected_block in expected_mappings.items():
+            # Aquí podrías probar el mapeo real si expones el método
+            pass
+    
+    def test_phenotype_determination(self):
+        """Test determinación de fenotipos según el nuevo mapeo"""
         test_cases = [
-            # (gerdq, rsi, endo_done, endo_pos, ph_done, ph_pos, ph_neg, expected_scenario)
-            (True, True, True, True, False, False, False, 'A'),     # A
-            (True, False, True, False, True, True, False, 'B'),     # B
-            (False, True, True, False, False, False, False, 'C'),   # C
-            (True, True, True, False, True, False, True, 'D'),      # D
-            (True, False, False, False, False, False, False, 'E'),  # E
-            (False, True, False, False, False, False, False, 'F'),  # F (corregido)
-            (True, True, False, False, False, False, False, 'G'),   # G
-            (False, False, True, False, True, False, True, 'H'),    # H
-            (False, False, False, False, False, False, False, 'I'), # I
-            (False, False, True, True, False, False, False, 'J'),   # J
-            (False, False, True, False, True, True, False, 'K'),    # K
-            (False, True, True, False, True, False, True, 'L'),     # L
-            (True, True, True, False, True, True, False, 'M'),      # M
-        ]
-        
-        for i, test_case in enumerate(test_cases):
-            scenario = PhenotypeClassificationService.determine_scenario(*test_case[:-1])
-            assert scenario == test_case[-1], f"Test case {i}: Expected {test_case[-1]}, got {scenario}"
-    
-    def test_determine_phenotype(self):
-        """Test de mapeo de escenarios a fenotipos"""
-        mappings = [
             ('A', 'EROSIVE'),
-            ('B', 'NERD'),
-            ('C', 'EXTRAESOPHAGEAL'),
-            ('D', 'FUNCTIONAL'),
-            ('E', 'SYMPTOMS_NO_TESTS'),
-            ('F', 'EXTRAESOPHAGEAL_NO_TESTS'),
+            ('B', 'NERD_MIXED'),  # Cambió de NERD a NERD_MIXED
+            ('C', 'NERD'),
+            ('D', 'EXTRAESOPHAGEAL'),
+            ('E', 'NO_SYMPTOMS'),  # Cambió de NERD a NO_SYMPTOMS
+            ('F', 'FUNCTIONAL'),
+            ('F2', 'FUNCTIONAL'),
+            ('F3', 'FUNCTIONAL'),
+            ('F4', 'NO_SYMPTOMS'),
             ('G', 'SYMPTOMS_MIXED_NO_TESTS'),
-            ('H', 'NO_SYMPTOMS'),
-            ('I', 'NO_SYMPTOMS'),
-            ('J', 'EROSIVE'),
-            ('K', 'NERD'),
-            ('L', 'EXTRAESOPHAGEAL'),
-            ('M', 'NERD_MIXED'),
+            ('H', 'SYMPTOMS_NO_TESTS'),
+            ('I', 'EXTRAESOPHAGEAL_NO_TESTS'),
+            ('J', 'NO_SYMPTOMS'),
+            ('K', 'SYMPTOMS_MIXED_NO_TESTS'),
+            ('L', 'SYMPTOMS_NO_TESTS'),
+            ('M', 'EXTRAESOPHAGEAL_NO_TESTS'),
+            ('N', 'NO_SYMPTOMS'),
+            ('O', 'SYMPTOMS_MIXED_NO_TESTS'),
+            ('P', 'SYMPTOMS_NO_TESTS'),
+            ('Q', 'EXTRAESOPHAGEAL_NO_TESTS'),
+            ('R', 'NO_SYMPTOMS'),
         ]
         
-        for scenario, expected_phenotype in mappings:
+        for scenario, expected_phenotype in test_cases:
             phenotype = PhenotypeClassificationService.determine_phenotype(scenario)
-            assert phenotype == expected_phenotype, f"Scenario {scenario}: Expected {expected_phenotype}, got {phenotype}"
+            assert phenotype == expected_phenotype, \
+                f"Scenario {scenario}: Expected {expected_phenotype}, got {phenotype}"
+    
+    def test_edge_cases(self):
+        """Test casos límite"""
+        # Test con None como escenario
+        phenotype = PhenotypeClassificationService.determine_phenotype(None)
+        assert phenotype == 'UNDETERMINED'
+        
+        # Test con escenario no reconocido
+        phenotype = PhenotypeClassificationService.determine_phenotype('Z')
+        assert phenotype == 'UNDETERMINED'

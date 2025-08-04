@@ -76,20 +76,17 @@ class TestUserCycleModel:
     
     def test_days_remaining_calculation(self, user):
         """Test cálculo de días restantes"""
-        # Ciclo que termina en 10 días
-        start_date = timezone.now()
-        end_date = start_date + timedelta(days=10)
-        
+        # Ciclo normal de 30 días
         cycle = UserCycle.objects.create(
             user=user,
             cycle_number=1,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
             status='ACTIVE'
         )
         
-        # Debería tener 9 o 10 días restantes dependiendo de la hora
-        assert 9 <= cycle.days_remaining <= 10
+        # Primer día: deben quedar 29 días
+        assert cycle.days_remaining == 29
     
     def test_days_remaining_expired(self, user):
         """Test días restantes cuando el ciclo ya expiró"""
@@ -274,3 +271,85 @@ class TestCycleSnapshot:
                 cycle=cycle,
                 habit_scores={}
             )
+
+
+# Añadir a cycles/tests/test_models.py
+
+@pytest.mark.django_db
+class TestDay30Bug:
+    """Tests específicos para el bug del día 31"""
+    
+    def test_cycle_day_30_exact(self, user):
+        """Verificar que el día 30 funciona correctamente"""
+        # Ciclo que empezó hace exactamente 29 días (hoy es día 30)
+        cycle = UserCycle.objects.create(
+            user=user,
+            cycle_number=1,
+            start_date=timezone.now() - timedelta(days=29),
+            end_date=timezone.now() + timedelta(days=1),
+            status='ACTIVE'
+        )
+        
+        # DEBE mostrar día 30, no 31
+        assert cycle.days_elapsed == 30, f"Esperado día 30, pero muestra día {cycle.days_elapsed}"
+        assert cycle.days_remaining == 0, f"Esperado 0 días restantes, pero muestra {cycle.days_remaining}"
+        
+        # DEBE cambiar a PENDING_RENEWAL
+        status = cycle.check_and_update_status()
+        assert status == 'PENDING_RENEWAL', f"Esperado PENDING_RENEWAL, pero está {status}"
+    
+    def test_cycle_never_shows_day_31(self, user):
+        """Verificar que NUNCA muestra día 31"""
+        # Ciclo que empezó hace 30 días (sería día 31 sin el fix)
+        cycle = UserCycle.objects.create(
+            user=user,
+            cycle_number=1,
+            start_date=timezone.now() - timedelta(days=30),
+            end_date=timezone.now(),
+            status='ACTIVE'
+        )
+        
+        # NUNCA debe mostrar más de 30 días
+        assert cycle.days_elapsed == 30, f"No debe mostrar día {cycle.days_elapsed}, máximo es 30"
+        assert cycle.days_remaining == 0
+        
+    def test_cycle_day_32_still_shows_30(self, user):
+        """Verificar que después del día 30 sigue mostrando día 30"""
+        # Ciclo que empezó hace 31 días (sería día 32)
+        cycle = UserCycle.objects.create(
+            user=user,
+            cycle_number=1,
+            start_date=timezone.now() - timedelta(days=31),
+            end_date=timezone.now() - timedelta(days=1),
+            status='ACTIVE'
+        )
+        
+        # Debe seguir mostrando día 30, no 32
+        assert cycle.days_elapsed == 30, f"Debe mostrar día 30, no día {cycle.days_elapsed}"
+        
+    def test_renewal_triggers_on_day_30(self, user):
+        """Verificar que la renovación se activa el día 30, no después"""
+        # Crear ciclo en día 29
+        cycle = UserCycle.objects.create(
+            user=user,
+            cycle_number=1,
+            start_date=timezone.now() - timedelta(days=28),
+            end_date=timezone.now() + timedelta(days=2),
+            status='ACTIVE'
+        )
+        
+        # Día 29: NO debe activar renovación
+        assert cycle.days_elapsed == 29
+        cycle.check_and_update_status()
+        assert cycle.status == 'ACTIVE'
+        
+        # Simular que pasa un día (día 30)
+        cycle.start_date = timezone.now() - timedelta(days=29)
+        cycle.end_date = timezone.now() + timedelta(days=1)
+        cycle.save()
+        
+        # Día 30: SÍ debe activar renovación
+        assert cycle.days_elapsed == 30
+        cycle.check_and_update_status()
+        cycle.refresh_from_db()
+        assert cycle.status == 'PENDING_RENEWAL'

@@ -5,6 +5,7 @@ __pycache__/
 # Entornos virtuales
 venv/
 env/
+gastroenv/
 
 # Archivos de entorno
 .env.DS_Store

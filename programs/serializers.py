@@ -292,7 +292,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'que_significa',
                         'title': '¿Qué significa tu perfil?',
-                        'content': 'Según tus respuestas, no se detectan síntomas típicos de reflujo ni molestias digestivas relevantes en este momento. Tampoco hay constancia de pruebas digestivas con hallazgos que indiquen un problema activo.',
+                        'content': 'Según tus respuestas, no presentas síntomas digestivos o de reflujo que, por su intensidad o frecuencia, sugieran un problema clínicamente relevante en este momento. Es posible que hayas notado alguna molestia leve o puntual, pero en conjunto, no parece indicar un trastorno digestivo activo. Además, no se ha detectado ninguna prueba con hallazgos relevantes.',
                         'icon': 'psychology'
                     },
                     {
@@ -307,7 +307,7 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     },
                     {
                         'id': 'que_hacer',
-                        'title': '¿Qué puedes hacer tú para mantener una buena salud digestiva?',
+                        'title': '¿Qué puedes hacer para mantener una buena salud digestiva?',
                         'content': [
                             'Come tranquilo, sin distracciones ni prisas, y mastica bien cada bocado.',
                             'Evita comidas muy abundantes o muy tardías, especialmente si vas a acostarte después.',
@@ -322,13 +322,13 @@ class UserProgramSerializer(serializers.ModelSerializer):
                     {
                         'id': 'seguimiento_medico',
                         'title': '¿Y si en algún momento aparecen síntomas?',
-                        'content': 'Si en el futuro experimentas ardor, acidez, molestias digestivas, tos persistente o sensación de reflujo, te recomendamos repetir los cuestionarios y valorar una consulta médica si los síntomas persisten.',
+                        'content': 'Si empiezas a experimentar molestias como ardor, acidez, digestiones pesadas, tos persistente o sensación de reflujo, puedes repetir los cuestionarios. Y si los síntomas se mantienen o te generan preocupación, es recomendable valorar una consulta médica para una evaluación más completa.',
                         'icon': 'hospital-user'
                     },
                     {
                         'id': 'recordatorio',
                         'title': 'Recuerda',
-                        'content': 'Aunque ahora no presentes síntomas, cuidar tus hábitos es la mejor forma de mantener tu sistema digestivo en equilibrio. La salud digestiva va más allá de la ausencia de molestias: influye en tu energía, tu bienestar diario y tu salud general a largo plazo. Por eso, te animamos a utilizar GastroAssistant para identificar qué áreas puedes reforzar y empezar a trabajar en hábitos que te ayuden a mantenerte bien hoy y prevenir problemas en el futuro.',
+                        'content': 'Aunque ahora no presentes síntomas clínicamente significativos relacionados con el reflujo, cuidar tus hábitos es la mejor forma de mantener tu sistema digestivo en equilibrio. La salud digestiva va más allá de la ausencia de molestias: influye en tu energía, tu bienestar diario y tu salud general a largo plazo. Por eso, te animamos a utilizar GastroAssistant para identificar qué áreas puedes reforzar y empezar a trabajar en hábitos que te ayuden a mantenerte bien hoy y prevenir problemas en el futuro.',
                         'icon': 'checkmark-circle'
                     }
                 ]

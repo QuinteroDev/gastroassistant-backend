@@ -15,14 +15,9 @@ def check_cycle_status(request):
     """
     user = request.user
     current_cycle = CycleService.get_current_cycle(user)
-    needs_renewal = CycleService.needs_new_cycle(user)
-    
-    # IMPORTANTE: Si hay un ciclo activo sin onboarding completado, marcarlo como needs_renewal
-    if current_cycle and current_cycle.status == 'ACTIVE' and not current_cycle.onboarding_completed_at:
-        needs_renewal = True
     
     response_data = {
-        'needs_renewal': needs_renewal,
+        'needs_renewal': False,
         'current_cycle': None,
         'days_remaining': 0,
         'days_elapsed': 0,
@@ -30,10 +25,24 @@ def check_cycle_status(request):
     }
     
     if current_cycle:
+        # Actualizar estado si han pasado 30 días
+        current_cycle.check_and_update_status()
+        current_cycle.refresh_from_db()
+        
+        # Obtener datos actualizados
+        days_elapsed = current_cycle.days_elapsed
+        days_remaining = current_cycle.days_remaining
+        
         response_data['current_cycle'] = CycleSerializer(current_cycle).data
-        response_data['days_remaining'] = current_cycle.days_remaining
-        response_data['days_elapsed'] = current_cycle.days_elapsed
+        response_data['days_remaining'] = days_remaining
+        response_data['days_elapsed'] = days_elapsed
         response_data['has_completed_onboarding'] = bool(current_cycle.onboarding_completed_at)
+        
+        # Si estamos en día 30 o el ciclo está en PENDING_RENEWAL
+        if days_elapsed >= 30 or current_cycle.status == 'PENDING_RENEWAL':
+            response_data['needs_renewal'] = True
+    else:
+        response_data['needs_renewal'] = True
     
     return Response(response_data)
 

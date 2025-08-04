@@ -87,71 +87,50 @@ class UserCycle(models.Model):
     def days_elapsed(self):
         """
         Calcula los días transcurridos desde el inicio del ciclo.
-        El primer día cuenta como día 1, no día 0.
+        Día 1 = día de inicio
+        Día 30 = último día del ciclo
         """
         if not self.start_date:
             return 0
         
-        # Obtener solo la fecha (sin hora) para evitar problemas de timezone
-        if hasattr(self.start_date, 'date'):
-            start_date = self.start_date.date()
-        else:
-            start_date = self.start_date
+        now = timezone.now()
         
-        today = timezone.now().date()
+        # Calcular diferencia en días completos
+        diff = (now.date() - self.start_date.date()).days
         
-        # Calcular diferencia en días
-        diff_days = (today - start_date).days
+        # El día de inicio es día 1
+        days_in_cycle = diff + 1
         
-        # El primer día cuenta como día 1
-        return diff_days + 1
+        # IMPORTANTE: Limitar a máximo 30 días
+        return min(days_in_cycle, 30)
     
     @property
     def days_remaining(self):
         """
         Calcula los días restantes hasta el final del ciclo.
+        Cuando days_elapsed = 30, debe retornar 0
         """
-        if not self.end_date:
-            return 0
+        days_completed = self.days_elapsed
+        remaining = 30 - days_completed
         
-        # Obtener solo la fecha (sin hora)
-        if hasattr(self.end_date, 'date'):
-            end_date = self.end_date.date()
-        else:
-            end_date = self.end_date
-        
-        today = timezone.now().date()
-        
-        # Calcular días restantes
-        diff_days = (end_date - today).days
-        
-        # Si ya pasó la fecha, devolver 0
-        return max(0, diff_days)
+        # Asegurar que nunca sea negativo
+        return max(0, remaining)
+
 
     def check_and_update_status(self):
         """
-        Verifica y actualiza el estado del ciclo basado en la fecha actual.
+        Actualiza el estado cuando se completan 30 días.
+        Se activa cuando days_elapsed = 30 (days_remaining = 0)
         """
         if self.status == 'ACTIVE':
-            if self.days_remaining <= 0:
+            # Cambiar la condición para que se active en día 30
+            if self.days_elapsed >= 30:  # Cambio aquí: >= 30 en lugar de days_remaining <= 0
                 self.status = 'PENDING_RENEWAL'
                 self.save()
+                print(f"Ciclo {self.id} actualizado a PENDING_RENEWAL (día {self.days_elapsed})")
         
         return self.status
     
-# En cycles/models.py, asegúrate que el método devuelve el status:
-    def check_and_update_status(self):
-        """
-        Verifica y actualiza el estado del ciclo basado en la fecha actual.
-        """
-        now = timezone.now()
-        
-        if self.status == 'ACTIVE':
-            if now >= self.end_date:
-                self.status = 'PENDING_RENEWAL'
-                self.save()
-        
-        return self.status  # ← ESTA LÍNEA DEBE ESTAR
 
 class CycleHabitAssignment(models.Model):
     """
