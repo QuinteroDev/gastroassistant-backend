@@ -1,9 +1,12 @@
-
-# 4. users/urls.py - VERSIÓN LIMPIA
-
-
 from django.urls import path
-from .views import register_user, login_user, change_password, request_password_reset, confirm_password_reset
+from .views import (
+    register_user, 
+    login_user, 
+    change_password, 
+    request_password_reset, 
+    confirm_password_reset,
+    delete_account 
+)
 
 urlpatterns = [
     path('register/', register_user, name='register'),
@@ -11,4 +14,5 @@ urlpatterns = [
     path('change-password/', change_password, name='change-password'),
     path('password-reset/request/', request_password_reset, name='request-password-reset'),
     path('password-reset/confirm/', confirm_password_reset, name='confirm-password-reset'),
+    path('delete-account/', delete_account, name='delete-account'), 
 ]

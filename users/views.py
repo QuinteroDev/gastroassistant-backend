@@ -13,6 +13,8 @@ from django.db.utils import IntegrityError
 from django.conf import settings
 from .models import PasswordResetToken  # ← IMPORTANTE: Import del modelo
 from .email_service import EmailService  # ← IMPORTANTE: Import del servicio
+from django.utils import timezone
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -254,3 +256,51 @@ def confirm_password_reset(request):
     except Exception as e:
         print(f"Error en confirm_password_reset: {str(e)}")
         return Response({'error': 'Error interno del servidor'}, status=500)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    """
+    Elimina (desactiva) la cuenta del usuario autenticado.
+    Soft delete: marca el usuario como inactivo y anonimiza datos sensibles.
+    """
+    user = request.user
+    password = request.data.get('password')
+    
+    # Validar que envió la contraseña para confirmar
+    if not password:
+        return Response({
+            'error': 'Debes confirmar tu contraseña para eliminar la cuenta'
+        }, status=400)
+    
+    # Verificar que la contraseña sea correcta
+    if not check_password(password, user.password):
+        return Response({
+            'error': 'Contraseña incorrecta'
+        }, status=400)
+    
+    try:
+        # Guardar username antes de modificar
+        original_username = user.username
+        
+        # Anonimizar datos del usuario
+        user.username = f"deleted_user_{user.id}_{int(timezone.now().timestamp())}"
+        user.email = f"deleted_{user.id}@deleted.com"
+        user.is_active = False
+        user.save()
+        
+        # Eliminar el token de autenticación
+        Token.objects.filter(user=user).delete()
+        
+        print(f"✅ Usuario {original_username} (ID: {user.id}) desactivado exitosamente")
+        
+        return Response({
+            'message': 'Tu cuenta ha sido eliminada exitosamente'
+        }, status=200)
+        
+    except Exception as e:
+        print(f"❌ Error al eliminar cuenta: {str(e)}")
+        return Response({
+            'error': 'Error al procesar la eliminación de la cuenta'
+        }, status=500)
