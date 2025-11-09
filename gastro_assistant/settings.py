@@ -159,3 +159,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')  # Para collectstatic
 
 RESEND_API_KEY = os.getenv('RESEND_API_KEY')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Gastro Assistant <info@refluxion.com>')
+
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://165.227.88.231')

@@ -15,8 +15,9 @@ class EmailService:
     def send_password_reset_email(self, user_email, username, reset_token):
         """Envía email de reset de contraseña"""
         
-        # URL de reset (ajustar según tu configuración)
-        reset_url = f"gastroassistant://reset-password?token={reset_token}"
+        # 🔧 CAMBIO IMPORTANTE: Usar URL web que redirige al deep link
+        # Esta URL abrirá una página web que automáticamente redirigirá a la app
+        reset_url = f"{settings.FRONTEND_URL}/api/users/reset-password/?token={reset_token}"
         
         # Contenido del email en HTML
         html_content = f"""
@@ -26,49 +27,92 @@ class EmailService:
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Restablecer contraseña - Gastro Assistant</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }}
-                .container {{ max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; }}
-                .header {{ text-align: center; margin-bottom: 30px; }}
-                .logo {{ color: #007bff; font-size: 24px; font-weight: bold; }}
-                .content {{ line-height: 1.6; color: #333; }}
-                .button {{ display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }}
-                .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; text-align: center; }}
-                .warning {{ background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin: 20px 0; }}
-            </style>
         </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <div class="logo">Gastro Assistant</div>
+        <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white;">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🔐</div>
+                    <h1 style="color: white; margin: 0; font-size: 28px;">Gastro Assistant</h1>
                 </div>
                 
-                <div class="content">
-                    <h2>Restablecer tu contraseña</h2>
+                <!-- Content -->
+                <div style="padding: 40px 30px;">
+                    <h2 style="color: #333; margin-top: 0;">Restablecer tu contraseña</h2>
                     
-                    <p>Hola <strong>{username}</strong>,</p>
+                    <p style="color: #555; line-height: 1.6; font-size: 16px;">
+                        Hola <strong>{username}</strong>,
+                    </p>
                     
-                    <p>Has solicitado restablecer tu contraseña en Gastro Assistant.</p>
+                    <p style="color: #555; line-height: 1.6; font-size: 16px;">
+                        Has solicitado restablecer tu contraseña en Gastro Assistant.
+                    </p>
                     
-                    <p>Para crear una nueva contraseña, toca el siguiente botón desde tu dispositivo móvil:</p>
+                    <p style="color: #555; line-height: 1.6; font-size: 16px;">
+                        Para crear una nueva contraseña, toca el siguiente botón:
+                    </p>
                     
-                    <div style="text-align: center;">
-                        <a href="{reset_url}" class="button">Restablecer Contraseña</a>
+                    <!-- Button -->
+                    <div style="text-align: center; margin: 35px 0;">
+                        <a href="{reset_url}" 
+                           style="display: inline-block; 
+                                  background-color: #007bff; 
+                                  color: white; 
+                                  padding: 16px 40px; 
+                                  text-decoration: none; 
+                                  border-radius: 8px;
+                                  font-weight: bold;
+                                  font-size: 18px;
+                                  box-shadow: 0 4px 6px rgba(0, 123, 255, 0.3);">
+                            ✨ Restablecer Contraseña
+                        </a>
                     </div>
                     
-                    <div class="warning">
-                        <strong>⏰ Importante:</strong> Este enlace es válido por <strong>1 hora</strong> únicamente.
+                    <!-- Warning Box -->
+                    <div style="background-color: #fff3cd; 
+                                border-left: 4px solid #ffc107; 
+                                padding: 15px 20px; 
+                                margin: 25px 0;
+                                border-radius: 4px;">
+                        <p style="margin: 0; color: #856404; font-size: 14px;">
+                            <strong>⏰ Importante:</strong> Este enlace es válido por <strong>1 hora</strong> únicamente.
+                        </p>
                     </div>
                     
+                    <!-- Alternative Link -->
+                    <div style="background-color: #f8f9fa; 
+                                padding: 20px; 
+                                border-radius: 8px; 
+                                margin: 25px 0;">
+                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                            <strong>¿El botón no funciona?</strong>
+                        </p>
+                        <p style="margin: 0; color: #666; font-size: 13px; word-break: break-all;">
+                            Copia y pega este enlace en tu navegador:<br>
+                            <a href="{reset_url}" style="color: #007bff;">{reset_url}</a>
+                        </p>
+                    </div>
                     
-                    <p>Si no has solicitado este cambio, puedes ignorar este mensaje de forma segura.</p>
+                    <p style="color: #555; line-height: 1.6; font-size: 16px;">
+                        Si no has solicitado este cambio, puedes ignorar este mensaje de forma segura.
+                    </p>
                     
-                    <p>¡Gracias por usar Gastro Assistant!</p>
+                    <p style="color: #555; line-height: 1.6; font-size: 16px;">
+                        ¡Gracias por usar Gastro Assistant! 💙
+                    </p>
                 </div>
                 
-                <div class="footer">
-                    <p>Este email fue enviado automáticamente, por favor no respondas.</p>
-                    <p>© 2025 Gastro Assistant - Tu compañero para el bienestar digestivo</p>
+                <!-- Footer -->
+                <div style="background-color: #f8f9fa; 
+                            padding: 30px 20px; 
+                            text-align: center; 
+                            border-top: 1px solid #dee2e6;">
+                    <p style="margin: 0 0 5px 0; color: #999; font-size: 12px;">
+                        Este email fue enviado automáticamente, por favor no respondas.
+                    </p>
+                    <p style="margin: 0; color: #999; font-size: 12px;">
+                        © 2025 Gastro Assistant - Tu compañero para el bienestar digestivo
+                    </p>
                 </div>
             </div>
         </body>
@@ -77,37 +121,37 @@ class EmailService:
         
         # Contenido en texto plano como fallback
         text_content = f"""
-        Hola {username},
+Hola {username},
 
-        Has solicitado restablecer tu contraseña en Gastro Assistant.
+Has solicitado restablecer tu contraseña en Gastro Assistant.
 
-        Para continuar, copia y pega el siguiente enlace en tu navegador desde tu dispositivo móvil:
-        {reset_url}
+Para crear una nueva contraseña, abre el siguiente enlace en tu navegador:
+{reset_url}
 
-        Este enlace es válido por 1 hora únicamente.
+⏰ IMPORTANTE: Este enlace es válido por 1 hora únicamente.
 
-        Si no has solicitado este cambio, puedes ignorar este mensaje.
+Si no has solicitado este cambio, puedes ignorar este mensaje de forma segura.
 
-        ¡Gracias por usar Gastro Assistant!
-        
-        ---
-        Este email fue enviado automáticamente, por favor no respondas.
-        © 2025 Gastro Assistant
+¡Gracias por usar Gastro Assistant!
+
+---
+Este email fue enviado automáticamente, por favor no respondas.
+© 2025 Gastro Assistant
         """
         
         try:
             params = {
                 "from": settings.DEFAULT_FROM_EMAIL,
                 "to": [user_email],
-                "subject": "Gastro Assistant - Restablecer tu contraseña",
+                "subject": "🔐 Gastro Assistant - Restablecer tu contraseña",
                 "html": html_content,
                 "text": text_content,
             }
             
             result = resend.Emails.send(params)
-            logger.info(f"Email enviado exitosamente a {user_email}. ID: {result.get('id')}")
+            logger.info(f"✅ Email enviado exitosamente a {user_email}. ID: {result.get('id')}")
             return True, result
             
         except Exception as e:
-            logger.error(f"Error enviando email a {user_email}: {str(e)}")
+            logger.error(f"❌ Error enviando email a {user_email}: {str(e)}")
             return False, str(e)

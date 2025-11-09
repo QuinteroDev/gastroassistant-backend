@@ -304,3 +304,272 @@ def delete_account(request):
         return Response({
             'error': 'Error al procesar la eliminación de la cuenta'
         }, status=500)
+    
+# Añade esta función al final de users/views.py
+
+from django.http import HttpResponse
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def reset_password_redirect(request):
+    """
+    Vista web que recibe el token del email y redirige al deep link de la app.
+    Esta página se abre cuando el usuario toca el botón en el email.
+    """
+    token = request.GET.get('token')
+    
+    if not token:
+        return HttpResponse("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Error - Gastro Assistant</title>
+                <style>
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    .container {
+                        background: white;
+                        padding: 40px;
+                        border-radius: 16px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                        max-width: 400px;
+                        text-align: center;
+                    }
+                    .icon { font-size: 64px; margin-bottom: 20px; }
+                    h1 { color: #dc3545; margin: 0 0 15px 0; font-size: 24px; }
+                    p { color: #666; line-height: 1.6; margin: 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="icon">❌</div>
+                    <h1>Enlace inválido</h1>
+                    <p>Este enlace no es válido. Por favor, solicita un nuevo enlace de recuperación desde la app.</p>
+                </div>
+            </body>
+            </html>
+        """, status=400)
+    
+    # Verificar que el token existe y es válido
+    try:
+        import uuid
+        token_uuid = uuid.UUID(token)
+        reset_token = PasswordResetToken.objects.get(token=token_uuid)
+        
+        if not reset_token.is_valid():
+            return HttpResponse("""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Enlace expirado - Gastro Assistant</title>
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                            margin: 0;
+                            padding: 20px;
+                        }
+                        .container {
+                            background: white;
+                            padding: 40px;
+                            border-radius: 16px;
+                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                            max-width: 400px;
+                            text-align: center;
+                        }
+                        .icon { font-size: 64px; margin-bottom: 20px; }
+                        h1 { color: #ffc107; margin: 0 0 15px 0; font-size: 24px; }
+                        p { color: #666; line-height: 1.6; margin: 0 0 10px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">⏰</div>
+                        <h1>Enlace expirado</h1>
+                        <p>Este enlace ha expirado o ya ha sido usado.</p>
+                        <p><strong>Por favor, solicita un nuevo enlace desde la app.</strong></p>
+                    </div>
+                </body>
+                </html>
+            """, status=400)
+            
+    except (ValueError, PasswordResetToken.DoesNotExist):
+        return HttpResponse("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Token inválido - Gastro Assistant</title>
+                <style>
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    .container {
+                        background: white;
+                        padding: 40px;
+                        border-radius: 16px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                        max-width: 400px;
+                        text-align: center;
+                    }
+                    .icon { font-size: 64px; margin-bottom: 20px; }
+                    h1 { color: #dc3545; margin: 0 0 15px 0; font-size: 24px; }
+                    p { color: #666; line-height: 1.6; margin: 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="icon">🚫</div>
+                    <h1>Token inválido</h1>
+                    <p>Por favor, solicita un nuevo enlace de recuperación desde la app.</p>
+                </div>
+            </body>
+            </html>
+        """, status=400)
+    
+    # Deep link de tu app - este esquema debe coincidir con el configurado en React Native
+    deep_link = f"gastroassistant://reset-password?token={token}"
+    
+    # HTML con redirección automática y fallback manual
+    return HttpResponse(f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Abriendo Gastro Assistant...</title>
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    padding: 20px;
+                }}
+                .container {{
+                    background: white;
+                    padding: 40px;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                    max-width: 400px;
+                    text-align: center;
+                }}
+                .icon {{ font-size: 64px; margin-bottom: 20px; }}
+                h1 {{ 
+                    color: #333; 
+                    margin: 0 0 20px 0; 
+                    font-size: 24px; 
+                }}
+                p {{ 
+                    color: #666; 
+                    line-height: 1.6; 
+                    margin: 0 0 20px 0; 
+                }}
+                .button {{
+                    display: inline-block;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 15px 30px;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    font-size: 16px;
+                    margin: 10px 0;
+                    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.4);
+                    transition: transform 0.2s;
+                }}
+                .button:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.5);
+                }}
+                .spinner {{
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #667eea;
+                    border-radius: 50%;
+                    width: 50px;
+                    height: 50px;
+                    animation: spin 1s linear infinite;
+                    margin: 20px auto;
+                }}
+                @keyframes spin {{
+                    0% {{ transform: rotate(0deg); }}
+                    100% {{ transform: rotate(360deg); }}
+                }}
+                .note {{
+                    font-size: 13px;
+                    color: #999;
+                    margin-top: 20px;
+                }}
+            </style>
+            <script>
+                // Intentar abrir la app automáticamente al cargar la página
+                window.onload = function() {{
+                    // Redirigir al deep link inmediatamente
+                    window.location.href = '{deep_link}';
+                    
+                    // Después de 2.5 segundos, mostrar el botón manual por si no funcionó
+                    setTimeout(function() {{
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('manual').style.display = 'block';
+                    }}, 2500);
+                }};
+                
+                // Función para reintentar abrir la app
+                function openApp() {{
+                    window.location.href = '{deep_link}';
+                }}
+            </script>
+        </head>
+        <body>
+            <div class="container">
+                <div class="icon">🔐</div>
+                
+                <!-- Estado de carga -->
+                <div id="loading">
+                    <h1>Abriendo Gastro Assistant...</h1>
+                    <div class="spinner"></div>
+                    <p>Por favor, espera un momento mientras abrimos la aplicación</p>
+                </div>
+                
+                <!-- Fallback manual -->
+                <div id="manual" style="display: none;">
+                    <h1>¿No se abrió la app?</h1>
+                    <p>No te preocupes, toca el botón para abrir Gastro Assistant:</p>
+                    <a href="{deep_link}" class="button" onclick="openApp(); return true;">
+                        📱 Abrir Gastro Assistant
+                    </a>
+                    <p class="note">
+                        Si el botón no funciona, asegúrate de tener la app instalada en tu dispositivo.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+    """)
