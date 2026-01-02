@@ -573,3 +573,19 @@ def reset_password_redirect(request):
         </body>
         </html>
     """)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_current_user(request):
+    """
+    Devuelve info del usuario autenticado para verificar sesión al abrir la app.
+    """
+    user = request.user
+    has_profile = hasattr(user, 'profile')
+    
+    return Response({
+        'username': user.username,
+        'has_profile': has_profile,
+        'onboarding_complete': user.profile.onboarding_complete if has_profile else False,
+    })
